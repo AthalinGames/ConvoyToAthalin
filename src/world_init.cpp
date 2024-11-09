@@ -22,13 +22,31 @@ Entity createSalmon(RenderSystem* renderer, vec2 pos)
 	registry.players.emplace(entity);
 	registry.renderRequests.insert(
 		entity,
-		{ TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no txture is needed
+		{ TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no texture is needed
 			EFFECT_ASSET_ID::SALMON,
 			GEOMETRY_BUFFER_ID::SALMON });
 
 	return entity;
 }
 */
+
+Entity createArcher(RenderSystem *renderer, const vec2 pos) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Motion& motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = 0.0f;
+	motion.velocity = vec2(0, 0);
+	motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+
+	registry.towers.emplace(entity);
+	registry.archers.emplace(entity);
+	return entity;
+}
+
 
 /*
 Entity createFish(RenderSystem* renderer, vec2 position)

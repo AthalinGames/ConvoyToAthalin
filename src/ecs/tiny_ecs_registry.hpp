@@ -11,11 +11,12 @@ class ECSRegistry
 
 public:
 	// Manually created list of all components this game has
-	// TODO: A1 add a LightUp component
 	ComponentContainer<DeathTimer> deathTimers;
 	ComponentContainer<Motion> motions;
 	ComponentContainer<Collision> collisions;
 	ComponentContainer<Player> players;
+	ComponentContainer<Tower> towers;
+	ComponentContainer<Archer> archers;
 	ComponentContainer<Mesh*> meshPtrs;
 	ComponentContainer<RenderRequest> renderRequests;
 	ComponentContainer<ScreenState> screenStates;
@@ -31,6 +32,8 @@ public:
 		registry_list.push_back(&motions);
 		registry_list.push_back(&collisions);
 		registry_list.push_back(&players);
+		registry_list.push_back(&towers);
+		registry_list.push_back(&archers);
 		registry_list.push_back(&meshPtrs);
 		registry_list.push_back(&renderRequests);
 		registry_list.push_back(&screenStates);
@@ -47,17 +50,17 @@ public:
 		printf("Debug info on all registry entries:\n");
 		for (ContainerInterface* reg : registry_list)
 			if (reg->size() > 0)
-				printf("%4d components of type %s\n", (int)reg->size(), typeid(*reg).name());
+				printf("%4d components of type %s\n", static_cast<int>(reg->size()), typeid(*reg).name());
 	}
 
 	void list_all_components_of(Entity e) {
-		printf("Debug info on components of entity %u:\n", (unsigned int)e);
+		printf("Debug info on components of entity %u:\n", static_cast<unsigned int>(e));
 		for (ContainerInterface* reg : registry_list)
 			if (reg->has(e))
 				printf("type %s\n", typeid(*reg).name());
 	}
 
-	void remove_all_components_of(Entity e) {
+	void remove_all_components_of(const Entity e) {
 		for (ContainerInterface* reg : registry_list)
 			reg->remove(e);
 	}

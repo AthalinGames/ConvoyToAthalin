@@ -5,8 +5,17 @@
 #include "../ext/stb_image/stb_image.h"
 
 // Player component
-struct Player
-{
+struct Player {
+
+};
+
+// Tower components
+struct Tower {
+
+};
+
+// Archer
+struct Archer {
 
 };
 
