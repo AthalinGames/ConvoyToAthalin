@@ -44,6 +44,13 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 
 	registry.towers.emplace(entity);
 	registry.archers.emplace(entity);
+
+	registry.renderRequests.insert(entity, {
+		TEXTURE_ASSET_ID::FISH,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
 	return entity;
 }
 

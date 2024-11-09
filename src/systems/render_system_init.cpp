@@ -73,9 +73,9 @@ void RenderSystem::initializeGlTextures()
 		ivec2& dimensions = texture_dimensions[i];
 
 		stbi_uc* data;
-		data = stbi_load(path.c_str(), &dimensions.x, &dimensions.y, NULL, 4);
+		data = stbi_load(path.c_str(), &dimensions.x, &dimensions.y, nullptr, 4);
 
-		if (data == NULL)
+		if (data == nullptr)
 		{
 			const std::string message = "Could not load the file " + path + ".";
 			fprintf(stderr, "%s", message.c_str());
@@ -139,9 +139,9 @@ void RenderSystem::initializeGlMeshes()
 void RenderSystem::initializeGlGeometryBuffers()
 {
 	// Vertex Buffer creation.
-	glGenBuffers((GLsizei)vertex_buffers.size(), vertex_buffers.data());
+	glGenBuffers(static_cast<GLsizei>(vertex_buffers.size()), vertex_buffers.data());
 	// Index Buffer creation.
-	glGenBuffers((GLsizei)index_buffers.size(), index_buffers.data());
+	glGenBuffers(static_cast<GLsizei>(index_buffers.size()), index_buffers.data());
 
 	// Index and Vertex buffer data initialization.
 	initializeGlMeshes();
@@ -256,11 +256,11 @@ bool RenderSystem::initScreenTexture()
 	registry.screenStates.emplace(screen_state_entity);
 
 	int framebuffer_width, framebuffer_height;
-	glfwGetFramebufferSize(const_cast<GLFWwindow*>(window), &framebuffer_width, &framebuffer_height);  // Note, this will be 2x the resolution given to glfwCreateWindow on retina displays
+	glfwGetFramebufferSize(window, &framebuffer_width, &framebuffer_height);  // Note, this will be 2x the resolution given to glfwCreateWindow on retina displays
 
 	glGenTextures(1, &off_screen_render_buffer_color);
 	glBindTexture(GL_TEXTURE_2D, off_screen_render_buffer_color);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, framebuffer_width, framebuffer_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, framebuffer_width, framebuffer_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	gl_has_errors();

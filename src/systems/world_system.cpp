@@ -86,8 +86,12 @@ GLFWwindow* WorldSystem::create_window() {
 	// Input is handled using GLFW, for more info see
 	// http://www.glfw.org/docs/latest/input_guide.html
 	glfwSetWindowUserPointer(window, this);
-	auto key_redirect = [](GLFWwindow* wnd, int _0, int _1, int _2, int _3) { ((WorldSystem*)glfwGetWindowUserPointer(wnd))->on_key(_0, _1, _2, _3); };
-	auto cursor_pos_redirect = [](GLFWwindow* wnd, double _0, double _1) { ((WorldSystem*)glfwGetWindowUserPointer(wnd))->on_mouse_move({ _0, _1 }); };
+	auto key_redirect = [](GLFWwindow *wnd, int _0, int _1, int _2, int _3) {
+		static_cast<WorldSystem *>(glfwGetWindowUserPointer(wnd))->on_key(_0, _1, _2, _3);
+	};
+	auto cursor_pos_redirect = [](GLFWwindow *wnd, double _0, double _1) {
+		static_cast<WorldSystem *>(glfwGetWindowUserPointer(wnd))->on_mouse_move({_0, _1});
+	};
 	glfwSetKeyCallback(window, key_redirect);
 	glfwSetCursorPosCallback(window, cursor_pos_redirect);
 
@@ -122,7 +126,7 @@ GLFWwindow* WorldSystem::create_window() {
 void WorldSystem::init(RenderSystem* renderer_arg) {
 	this->renderer = renderer_arg;
 	// Playing background music indefinitely
-	Mix_PlayMusic(background_music, -1); // TODO: Replace with our bgm
+	//Mix_PlayMusic(background_music, -1); // TODO: Replace with our bgm
 	fprintf(stderr, "Loaded music\n");
 
 	// Set all states to default
@@ -227,6 +231,8 @@ void WorldSystem::restart_game() {
 	while (registry.motions.entities.size() > 0)
 	    registry.remove_all_components_of(registry.motions.entities.back());
 
+	towers.clear();
+
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
@@ -235,6 +241,9 @@ void WorldSystem::restart_game() {
 	player_salmon = createSalmon(renderer, { 100, 200 });
 	registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
 	*/
+	const auto debug_archer = createArcher(renderer, {100, 200});
+	towers.push_back(debug_archer);
+
 
 	// !! TODO A2: Enable static pebbles on the ground, for reference
 	// Create pebbles on the floor, use this for reference

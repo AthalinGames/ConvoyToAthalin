@@ -57,6 +57,7 @@ private:
     float next_turtle_spawn;
     float next_fish_spawn;
     Entity player_salmon;
+    std::vector<Entity> towers;
 
     // music references
     Mix_Music* background_music;
