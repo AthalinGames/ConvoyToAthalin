@@ -2,7 +2,7 @@
 #include "render_system.hpp"
 #include <SDL.h>
 
-#include "tiny_ecs_registry.hpp"
+#include "ecs/tiny_ecs_registry.hpp"
 
 void RenderSystem::drawTexturedMesh(Entity entity,
 									const mat3 &projection)
@@ -67,6 +67,7 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 		glBindTexture(GL_TEXTURE_2D, texture_id);
 		gl_has_errors();
 	}
+	/* TODO: Replace with effects for our own stuff
 	else if (render_request.used_effect == EFFECT_ASSET_ID::SALMON || render_request.used_effect == EFFECT_ASSET_ID::PEBBLE)
 	{
 		GLint in_position_loc = glGetAttribLocation(program, "in_position");
@@ -94,6 +95,7 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 			gl_has_errors();
 		}
 	}
+	*/
 	else
 	{
 		assert(false && "Type of render request not supported");
@@ -132,7 +134,7 @@ void RenderSystem::drawToScreen()
 {
 	// Setting shaders
 	// get the water texture, sprite mesh, and program
-	glUseProgram(effects[(GLuint)EFFECT_ASSET_ID::WATER]);
+	//glUseProgram(effects[(GLuint)EFFECT_ASSET_ID::WATER]); TODO: Replace with battle map background?
 	gl_has_errors();
 	// Clearing backbuffer
 	int w, h;
@@ -156,6 +158,8 @@ void RenderSystem::drawToScreen()
 		index_buffers[(GLuint)GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE]); // Note, GL_ELEMENT_ARRAY_BUFFER associates
 																	 // indices to the bound GL_ARRAY_BUFFER
 	gl_has_errors();
+
+	/* TODO: Replace with battle map background?
 	const GLuint water_program = effects[(GLuint)EFFECT_ASSET_ID::WATER];
 	// Set clock
 	GLuint time_uloc = glGetUniformLocation(water_program, "time");
@@ -170,6 +174,7 @@ void RenderSystem::drawToScreen()
 	glEnableVertexAttribArray(in_position_loc);
 	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void *)0);
 	gl_has_errors();
+	*/
 
 	// Bind our texture in Texture Unit 0
 	glActiveTexture(GL_TEXTURE0);

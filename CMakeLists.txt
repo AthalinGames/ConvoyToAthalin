@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.1)
-project(salmon)
+cmake_minimum_required(VERSION 3.5)
+project(convoyToAthalin)
 
 # Set c++11
 # https://stackoverflow.com/questions/10851247/how-to-activate-c-11-in-cmake
@@ -28,29 +28,7 @@ endif()
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ext/project_path.hpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/ext/project_path.hpp")
 
 # You can switch to use the file GLOB for simplicity but at your own risk
-file(GLOB SOURCE_FILES src/*.cpp src/*.hpp)
-
-#set(SOURCE_FILES
-#	src/main.cpp
-#	src/common.cpp
-#	src/fish.cpp
-#	src/salmon.cpp
-#	src/turtle.cpp
-#	src/water.cpp
-#	src/world.cpp
-#	src/mini_ecs.cpp
-# 	src/pebbles.cpp
-
-#    ext/project_path.hpp
-#	src/common.hpp
-#	src/fish.hpp
-#	src/salmon.hpp
-#	src/turtle.hpp
-#	src/water.hpp
-#	src/world.hpp
-#	src/mini_ecs.hpp
-#	src/pebbles.hpp
-#	)
+file(GLOB SOURCE_FILES src/*.cpp src/*.hpp src/*/*.cpp src/*/*.hpp)
 
 # external libraries will be installed into /usr/local/include and /usr/local/lib but that folder is not automatically included in the search on MACs
 if (IS_OS_MAC)
@@ -69,6 +47,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ext/stb_image/)
 target_include_directories(${PROJECT_NAME} PUBLIC ext/gl3w)
 
 # Find OpenGL
+set(OpenGL_GL_PREFERENCE GLVND)
 find_package(OpenGL REQUIRED)
 
 if (OPENGL_FOUND)

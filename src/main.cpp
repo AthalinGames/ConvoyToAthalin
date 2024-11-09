@@ -6,9 +6,11 @@
 #include <chrono>
 
 // internal
-#include "physics_system.hpp"
-#include "render_system.hpp"
-#include "world_system.hpp"
+#include <memory>
+
+#include "systems/physics_system.hpp"
+#include "systems/render_system.hpp"
+#include "systems/world_system.hpp"
 
 using Clock = std::chrono::high_resolution_clock;
 
@@ -41,9 +43,11 @@ int main()
 
 		// Calculating elapsed times in milliseconds from the previous iteration
 		auto now = Clock::now();
-		float elapsed_ms =
-			(float)(std::chrono::duration_cast<std::chrono::microseconds>(now - t)).count() / 1000;
+		const float elapsed_ms =
+			static_cast<float>((std::chrono::duration_cast<std::chrono::microseconds>(now - t)).count()) / 1000;
 		t = now;
+
+		std::shared_ptr<int> test;
 
 		world_system.step(elapsed_ms);
 		physics_system.step(elapsed_ms);

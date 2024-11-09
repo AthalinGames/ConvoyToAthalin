@@ -50,7 +50,7 @@ void PhysicsSystem::step(float elapsed_ms)
 	{
 		Motion& motion_i = motion_container.components[i];
 		Entity entity_i = motion_container.entities[i];
-		
+
 		// note starting j at i+1 to compare all (i,j) pairs only once (and to not compare with itself)
 		for(uint j = i+1; j < motion_container.components.size(); j++)
 		{

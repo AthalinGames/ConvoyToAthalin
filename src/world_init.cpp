@@ -1,6 +1,7 @@
 #include "world_init.hpp"
-#include "tiny_ecs_registry.hpp"
+#include "ecs/tiny_ecs_registry.hpp"
 
+/* TODO: create player base
 Entity createSalmon(RenderSystem* renderer, vec2 pos)
 {
 	auto entity = Entity();
@@ -27,7 +28,9 @@ Entity createSalmon(RenderSystem* renderer, vec2 pos)
 
 	return entity;
 }
+*/
 
+/*
 Entity createFish(RenderSystem* renderer, vec2 position)
 {
 	// Reserve en entity
@@ -56,7 +59,9 @@ Entity createFish(RenderSystem* renderer, vec2 position)
 
 	return entity;
 }
+*/
 
+/* TODO: create enemy
 Entity createTurtle(RenderSystem* renderer, vec2 position)
 {
 	auto entity = Entity();
@@ -84,6 +89,7 @@ Entity createTurtle(RenderSystem* renderer, vec2 position)
 
 	return entity;
 }
+*/
 
 Entity createLine(vec2 position, vec2 scale)
 {
@@ -107,6 +113,7 @@ Entity createLine(vec2 position, vec2 scale)
 	return entity;
 }
 
+/*
 Entity createPebble(vec2 pos, vec2 size)
 {
 	auto entity = Entity();
@@ -128,3 +135,4 @@ Entity createPebble(vec2 pos, vec2 size)
 
 	return entity;
 }
+*/

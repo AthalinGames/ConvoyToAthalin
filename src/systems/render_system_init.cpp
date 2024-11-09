@@ -7,7 +7,7 @@
 #include "../ext/stb_image/stb_image.h"
 
 // This creates circular header inclusion, that is quite bad.
-#include "tiny_ecs_registry.hpp"
+#include "ecs/tiny_ecs_registry.hpp"
 
 // stlib
 #include <iostream>
@@ -42,7 +42,7 @@ bool RenderSystem::init(GLFWwindow* window_arg)
 		printf("window width_height = %d,%d\n", window_width_px, window_height_px);
 	}
 
-	// Hint: Ask your TA for how to setup pretty OpenGL error callbacks. 
+	// Hint: Ask your TA for how to setup pretty OpenGL error callbacks.
 	// This can not be done in mac os, so do not enable
 	// it unless you are on Linux or Windows. You will need to change the window creation
 	// code to use OpenGL 4.3 (not suported on mac) and add additional .h and .cpp
@@ -125,13 +125,13 @@ void RenderSystem::initializeGlMeshes()
 		// Initialize meshes
 		GEOMETRY_BUFFER_ID geom_index = mesh_paths[i].first;
 		std::string name = mesh_paths[i].second;
-		Mesh::loadFromOBJFile(name, 
+		Mesh::loadFromOBJFile(name,
 			meshes[(int)geom_index].vertices,
 			meshes[(int)geom_index].vertex_indices,
 			meshes[(int)geom_index].original_size);
 
 		bindVBOandIBO(geom_index,
-			meshes[(int)geom_index].vertices, 
+			meshes[(int)geom_index].vertices,
 			meshes[(int)geom_index].vertex_indices);
 	}
 }
@@ -165,6 +165,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 
 	////////////////////////
 	// Initialize pebble
+	/* TODO: Something similar to pebbles needed for us?
 	std::vector<ColoredVertex> pebble_vertices;
 	std::vector<uint16_t> pebble_indices;
 	constexpr float z = -0.1f;
@@ -188,6 +189,7 @@ void RenderSystem::initializeGlGeometryBuffers()
 	meshes[geom_index].vertices = pebble_vertices;
 	meshes[geom_index].vertex_indices = pebble_indices;
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::PEBBLE, meshes[geom_index].vertices, meshes[geom_index].vertex_indices);
+	*/
 
 	//////////////////////////////////
 	// Initialize debug line
@@ -207,8 +209,8 @@ void RenderSystem::initializeGlGeometryBuffers()
 
 	// Two triangles
 	line_indices = {0, 1, 3, 1, 2, 3};
-	
-	geom_index = (int)GEOMETRY_BUFFER_ID::DEBUG_LINE;
+
+	int geom_index = (int)GEOMETRY_BUFFER_ID::DEBUG_LINE;
 	meshes[geom_index].vertices = line_vertices;
 	meshes[geom_index].vertex_indices = line_indices;
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::DEBUG_LINE, line_vertices, line_indices);

@@ -9,15 +9,17 @@
 #include "physics_system.hpp"
 
 // Game configuration
+/* TODO: Replace with our game config
 const size_t MAX_TURTLES = 15;
 const size_t MAX_FISH = 5;
 const size_t TURTLE_DELAY_MS = 2000 * 3;
 const size_t FISH_DELAY_MS = 5000 * 3;
+*/
 
 // Create the fish world
 WorldSystem::WorldSystem()
 	: points(0)
-	, next_turtle_spawn(0.f)
+	, next_turtle_spawn(0.f) //TODO: Replace with our spawn time variables
 	, next_fish_spawn(0.f) {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
@@ -25,6 +27,7 @@ WorldSystem::WorldSystem()
 
 WorldSystem::~WorldSystem() {
 	// Destroy music components
+	/* TODO: Replace with our sounds
 	if (background_music != nullptr)
 		Mix_FreeMusic(background_music);
 	if (salmon_dead_sound != nullptr)
@@ -32,6 +35,7 @@ WorldSystem::~WorldSystem() {
 	if (salmon_eat_sound != nullptr)
 		Mix_FreeChunk(salmon_eat_sound);
 	Mix_CloseAudio();
+	*/
 
 	// Destroy all created components
 	registry.clear_all_components();
@@ -72,7 +76,7 @@ GLFWwindow* WorldSystem::create_window() {
 	glfwWindowHint(GLFW_RESIZABLE, 0);
 
 	// Create the main window (for rendering, keyboard, and mouse input)
-	window = glfwCreateWindow(window_width_px, window_height_px, "Salmon Game Assignment", nullptr, nullptr);
+	window = glfwCreateWindow(window_width_px, window_height_px, "Convoy to Athalin", nullptr, nullptr);
 	if (window == nullptr) {
 		fprintf(stderr, "Failed to glfwCreateWindow");
 		return nullptr;
@@ -98,6 +102,7 @@ GLFWwindow* WorldSystem::create_window() {
 		return nullptr;
 	}
 
+	/* TODO: Replace with our sounds
 	background_music = Mix_LoadMUS(audio_path("music.wav").c_str());
 	salmon_dead_sound = Mix_LoadWAV(audio_path("salmon_dead.wav").c_str());
 	salmon_eat_sound = Mix_LoadWAV(audio_path("salmon_eat.wav").c_str());
@@ -109,6 +114,7 @@ GLFWwindow* WorldSystem::create_window() {
 			audio_path("salmon_eat.wav").c_str());
 		return nullptr;
 	}
+	*/
 
 	return window;
 }
@@ -116,7 +122,7 @@ GLFWwindow* WorldSystem::create_window() {
 void WorldSystem::init(RenderSystem* renderer_arg) {
 	this->renderer = renderer_arg;
 	// Playing background music indefinitely
-	Mix_PlayMusic(background_music, -1);
+	Mix_PlayMusic(background_music, -1); // TODO: Replace with our bgm
 	fprintf(stderr, "Loaded music\n");
 
 	// Set all states to default
@@ -149,6 +155,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	}
 
 	// Spawning new turtles
+	/* TODO: Spawn our own enemies
 	next_turtle_spawn -= elapsed_ms_since_last_update * current_speed;
 	if (registry.hardShells.components.size() <= MAX_TURTLES && next_turtle_spawn < 0.f) {
 		// Reset timer
@@ -163,18 +170,21 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 		motion.velocity = vec2(-100.f, 0.f);
 	}
 
+
 	// Spawning new fish
+
 	next_fish_spawn -= elapsed_ms_since_last_update * current_speed;
 	if (registry.softShells.components.size() <= MAX_FISH && next_fish_spawn < 0.f) {
 		// !!!  TODO A1: Create new fish with createFish({0,0}), as for the Turtles above
 	}
+	*/
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// TODO A2: HANDLE PEBBLE SPAWN HERE
 	// DON'T WORRY ABOUT THIS UNTIL ASSIGNMENT 2
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-	// Processing the salmon state
+	// Processing the salmon state TODO: Process our player state instead?
 	assert(registry.screenStates.components.size() <= 1);
     ScreenState &screen = registry.screenStates.components[0];
 
@@ -221,8 +231,10 @@ void WorldSystem::restart_game() {
 	registry.list_all_components();
 
 	// Create a new salmon
+	/* TODO: create player base?
 	player_salmon = createSalmon(renderer, { 100, 200 });
 	registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
+	*/
 
 	// !! TODO A2: Enable static pebbles on the ground, for reference
 	// Create pebbles on the floor, use this for reference
@@ -231,7 +243,7 @@ void WorldSystem::restart_game() {
 		int w, h;
 		glfwGetWindowSize(window, &w, &h);
 		float radius = 30 * (uniform_dist(rng) + 0.3f); // range 0.3 .. 1.3
-		Entity pebble = createPebble({ uniform_dist(rng) * w, h - uniform_dist(rng) * 20 }, 
+		Entity pebble = createPebble({ uniform_dist(rng) * w, h - uniform_dist(rng) * 20 },
 			         { radius, radius });
 		float brightness = uniform_dist(rng) * 0.5 + 0.5;
 		registry.colors.insert(pebble, { brightness, brightness, brightness});
@@ -253,6 +265,7 @@ void WorldSystem::handle_collisions() {
 			//Player& player = registry.players.get(entity);
 
 			// Checking Player - HardShell collisions
+			/* TODO: check instead enemy collision with player base?
 			if (registry.hardShells.has(entity_other)) {
 				// initiate death unless already dying
 				if (!registry.deathTimers.has(entity)) {
@@ -264,6 +277,7 @@ void WorldSystem::handle_collisions() {
 				}
 			}
 			// Checking Player - SoftShell collisions
+			// TODO: later check collision of enemy and player projectile
 			else if (registry.softShells.has(entity_other)) {
 				if (!registry.deathTimers.has(entity)) {
 					// chew, count points, and set the LightUp timer
@@ -274,6 +288,7 @@ void WorldSystem::handle_collisions() {
 					// !!! TODO A1: create a new struct called LightUp in components.hpp and add an instance to the salmon entity by modifying the ECS registry
 				}
 			}
+			*/
 		}
 	}
 
@@ -288,11 +303,7 @@ bool WorldSystem::is_over() const {
 
 // On key callback
 void WorldSystem::on_key(int key, int, int action, int mod) {
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// TODO A1: HANDLE SALMON MOVEMENT HERE
-	// key is of 'type' GLFW_KEY_
-	// action can be GLFW_PRESS GLFW_RELEASE GLFW_REPEAT
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	//TODO: handle keyboard shortcuts
 
 	// Resetting game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R) {
@@ -328,6 +339,7 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
 	// xpos and ypos are relative to the top-left of the window, the salmon's
 	// default facing direction is (1, 0)
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	//TODO: handle drag and drop tower placement
 
 	(vec2)mouse_position; // dummy to avoid compiler warning
 }

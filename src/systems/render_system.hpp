@@ -5,7 +5,7 @@
 
 #include "common.hpp"
 #include "components.hpp"
-#include "tiny_ecs.hpp"
+#include "ecs/tiny_ecs.hpp"
 
 // System responsible for setting up OpenGL and for rendering all the
 // visual entities in the game
