@@ -4,7 +4,7 @@
 #include <utility>
 
 #include "common.hpp"
-#include "components.hpp"
+#include "ecs/components.hpp"
 #include "ecs/tiny_ecs.hpp"
 
 // System responsible for setting up OpenGL and for rendering all the

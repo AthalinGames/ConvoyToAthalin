@@ -1,8 +1,8 @@
-#include "components.hpp"
-#include "systems/render_system.hpp" // for gl_has_errors
+#include "../ecs/components.hpp"
+#include "../systems/render_system.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "../ext/stb_image/stb_image.h"
+#include "../../ext/stb_image/stb_image.h"
 
 // stlib
 #include <iostream>

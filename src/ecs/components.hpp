@@ -23,13 +23,13 @@ struct Collision
 {
 	// Note, the first object is stored in the ECS container.entities
 	Entity other_entity; // the second object involved in the collision
-	Collision(Entity& other_entity) { this->other_entity = other_entity; };
+	explicit Collision(const Entity& other_entity) { this->other_entity = other_entity; };
 };
 
 // Data structure for toggling debug mode
 struct Debug {
-	bool in_debug_mode = 0;
-	bool in_freeze_mode = 0;
+	bool in_debug_mode = false;
+	bool in_freeze_mode = false;
 };
 extern Debug debugging;
 
@@ -103,7 +103,8 @@ enum class TEXTURE_ASSET_ID {
 	TURTLE = FISH + 1,
 	TEXTURE_COUNT = TURTLE + 1
 };
-const int texture_count = (int)TEXTURE_ASSET_ID::TEXTURE_COUNT;
+
+constexpr int texture_count = static_cast<int>(TEXTURE_ASSET_ID::TEXTURE_COUNT);
 
 enum class EFFECT_ASSET_ID {
 	COLOURED = 0,
@@ -113,7 +114,8 @@ enum class EFFECT_ASSET_ID {
 	WATER = TEXTURED + 1,
 	EFFECT_COUNT = WATER + 1
 };
-const int effect_count = (int)EFFECT_ASSET_ID::EFFECT_COUNT;
+
+constexpr int effect_count = static_cast<int>(EFFECT_ASSET_ID::EFFECT_COUNT);
 
 enum class GEOMETRY_BUFFER_ID {
 	SALMON = 0,
@@ -123,7 +125,8 @@ enum class GEOMETRY_BUFFER_ID {
 	SCREEN_TRIANGLE = DEBUG_LINE + 1,
 	GEOMETRY_COUNT = SCREEN_TRIANGLE + 1
 };
-const int geometry_count = (int)GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
+
+constexpr int geometry_count = static_cast<int>(GEOMETRY_BUFFER_ID::GEOMETRY_COUNT);
 
 struct RenderRequest {
 	TEXTURE_ASSET_ID used_texture = TEXTURE_ASSET_ID::TEXTURE_COUNT;
