@@ -81,12 +81,12 @@ bool Mesh::loadFromOBJFile(std::string obj_path, std::vector<ColoredVertex>& out
 			}
 
 			// -1 since .obj starts counting at 1 and OpenGL starts at 0
-			out_vertex_indices.push_back((uint16_t)vertexIndex[0] - 1);
-			out_vertex_indices.push_back((uint16_t)vertexIndex[1] - 1);
-			out_vertex_indices.push_back((uint16_t)vertexIndex[2] - 1);
-			out_normal_indices.push_back((uint16_t)normalIndex[0] - 1);
-			out_normal_indices.push_back((uint16_t)normalIndex[1] - 1);
-			out_normal_indices.push_back((uint16_t)normalIndex[2] - 1);
+			out_vertex_indices.push_back(static_cast<uint16_t>(vertexIndex[0]) - 1);
+			out_vertex_indices.push_back(static_cast<uint16_t>(vertexIndex[1]) - 1);
+			out_vertex_indices.push_back(static_cast<uint16_t>(vertexIndex[2]) - 1);
+			out_normal_indices.push_back(static_cast<uint16_t>(normalIndex[0]) - 1);
+			out_normal_indices.push_back(static_cast<uint16_t>(normalIndex[1]) - 1);
+			out_normal_indices.push_back(static_cast<uint16_t>(normalIndex[2]) - 1);
 		}
 		else {
 			// Probably a comment, eat up the rest of the line

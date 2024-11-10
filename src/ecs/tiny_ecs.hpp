@@ -57,7 +57,7 @@ public:
 		// Usually, every entity should only have one instance of each component type
 		assert(!(check_for_duplicates && has(e)) && "Entity already contained in ECS registry");
 
-		map_entity_componentID[e] = (unsigned int)components.size();
+		map_entity_componentID[e] = static_cast<unsigned int>(components.size());
 		components.push_back(std::move(c)); // the move enforces move instead of copy constructor
 		entities.push_back(e);
 		return components.back();

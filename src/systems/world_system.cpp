@@ -148,7 +148,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// Remove entities that leave the screen on the left side
 	// Iterate backwards to be able to remove without unterfering with the next object to visit
 	// (the containers exchange the last element with the current)
-	for (int i = (int)motion_container.components.size()-1; i>=0; --i) {
+	for (int i = static_cast<int>(motion_container.components.size())-1; i>=0; --i) {
 	    Motion& motion = motion_container.components[i];
 		if (motion.position.x + abs(motion.scale.x) < 0.f) {
 			if(!registry.players.has(motion_container.entities[i])) // don't remove the player
