@@ -21,6 +21,7 @@ public:
 	ComponentContainer<Arrow> arrows;
 	ComponentContainer<Archer> archers;
     ComponentContainer<Stationary> stationaries;
+    ComponentContainer<Map> maps;
 	ComponentContainer<Enemy> enemies;
 	ComponentContainer<Mesh*> meshPtrs;
 	ComponentContainer<RenderRequest> renderRequests;
@@ -42,6 +43,7 @@ public:
 		registry_list.push_back(&arrows);
 		registry_list.push_back(&archers);
         registry_list.push_back(&stationaries);
+        registry_list.push_back(&maps);
 		registry_list.push_back(&enemies);
 		registry_list.push_back(&meshPtrs);
 		registry_list.push_back(&renderRequests);
