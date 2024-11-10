@@ -246,11 +246,20 @@ void WorldSystem::restart_game() {
 	player_salmon = createSalmon(renderer, { 100, 200 });
 	registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
 	*/
-    const auto debug_map = createMap(renderer, {window_width_px/2, window_height_px/2});
+    const auto debug_map = createMap(renderer,
+                                                {window_width_px/2, window_height_px/2},
+                                                {vec2(0, 180), vec2(510, 180), vec2(510, 450), vec2(930, 450), vec2(1050, 330)}); //TODO percentage relative to window size
     maps.push_back(debug_map);
+    Map& map = registry.maps.get(debug_map);
+    map.active = true;
 
 	const auto debug_archer = createArcher(renderer, {400, 300});
 	towers.push_back(debug_archer);
+
+    const auto debug_enemy = createEnemy(renderer, {0, 100});
+    enemies.push_back(debug_enemy);
+    Enemy& enemy = registry.enemies.get(debug_enemy);
+    enemy.speed = 100.f;
 
     registry.list_all_components();
 
