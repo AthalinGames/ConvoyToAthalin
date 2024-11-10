@@ -55,6 +55,29 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	return entity;
 }
 
+Entity createArrow(RenderSystem *renderer, const vec2 pos, float angle, float velocity) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Motion& motion = registry.motions.emplace(entity);
+	motion.position = pos;
+	motion.angle = angle;
+	motion.velocity = velocity * pos;
+	motion.scale = vec2({-ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
+
+	/*
+	registry.renderRequests.insert(entity, {
+		TEXTURE_ASSET_ID::ARROW,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+	 */
+
+	return entity;
+}
+
 Entity createMap(RenderSystem *renderer, const vec2 pos) {
     const auto entity = Entity();
 

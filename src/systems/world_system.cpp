@@ -212,7 +212,14 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// reduce window brightness if any of the present salmons is dying
 	screen.screen_darken_factor = 1 - min_timer_ms / 3000;
 
-	// !!! TODO A1: update LightUp timers and remove if time drops below zero, similar to the death timer
+	for (const auto tower_entity : registry.shotTimers.entities) {
+		auto& shot_timer = registry.shotTimers.get(tower_entity);
+		shot_timer.time -= elapsed_ms_since_last_update;
+
+		if (shot_timer.time < 0) {
+			registry.shotTimers.remove(tower_entity);
+		}
+	}
 
 	return true;
 }
@@ -339,13 +346,21 @@ void WorldSystem::handle_collisions() {
 void WorldSystem::handle_aiming() {
 	auto& aimingRegistry = registry.aimingAts;
 	for (uint i = 0; i < aimingRegistry.entities.size(); i++) {
-		Entity tower_entity = aimingRegistry.entities[i];
-		Entity enemy_entity = aimingRegistry.components[i].aimed_entity;
+		const Entity tower_entity = aimingRegistry.entities[i];
+		const Entity enemy_entity = aimingRegistry.components[i].aimed_entity;
 		auto& tower_motion = registry.motions.get(tower_entity);
 		auto& enemy_motion = registry.motions.get(enemy_entity);
-		auto d_p = tower_motion.position - enemy_motion.position;
-		auto angle = atan2(d_p.y, d_p.x);
+		const auto d_p = tower_motion.position - enemy_motion.position;
+		const auto angle = atan2(d_p.y, d_p.x);
 		tower_motion.angle = angle;
+
+		if (!registry.shotTimers.has(tower_entity)) {
+			auto& archer = registry.archers.get(tower_entity);
+			registry.shotTimers.emplace(tower_entity);
+			if (registry.archers.has(tower_entity)) {
+				createArrow(renderer, tower_motion.position, tower_motion.angle, archer.arrow_speed);
+			}
+		}
 	}
 	// Clear aiming for next iteration
 	registry.aimingAts.clear();

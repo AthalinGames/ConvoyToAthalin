@@ -32,8 +32,17 @@ struct TowerAimingAt {
 	Entity aimed_entity;
 };
 
+struct ShotTimer {
+	float time = 100.0f;
+};
+
 // Archer
 struct Archer {
+	float arrow_speed = 100.0f;
+};
+
+// Arrow
+struct Arrow {
 
 };
 

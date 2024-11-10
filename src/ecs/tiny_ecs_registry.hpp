@@ -17,6 +17,8 @@ public:
 	ComponentContainer<Player> players;
 	ComponentContainer<Tower> towers;
 	ComponentContainer<TowerAimingAt> aimingAts;
+	ComponentContainer<ShotTimer> shotTimers;
+	ComponentContainer<Arrow> arrows;
 	ComponentContainer<Archer> archers;
     ComponentContainer<Stationary> stationaries;
 	ComponentContainer<Enemy> enemies;
@@ -36,6 +38,8 @@ public:
 		registry_list.push_back(&players);
 		registry_list.push_back(&towers);
 		registry_list.push_back(&aimingAts);
+		registry_list.push_back(&shotTimers);
+		registry_list.push_back(&arrows);
 		registry_list.push_back(&archers);
         registry_list.push_back(&stationaries);
 		registry_list.push_back(&enemies);
