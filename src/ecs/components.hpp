@@ -5,8 +5,17 @@
 #include "../ext/stb_image/stb_image.h"
 
 // Player component
-struct Player
-{
+struct Player {
+
+};
+
+// Tower components
+struct Tower {
+
+};
+
+// Archer
+struct Archer {
 
 };
 
@@ -112,7 +121,9 @@ enum class EFFECT_ASSET_ID {
 	SALMON = PEBBLE + 1,
 	TEXTURED = SALMON + 1,
 	WATER = TEXTURED + 1,
-	EFFECT_COUNT = WATER + 1
+    EFFECT_COUNT = WATER + 1,
+    //TODO GROUND = WATER + 1,
+	//EFFECT_COUNT = GROUND + 1
 };
 
 constexpr int effect_count = static_cast<int>(EFFECT_ASSET_ID::EFFECT_COUNT);
