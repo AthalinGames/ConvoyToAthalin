@@ -5,8 +5,8 @@
 #include "systems/render_system.hpp"
 
 // These are hard coded to the dimensions of the entity texture
-const float ARCHER_BB_WIDTH = 0.4f * 300.f;
-const float ARCHER_BB_HEIGHT = 0.4f * 300.f;
+constexpr float ARCHER_BB_WIDTH = 0.4f * 100.f;
+constexpr float ARCHER_BB_HEIGHT = 0.4f * 100.f;
 
 // the player
 Entity createArcher(RenderSystem* renderer, vec2 pos);

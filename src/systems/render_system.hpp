@@ -24,23 +24,28 @@ class RenderSystem {
 	// Associated id with .obj path
 	const std::vector < std::pair<GEOMETRY_BUFFER_ID, std::string>> mesh_paths =
 	{
-		  std::pair<GEOMETRY_BUFFER_ID, std::string>(GEOMETRY_BUFFER_ID::SALMON, mesh_path("salmon.obj"))
+		  std::pair(GEOMETRY_BUFFER_ID::SALMON, mesh_path("salmon.obj"))
 		  // specify meshes of other assets here
 	};
 
 	// Make sure these paths remain in sync with the associated enumerators.
-	const std::array<std::string, texture_count> texture_paths = {
-			textures_path("fish.png"),
-			textures_path("turtle.png") };
+	const std::array<std::string, texture_count> texture_paths = [] {
+		std::array<std::string, texture_count> textures{};
+		for (int i = 0; i < texture_count; i++) {
+			textures[i] = textures_path(TextureAssetIDToString(static_cast<TEXTURE_ASSET_ID> (i)));
+		}
+		return textures;
+	} ();
 
 	std::array<GLuint, effect_count> effects;
 	// Make sure these paths remain in sync with the associated enumerators.
-	const std::array<std::string, effect_count> effect_paths = {
-		shader_path("coloured"),
-		shader_path("pebble"),
-		shader_path("salmon"),
-		shader_path("textured"),
-		shader_path("water") };
+	const std::array<std::string, effect_count> effect_paths = [] {
+		std::array<std::string, effect_count> effects{};
+		for (int i = 0; i < effect_count; i++) {
+			effects[i] = shader_path(EffectAssetIDToString(static_cast<EFFECT_ASSET_ID> (i)));
+		}
+		return effects;
+	} ();
 
 	std::array<GLuint, geometry_count> vertex_buffers;
 	std::array<GLuint, geometry_count> index_buffers;

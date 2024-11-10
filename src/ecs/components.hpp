@@ -1,4 +1,6 @@
 #pragma once
+#include <map>
+
 #include "common.hpp"
 #include <vector>
 #include <unordered_map>
@@ -109,30 +111,57 @@ struct Mesh
 
 enum class TEXTURE_ASSET_ID {
 	FISH = 0,
-	TURTLE = FISH + 1,
-	TEXTURE_COUNT = TURTLE + 1
+	TURTLE,
+	ARCHER,
+	TEXTURE_COUNT
 };
+
+constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
+	switch (id) {
+		case TEXTURE_ASSET_ID::FISH: return "fish.png";
+		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
+		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
+		default: {
+			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
+			assert(false);
+		};
+	}
+}
 
 constexpr int texture_count = static_cast<int>(TEXTURE_ASSET_ID::TEXTURE_COUNT);
 
 enum class EFFECT_ASSET_ID {
 	COLOURED = 0,
-	PEBBLE = COLOURED + 1,
-	SALMON = PEBBLE + 1,
-	TEXTURED = SALMON + 1,
-	WATER = TEXTURED + 1,
-	EFFECT_COUNT = WATER + 1
+	PEBBLE,
+	SALMON,
+	TEXTURED,
+	WATER,
+	EFFECT_COUNT
 };
+
+constexpr const char* EffectAssetIDToString(const EFFECT_ASSET_ID id) {
+	switch (id) {
+		case EFFECT_ASSET_ID::COLOURED: return "coloured";
+		case EFFECT_ASSET_ID::PEBBLE: return "pebble";
+		case EFFECT_ASSET_ID::SALMON: return "salmon";
+		case EFFECT_ASSET_ID::TEXTURED: return "textured";
+		case EFFECT_ASSET_ID::WATER: return "water";
+		default: {
+			fprintf(stderr, "Invalid EFFECT_ASSET_ID: %d", static_cast<int>(id));
+			assert(false);
+		}
+	}
+}
 
 constexpr int effect_count = static_cast<int>(EFFECT_ASSET_ID::EFFECT_COUNT);
 
 enum class GEOMETRY_BUFFER_ID {
 	SALMON = 0,
-	SPRITE = SALMON + 1,
-	PEBBLE = SPRITE + 1,
-	DEBUG_LINE = PEBBLE + 1,
-	SCREEN_TRIANGLE = DEBUG_LINE + 1,
-	GEOMETRY_COUNT = SCREEN_TRIANGLE + 1
+	SPRITE,
+	PEBBLE,
+	DEBUG_LINE,
+	SCREEN_TRIANGLE,
+	GEOMETRY_COUNT
 };
 
 constexpr int geometry_count = static_cast<int>(GEOMETRY_BUFFER_ID::GEOMETRY_COUNT);
