@@ -249,7 +249,7 @@ void WorldSystem::restart_game() {
     const auto debug_map = createMap(renderer, {window_width_px/2, window_height_px/2});
     maps.push_back(debug_map);
 
-	const auto debug_archer = createArcher(renderer, {100, 200});
+	const auto debug_archer = createArcher(renderer, {400, 300});
 	towers.push_back(debug_archer);
 
     registry.list_all_components();
