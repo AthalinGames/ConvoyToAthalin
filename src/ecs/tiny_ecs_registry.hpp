@@ -18,6 +18,7 @@ public:
 	ComponentContainer<Tower> towers;
 	ComponentContainer<TowerAimingAt> aimingAts;
 	ComponentContainer<Archer> archers;
+    ComponentContainer<Stationary> stationaries;
 	ComponentContainer<Enemy> enemies;
 	ComponentContainer<Mesh*> meshPtrs;
 	ComponentContainer<RenderRequest> renderRequests;
@@ -36,6 +37,7 @@ public:
 		registry_list.push_back(&towers);
 		registry_list.push_back(&aimingAts);
 		registry_list.push_back(&archers);
+        registry_list.push_back(&stationaries);
 		registry_list.push_back(&enemies);
 		registry_list.push_back(&meshPtrs);
 		registry_list.push_back(&renderRequests);

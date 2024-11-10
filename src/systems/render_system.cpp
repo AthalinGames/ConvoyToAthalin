@@ -7,14 +7,27 @@
 void RenderSystem::drawTexturedMesh(const Entity entity,
                                     const mat3 &projection)
 {
-	Motion &motion = registry.motions.get(entity);
+	vec2 position;
+    float angle;
+    vec2 scale;
+    if (registry.motions.has(entity)) {
+        Motion &motion = registry.motions.get(entity);
+        position = motion.position;
+        angle = motion.angle;
+        scale = motion.scale;
+    } else {
+        Stationary &map = registry.stationaries.get(entity);
+        position = map.position;
+        angle = map.angle;
+        scale = map.scale;
+    }
 	// Transformation code, see Rendering and Transformation in the template
 	// specification for more info Incrementally updates transformation matrix,
 	// thus ORDER IS IMPORTANT
 	Transform transform;
-	transform.translate(motion.position);
-	transform.rotate(motion.angle);
-	transform.scale(motion.scale);
+	transform.translate(position);
+	transform.rotate(angle);
+	transform.scale(scale);
 
 	assert(registry.renderRequests.has(entity));
 	const RenderRequest &render_request = registry.renderRequests.get(entity);
@@ -134,9 +147,7 @@ void RenderSystem::drawToScreen()
 	// Setting shaders
 	// get the water texture, sprite mesh, and program
 	glUseProgram(effects[static_cast<GLuint>(EFFECT_ASSET_ID::WATER)]);// TODO: Replace with battle map background?
-    //glUseProgram(effects[(GLuint)EFFECT_ASSET_ID::GROUND]);
-
-    gl_has_errors();
+	gl_has_errors();
 	// Clearing backbuffer
 	int w, h;
 	glfwGetFramebufferSize(window, &w, &h); // Note, this will be 2x the resolution given to glfwCreateWindow on retina displays
@@ -176,24 +187,6 @@ void RenderSystem::drawToScreen()
 	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), static_cast<void *>(nullptr));
 	gl_has_errors();
 
-    /*
-    const GLuint ground_program = effects[(GLuint)EFFECT_ASSET_ID::GROUND];
-    // Set clock
-    GLuint time_uloc = glGetUniformLocation(ground_program, "time");
-    GLuint dead_timer_uloc = glGetUniformLocation(ground_program, "screen_darken_factor");
-    glUniform1f(time_uloc, (float)(glfwGetTime() * 10.0f));
-    ScreenState &screen = registry.screenStates.get(screen_state_entity);
-    glUniform1f(dead_timer_uloc, screen.screen_darken_factor);
-    gl_has_errors();
-    // Set the vertex position and vertex texture coordinates (both stored in the
-    // same VBO)
-    GLint in_position_loc = glGetAttribLocation(ground_program, "in_position");
-    glEnableVertexAttribArray(in_position_loc);
-    glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void *)0);
-    gl_has_errors();
-     */
-
-
 
 	// Bind our texture in Texture Unit 0
 	glActiveTexture(GL_TEXTURE0);
@@ -222,7 +215,7 @@ void RenderSystem::draw()
 	// Clearing backbuffer
 	glViewport(0, 0, w, h);
 	glDepthRange(0.00001, 10);
-	glClearColor(0, 0, 1, 1.0);
+	glClearColor(0, 0, 0, 1.0);
 	glClearDepth(10.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_BLEND);
@@ -235,7 +228,7 @@ void RenderSystem::draw()
 	// Draw all textured meshes that have a position and size component
 	for (Entity entity : registry.renderRequests.entities)
 	{
-		if (!registry.motions.has(entity))
+		if (!registry.motions.has(entity) && !registry.stationaries.has(entity))
 			continue;
 		// Note, its not very efficient to access elements indirectly via the entity
 		// albeit iterating through all Sprites in sequence. A good point to optimize

@@ -231,7 +231,12 @@ void WorldSystem::restart_game() {
 	while (registry.motions.entities.size() > 0)
 	    registry.remove_all_components_of(registry.motions.entities.back());
 
+    //Remove all stationaries
+    while (registry.stationaries.entities.size() > 0)
+        registry.remove_all_components_of(registry.stationaries.entities.back());
+
 	towers.clear();
+    maps.clear();
 
 	// Debugging for memory/component leaks
 	registry.list_all_components();
@@ -241,9 +246,13 @@ void WorldSystem::restart_game() {
 	player_salmon = createSalmon(renderer, { 100, 200 });
 	registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
 	*/
+    const auto debug_map = createMap(renderer, {window_width_px/2, window_height_px/2});
+    maps.push_back(debug_map);
+
 	const auto debug_archer = createArcher(renderer, {100, 200});
 	towers.push_back(debug_archer);
 
+    registry.list_all_components();
 
 	// !! TODO A2: Enable static pebbles on the ground, for reference
 	// Create pebbles on the floor, use this for reference

@@ -53,6 +53,16 @@ struct Collision
 	explicit Collision(const Entity& other_entity) { this->other_entity = other_entity; };
 };
 
+// Defines attributes of combat map
+struct Stationary
+{
+    vec2 position = { 0.f, 0.f };
+    float angle = 0.f;
+    vec2 scale = { 100.f, 100.f };
+    unsigned int enemies_remaining = 0;
+    bool combat_started = false;
+};
+
 // Data structure for toggling debug mode
 struct Debug {
 	bool in_debug_mode = false;
@@ -129,6 +139,7 @@ enum class TEXTURE_ASSET_ID {
 	FISH = 0,
 	TURTLE,
 	ARCHER,
+    MAP,
 	TEXTURE_COUNT
 };
 
@@ -137,9 +148,11 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::FISH: return "fish.png";
 		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
+        case TEXTURE_ASSET_ID::MAP: return "tdmap.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
+            return "";
 		};
 	}
 }
@@ -165,6 +178,7 @@ constexpr const char* EffectAssetIDToString(const EFFECT_ASSET_ID id) {
 		default: {
 			fprintf(stderr, "Invalid EFFECT_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
+            return "";
 		}
 	}
 }

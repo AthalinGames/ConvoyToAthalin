@@ -55,6 +55,24 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	return entity;
 }
 
+Entity createMap(RenderSystem *renderer, const vec2 pos) {
+    const auto entity = Entity();
+
+    Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+    registry.meshPtrs.emplace(entity, &mesh);
+
+    Stationary& map = registry.stationaries.emplace(entity);
+    map.position = pos;
+    map.scale = vec2({MAP_WIDTH, MAP_HEIGHT});
+
+    registry.renderRequests.insert(entity, {
+            TEXTURE_ASSET_ID::MAP,
+            EFFECT_ASSET_ID::TEXTURED,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+
+    return entity;
+}
 
 /*
 Entity createFish(RenderSystem* renderer, vec2 position)
