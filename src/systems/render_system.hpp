@@ -63,7 +63,7 @@ public:
 	void initializeGlEffects();
 
 	void initializeGlMeshes();
-	Mesh& getMesh(GEOMETRY_BUFFER_ID id) { return meshes[(int)id]; };
+	Mesh& getMesh(GEOMETRY_BUFFER_ID id) { return meshes[static_cast<int>(id)]; };
 
 	void initializeGlGeometryBuffers();
 	// Initialize the screen texture used as intermediate render target
