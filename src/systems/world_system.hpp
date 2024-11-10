@@ -35,6 +35,9 @@ public:
     // Check for collisions
     void handle_collisions();
 
+    // Aim all towers at their current enemy
+    void handle_aiming();
+
     // Should the game be over ?
     bool is_over()const;
 private:

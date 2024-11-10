@@ -11,9 +11,25 @@ struct Player {
 
 };
 
-// Tower components
-struct Tower {
+// Enemy components
+struct Enemy {
+	float enemy_progress = 0.0f;
+};
 
+// Tower components
+enum EnemyPriority {
+	LAST,
+	FIRST
+};
+
+struct Tower {
+	float range = 0.0f;
+	EnemyPriority priority = FIRST;
+	bool is_aiming = false;
+};
+
+struct TowerAimingAt {
+	Entity aimed_entity;
 };
 
 // Archer

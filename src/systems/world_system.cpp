@@ -296,11 +296,48 @@ void WorldSystem::handle_collisions() {
 				}
 			}
 			*/
+		} else if (registry.towers.has(entity) && registry.enemies.has(entity_other)) {
+			auto& tower = registry.towers.get(entity);
+			if (registry.aimingAts.has(entity)) {
+				auto& aiming = registry.aimingAts.get(entity);
+				auto& aimedEnemy = registry.enemies.get(aiming.aimed_entity);
+				auto& otherEnemy = registry.enemies.get(entity_other);
+				switch (tower.priority) {
+					case FIRST:
+						if (aimedEnemy.enemy_progress < otherEnemy.enemy_progress) {
+							aiming.aimed_entity = entity_other;
+						}
+						break;
+					case LAST:
+						if (aimedEnemy.enemy_progress > otherEnemy.enemy_progress) {
+							aiming.aimed_entity = entity_other;
+						}
+						break;
+				}
+			} else {
+				auto& aimingAt = registry.aimingAts.emplace(entity);
+				aimingAt.aimed_entity = entity_other;
+			}
 		}
 	}
 
 	// Remove all collisions from this simulation step
 	registry.collisions.clear();
+}
+
+void WorldSystem::handle_aiming() {
+	auto& aimingRegistry = registry.aimingAts;
+	for (uint i = 0; i < aimingRegistry.entities.size(); i++) {
+		Entity tower_entity = aimingRegistry.entities[i];
+		Entity enemy_entity = aimingRegistry.components[i].aimed_entity;
+		auto& tower_motion = registry.motions.get(tower_entity);
+		auto& enemy_motion = registry.motions.get(enemy_entity);
+		auto d_p = tower_motion.position - enemy_motion.position;
+		auto angle = atan2(d_p.y, d_p.x);
+		tower_motion.angle = angle;
+	}
+	// Clear aiming for next iteration
+	registry.aimingAts.clear();
 }
 
 // Should the game be over ?
