@@ -62,6 +62,7 @@ private:
     Entity player_salmon;
     std::vector<Entity> towers;
     std::vector<Entity> maps;
+    std::vector<Entity> enemies;
 
     // music references
     Mix_Music* background_music;

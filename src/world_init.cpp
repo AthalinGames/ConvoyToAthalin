@@ -55,15 +55,51 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	return entity;
 }
 
-Entity createMap(RenderSystem *renderer, const vec2 pos) {
+Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
     const auto entity = Entity();
 
     Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
     registry.meshPtrs.emplace(entity, &mesh);
 
-    Stationary& map = registry.stationaries.emplace(entity);
-    map.position = pos;
-    map.scale = vec2({MAP_WIDTH, MAP_HEIGHT});
+    Motion& motion = registry.motions.emplace(entity);
+    motion.position = pos;
+    motion.angle = 0.0f;
+    motion.velocity = vec2(0, 0);
+    motion.scale = vec2({-SLIME_WIDTH, SLIME_HEIGHT});
+
+    auto& enemy = registry.enemies.emplace(entity);
+
+    registry.renderRequests.insert(entity, {
+            TEXTURE_ASSET_ID::SLIME,
+            EFFECT_ASSET_ID::TEXTURED,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+
+    return entity;
+}
+
+Entity createMap(RenderSystem *renderer, const vec2 pos, const std::vector<vec2>& checkpoints) { //is & for checkpoint necessary?
+    const auto entity = Entity();
+
+    Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+    registry.meshPtrs.emplace(entity, &mesh);
+
+    Stationary& map_texture = registry.stationaries.emplace(entity);
+    map_texture.position = pos;
+    map_texture.scale = vec2({MAP_WIDTH, MAP_HEIGHT});
+
+    Map& map_attributes = registry.maps.emplace(entity);
+    map_attributes.checkpoints = checkpoints;//{vec2(0, 100), vec2(300, 100), vec2(300, 400)};
+
+    //calculate path length
+    float path_length = 0;
+    if (checkpoints.size() > 1) {
+        path_length += abs(distance(checkpoints[0], checkpoints[1]));
+        for (int i = 2; i < checkpoints.size(); ++i) {
+            path_length += abs(distance(checkpoints[i-1], checkpoints[i]));
+        }
+    }
+    map_attributes.path_length = path_length;
 
     registry.renderRequests.insert(entity, {
             TEXTURE_ASSET_ID::MAP,

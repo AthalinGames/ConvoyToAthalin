@@ -14,6 +14,9 @@ struct Player {
 // Enemy components
 struct Enemy {
 	float enemy_progress = 0.0f;
+    float speed = 0.f;
+    uint next_checkpoint = 1; // checkpoint 0 is start position
+    float section_progress = 0.f;
 };
 
 // Tower components
@@ -53,14 +56,21 @@ struct Collision
 	explicit Collision(const Entity& other_entity) { this->other_entity = other_entity; };
 };
 
-// Defines attributes of combat map
+// Defines attributes of stationary entity
 struct Stationary
 {
     vec2 position = { 0.f, 0.f };
     float angle = 0.f;
     vec2 scale = { 100.f, 100.f };
+};
+
+struct Map
+{
+    std::vector<vec2> checkpoints = {vec2(0.f,0.f)};
+    float path_length = 0;
     unsigned int enemies_remaining = 0;
     bool combat_started = false;
+    bool active = false;
 };
 
 // Data structure for toggling debug mode
@@ -139,6 +149,7 @@ enum class TEXTURE_ASSET_ID {
 	FISH = 0,
 	TURTLE,
 	ARCHER,
+    SLIME,
     MAP,
 	TEXTURE_COUNT
 };
@@ -148,6 +159,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::FISH: return "fish.png";
 		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
+        case TEXTURE_ASSET_ID::SLIME: return "slime.png";
         case TEXTURE_ASSET_ID::MAP: return "tdmap.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
