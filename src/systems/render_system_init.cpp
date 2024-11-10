@@ -65,15 +65,13 @@ bool RenderSystem::init(GLFWwindow* window_arg)
 
 void RenderSystem::initializeGlTextures()
 {
-    glGenTextures((GLsizei)texture_gl_handles.size(), texture_gl_handles.data());
+    glGenTextures(static_cast<GLsizei>(texture_gl_handles.size()), texture_gl_handles.data());
 
-    for(uint i = 0; i < texture_paths.size(); i++)
-    {
+    for(uint i = 0; i < texture_paths.size(); i++) {
 		const std::string& path = texture_paths[i];
 		ivec2& dimensions = texture_dimensions[i];
 
-		stbi_uc* data;
-		data = stbi_load(path.c_str(), &dimensions.x, &dimensions.y, nullptr, 4);
+		stbi_uc *data = stbi_load(path.c_str(), &dimensions.x, &dimensions.y, nullptr, 4);
 
 		if (data == nullptr)
 		{
@@ -99,7 +97,7 @@ void RenderSystem::initializeGlEffects()
 		const std::string fragment_shader_name = effect_paths[i] + ".fs.glsl";
 
 		bool is_valid = loadEffectFromFile(vertex_shader_name, fragment_shader_name, effects[i]);
-		assert(is_valid && (GLuint)effects[i] != 0);
+		assert(is_valid && effects[i] != 0);
 	}
 }
 
@@ -107,12 +105,12 @@ void RenderSystem::initializeGlEffects()
 template <class T>
 void RenderSystem::bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices, std::vector<uint16_t> indices)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[(uint)gid]);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[static_cast<uint>(gid)]);
 	glBufferData(GL_ARRAY_BUFFER,
 		sizeof(vertices[0]) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
 	gl_has_errors();
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffers[(uint)gid]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffers[static_cast<uint>(gid)]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 		sizeof(indices[0]) * indices.size(), indices.data(), GL_STATIC_DRAW);
 	gl_has_errors();
@@ -193,24 +191,22 @@ void RenderSystem::initializeGlGeometryBuffers()
 
 	//////////////////////////////////
 	// Initialize debug line
-	std::vector<ColoredVertex> line_vertices;
-	std::vector<uint16_t> line_indices;
 
 	constexpr float depth = 0.5f;
 	constexpr vec3 red = { 0.8,0.1,0.1 };
 
 	// Corner points
-	line_vertices = {
-		{{-0.5,-0.5, depth}, red},
+	std::vector<ColoredVertex> line_vertices = {
+		{{-0.5, -0.5, depth}, red},
 		{{-0.5, 0.5, depth}, red},
-		{{ 0.5, 0.5, depth}, red},
-		{{ 0.5,-0.5, depth}, red},
+		{{0.5, 0.5, depth}, red},
+		{{0.5, -0.5, depth}, red},
 	};
 
 	// Two triangles
-	line_indices = {0, 1, 3, 1, 2, 3};
+	std::vector<uint16_t> line_indices = {0, 1, 3, 1, 2, 3};
 
-	int geom_index = (int)GEOMETRY_BUFFER_ID::DEBUG_LINE;
+	int geom_index = static_cast<int>(GEOMETRY_BUFFER_ID::DEBUG_LINE);
 	meshes[geom_index].vertices = line_vertices;
 	meshes[geom_index].vertex_indices = line_indices;
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::DEBUG_LINE, line_vertices, line_indices);
@@ -231,9 +227,9 @@ RenderSystem::~RenderSystem()
 {
 	// Don't need to free gl resources since they last for as long as the program,
 	// but it's polite to clean after yourself.
-	glDeleteBuffers((GLsizei)vertex_buffers.size(), vertex_buffers.data());
-	glDeleteBuffers((GLsizei)index_buffers.size(), index_buffers.data());
-	glDeleteTextures((GLsizei)texture_gl_handles.size(), texture_gl_handles.data());
+	glDeleteBuffers(static_cast<GLsizei>(vertex_buffers.size()), vertex_buffers.data());
+	glDeleteBuffers(static_cast<GLsizei>(index_buffers.size()), index_buffers.data());
+	glDeleteTextures(static_cast<GLsizei>(texture_gl_handles.size()), texture_gl_handles.data());
 	glDeleteTextures(1, &off_screen_render_buffer_color);
 	glDeleteRenderbuffers(1, &off_screen_render_buffer_depth);
 	gl_has_errors();
@@ -246,7 +242,7 @@ RenderSystem::~RenderSystem()
 	gl_has_errors();
 
 	// remove all entities created by the render system
-	while (registry.renderRequests.entities.size() > 0)
+	while (!registry.renderRequests.entities.empty())
 	    registry.remove_all_components_of(registry.renderRequests.entities.back());
 }
 
@@ -321,8 +317,8 @@ bool loadEffectFromFile(
 	std::string fs_str = fs_ss.str();
 	const char* vs_src = vs_str.c_str();
 	const char* fs_src = fs_str.c_str();
-	GLsizei vs_len = (GLsizei)vs_str.size();
-	GLsizei fs_len = (GLsizei)fs_str.size();
+	auto vs_len = static_cast<GLsizei>(vs_str.size());
+	auto fs_len = static_cast<GLsizei>(fs_str.size());
 
 	GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertex, 1, &vs_src, &vs_len);

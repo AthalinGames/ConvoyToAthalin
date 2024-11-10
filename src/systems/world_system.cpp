@@ -27,7 +27,7 @@ WorldSystem::WorldSystem()
 
 WorldSystem::~WorldSystem() {
 	// Destroy music components
-	/* TODO: Replace with our sounds
+	// TODO: Replace with our sounds
 	if (background_music != nullptr)
 		Mix_FreeMusic(background_music);
 	if (salmon_dead_sound != nullptr)
@@ -35,7 +35,6 @@ WorldSystem::~WorldSystem() {
 	if (salmon_eat_sound != nullptr)
 		Mix_FreeChunk(salmon_eat_sound);
 	Mix_CloseAudio();
-	*/
 
 	// Destroy all created components
 	registry.clear_all_components();
@@ -106,7 +105,7 @@ GLFWwindow* WorldSystem::create_window() {
 		return nullptr;
 	}
 
-	/* TODO: Replace with our sounds
+	// TODO: Replace with our sounds
 	background_music = Mix_LoadMUS(audio_path("music.wav").c_str());
 	salmon_dead_sound = Mix_LoadWAV(audio_path("salmon_dead.wav").c_str());
 	salmon_eat_sound = Mix_LoadWAV(audio_path("salmon_eat.wav").c_str());
@@ -118,7 +117,6 @@ GLFWwindow* WorldSystem::create_window() {
 			audio_path("salmon_eat.wav").c_str());
 		return nullptr;
 	}
-	*/
 
 	return window;
 }
@@ -126,7 +124,7 @@ GLFWwindow* WorldSystem::create_window() {
 void WorldSystem::init(RenderSystem* renderer_arg) {
 	this->renderer = renderer_arg;
 	// Playing background music indefinitely
-	//Mix_PlayMusic(background_music, -1); // TODO: Replace with our bgm
+	Mix_PlayMusic(background_music, -1); // TODO: Replace with our bgm
 	fprintf(stderr, "Loaded music\n");
 
 	// Set all states to default
@@ -141,7 +139,7 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	glfwSetWindowTitle(window, title_ss.str().c_str());
 
 	// Remove debug info from the last step
-	while (registry.debugComponents.entities.size() > 0)
+	while (!registry.debugComponents.entities.empty())
 	    registry.remove_all_components_of(registry.debugComponents.entities.back());
 
 	// Removing out of screen entities

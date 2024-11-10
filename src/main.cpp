@@ -47,8 +47,6 @@ int main()
 			static_cast<float>((std::chrono::duration_cast<std::chrono::microseconds>(now - t)).count()) / 1000;
 		t = now;
 
-		std::shared_ptr<int> test;
-
 		world_system.step(elapsed_ms);
 		physics_system.step(elapsed_ms);
 

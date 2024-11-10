@@ -119,7 +119,7 @@ void RenderSystem::drawTexturedMesh(Entity entity,
 	glGetIntegerv(GL_CURRENT_PROGRAM, &currProgram);
 	// Setting uniform values to the currently bound program
 	GLuint transform_loc = glGetUniformLocation(currProgram, "transform");
-	glUniformMatrix3fv(transform_loc, 1, GL_FALSE, (float *)&transform.mat);
+	glUniformMatrix3fv(transform_loc, 1, GL_FALSE, reinterpret_cast<float *>(&transform.mat));
 	GLuint projection_loc = glGetUniformLocation(currProgram, "projection");
 	glUniformMatrix3fv(projection_loc, 1, GL_FALSE, (float *)&projection);
 	gl_has_errors();
@@ -134,7 +134,7 @@ void RenderSystem::drawToScreen()
 {
 	// Setting shaders
 	// get the water texture, sprite mesh, and program
-	//glUseProgram(effects[(GLuint)EFFECT_ASSET_ID::WATER]); TODO: Replace with battle map background?
+	glUseProgram(effects[static_cast<GLuint>(EFFECT_ASSET_ID::WATER)]);// TODO: Replace with battle map background?
 	gl_has_errors();
 	// Clearing backbuffer
 	int w, h;
@@ -152,29 +152,29 @@ void RenderSystem::drawToScreen()
 	glDisable(GL_DEPTH_TEST);
 
 	// Draw the screen texture on the quad geometry
-	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[(GLuint)GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE]);
+	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[static_cast<GLuint>(GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE)]);
 	glBindBuffer(
 		GL_ELEMENT_ARRAY_BUFFER,
-		index_buffers[(GLuint)GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE]); // Note, GL_ELEMENT_ARRAY_BUFFER associates
+		index_buffers[static_cast<GLuint>(GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE)]); // Note, GL_ELEMENT_ARRAY_BUFFER associates
 																	 // indices to the bound GL_ARRAY_BUFFER
 	gl_has_errors();
 
-	/* TODO: Replace with battle map background?
-	const GLuint water_program = effects[(GLuint)EFFECT_ASSET_ID::WATER];
+	// TODO: Replace with battle map background?
+	const GLuint water_program = effects[static_cast<GLuint>(EFFECT_ASSET_ID::WATER)];
 	// Set clock
-	GLuint time_uloc = glGetUniformLocation(water_program, "time");
-	GLuint dead_timer_uloc = glGetUniformLocation(water_program, "screen_darken_factor");
-	glUniform1f(time_uloc, (float)(glfwGetTime() * 10.0f));
-	ScreenState &screen = registry.screenStates.get(screen_state_entity);
+	const GLuint time_uloc = glGetUniformLocation(water_program, "time");
+	const GLuint dead_timer_uloc = glGetUniformLocation(water_program, "screen_darken_factor");
+	glUniform1f(time_uloc, static_cast<float>(glfwGetTime() * 10.0f));
+	const ScreenState &screen = registry.screenStates.get(screen_state_entity);
 	glUniform1f(dead_timer_uloc, screen.screen_darken_factor);
 	gl_has_errors();
 	// Set the vertex position and vertex texture coordinates (both stored in the
 	// same VBO)
-	GLint in_position_loc = glGetAttribLocation(water_program, "in_position");
+	const GLint in_position_loc = glGetAttribLocation(water_program, "in_position");
 	glEnableVertexAttribArray(in_position_loc);
-	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void *)0);
+	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), static_cast<void *>(nullptr));
 	gl_has_errors();
-	*/
+
 
 	// Bind our texture in Texture Unit 0
 	glActiveTexture(GL_TEXTURE0);
