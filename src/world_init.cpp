@@ -42,7 +42,8 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	motion.velocity = vec2(0, 0);
 	motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
 
-	registry.towers.emplace(entity);
+	auto& tower = registry.towers.emplace(entity);
+	tower.range = 50;
 	registry.archers.emplace(entity);
 
 	registry.renderRequests.insert(entity, {

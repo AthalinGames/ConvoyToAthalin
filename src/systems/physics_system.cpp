@@ -26,6 +26,18 @@ bool collides(const Motion& motion1, const Motion& motion2)
 	return false;
 }
 
+bool enemyInTowerRange(const Motion& tower_motion, const Tower& tower, const Motion& enemy_motion) {
+	const vec2 d_p = tower_motion.position - enemy_motion.position;
+	const float dist_squared = dot(d_p, d_p);
+	const vec2 enemy_bounding_box = get_bounding_box(enemy_motion);
+	const float enemy_r_squared = dot(enemy_bounding_box, enemy_bounding_box);
+	const float tower_r_squared = tower.range * tower.range;
+	const float r_squared = max(enemy_r_squared, tower_r_squared);
+	if (dist_squared < r_squared)
+		return true;
+	return false;
+}
+
 void PhysicsSystem::step(float elapsed_ms)
 {
 	// Move fish based on how much time has passed, this is to (partially) avoid
@@ -34,10 +46,9 @@ void PhysicsSystem::step(float elapsed_ms)
 	for(uint i = 0; i < motion_container.size(); i++)
 	{
 		// !!! TODO A1: update motion.position based on step_seconds and motion.velocity
-		//Motion& motion = motion_container.components[i];
-		//Entity entity = motion_container.entities[i];
-		//float step_seconds = elapsed_ms / 1000.f;
-		(void)elapsed_ms; // placeholder to silence unused warning until implemented
+		Motion& motion = motion_container.components[i];
+		float step_seconds = elapsed_ms / 1000.f;
+		motion.position += step_seconds * motion.velocity;
 	}
 
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -55,9 +66,13 @@ void PhysicsSystem::step(float elapsed_ms)
 		for(uint j = i+1; j < motion_container.components.size(); j++)
 		{
 			Motion& motion_j = motion_container.components[j];
-			if (collides(motion_i, motion_j))
-			{
-				Entity entity_j = motion_container.entities[j];
+			Entity entity_j = motion_container.entities[j];
+			if (registry.towers.has(entity_i) && registry.enemies.has(entity_j)) {
+				if (enemyInTowerRange(motion_i, registry.towers.get(entity_i), motion_j)) {
+					registry.collisions.emplace_with_duplicates(entity_i, entity_j);
+					registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+				}
+			} else if (collides(motion_i, motion_j)) {
 				// Create a collisions event
 				// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
 				registry.collisions.emplace_with_duplicates(entity_i, entity_j);

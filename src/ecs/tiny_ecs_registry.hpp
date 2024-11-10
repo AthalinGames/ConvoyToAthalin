@@ -16,8 +16,10 @@ public:
 	ComponentContainer<Collision> collisions;
 	ComponentContainer<Player> players;
 	ComponentContainer<Tower> towers;
+	ComponentContainer<TowerAimingAt> aimingAts;
 	ComponentContainer<Archer> archers;
     ComponentContainer<Stationary> stationaries;
+	ComponentContainer<Enemy> enemies;
 	ComponentContainer<Mesh*> meshPtrs;
 	ComponentContainer<RenderRequest> renderRequests;
 	ComponentContainer<ScreenState> screenStates;
@@ -28,14 +30,15 @@ public:
 	// IMPORTANT: Don't forget to add any newly added containers!
 	ECSRegistry()
 	{
-		// TODO: A1 add a LightUp component
 		registry_list.push_back(&deathTimers);
 		registry_list.push_back(&motions);
 		registry_list.push_back(&collisions);
 		registry_list.push_back(&players);
 		registry_list.push_back(&towers);
+		registry_list.push_back(&aimingAts);
 		registry_list.push_back(&archers);
         registry_list.push_back(&stationaries);
+		registry_list.push_back(&enemies);
 		registry_list.push_back(&meshPtrs);
 		registry_list.push_back(&renderRequests);
 		registry_list.push_back(&screenStates);
