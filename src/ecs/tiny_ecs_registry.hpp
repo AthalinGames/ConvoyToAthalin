@@ -17,6 +17,7 @@ public:
 	ComponentContainer<Player> players;
 	ComponentContainer<Tower> towers;
 	ComponentContainer<Archer> archers;
+    ComponentContainer<Stationary> stationaries;
 	ComponentContainer<Mesh*> meshPtrs;
 	ComponentContainer<RenderRequest> renderRequests;
 	ComponentContainer<ScreenState> screenStates;
@@ -34,6 +35,7 @@ public:
 		registry_list.push_back(&players);
 		registry_list.push_back(&towers);
 		registry_list.push_back(&archers);
+        registry_list.push_back(&stationaries);
 		registry_list.push_back(&meshPtrs);
 		registry_list.push_back(&renderRequests);
 		registry_list.push_back(&screenStates);

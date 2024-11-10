@@ -7,13 +7,23 @@
 void RenderSystem::drawTexturedMesh(const Entity entity,
                                     const mat3 &projection)
 {
-	Motion &motion = registry.motions.get(entity);
+	vec2 position;
+    vec2 scale;
+    if (registry.motions.has(entity)) {
+        Motion &motion = registry.motions.get(entity);
+        position = motion.position;
+        scale = motion.scale;
+    } else {
+        Stationary &map = registry.stationaries.get(entity);
+        position = map.position;
+        scale = map.scale;
+    }
 	// Transformation code, see Rendering and Transformation in the template
 	// specification for more info Incrementally updates transformation matrix,
 	// thus ORDER IS IMPORTANT
 	Transform transform;
-	transform.translate(motion.position);
-	transform.scale(motion.scale);
+	transform.translate(position);
+	transform.scale(scale);
 	// !!! TODO A1: add rotation to the chain of transformations, mind the order
 	// of transformations
 
@@ -223,7 +233,7 @@ void RenderSystem::draw()
 	// Clearing backbuffer
 	glViewport(0, 0, w, h);
 	glDepthRange(0.00001, 10);
-	glClearColor(0, 0, 1, 1.0);
+	glClearColor(0, 0, 0, 1.0);
 	glClearDepth(10.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_BLEND);
@@ -236,8 +246,9 @@ void RenderSystem::draw()
 	// Draw all textured meshes that have a position and size component
 	for (Entity entity : registry.renderRequests.entities)
 	{
-		if (!registry.motions.has(entity))
+		if (!registry.motions.has(entity) && !registry.stationaries.has(entity))
 			continue;
+
 		// Note, its not very efficient to access elements indirectly via the entity
 		// albeit iterating through all Sprites in sequence. A good point to optimize
 		drawTexturedMesh(entity, projection_2D);
