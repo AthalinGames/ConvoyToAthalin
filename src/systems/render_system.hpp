@@ -31,7 +31,7 @@ class RenderSystem {
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, texture_count> texture_paths = [] {
 		std::array<std::string, texture_count> textures{};
-		for (int i = 0; i < texture_count; i++) {
+		for (int i = 0; i < texture_count; i++) { // iterate over textures to create paths
 			textures[i] = textures_path(TextureAssetIDToString(static_cast<TEXTURE_ASSET_ID> (i)));
 		}
 		return textures;
@@ -41,7 +41,7 @@ class RenderSystem {
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, effect_count> effect_paths = [] {
 		std::array<std::string, effect_count> effects{};
-		for (int i = 0; i < effect_count; i++) {
+		for (int i = 0; i < effect_count; i++) { // iterate over shaders to create paths
 			effects[i] = shader_path(EffectAssetIDToString(static_cast<EFFECT_ASSET_ID> (i)));
 		}
 		return effects;

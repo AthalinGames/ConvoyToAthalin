@@ -135,7 +135,9 @@ void RenderSystem::drawToScreen()
 	// Setting shaders
 	// get the water texture, sprite mesh, and program
 	glUseProgram(effects[static_cast<GLuint>(EFFECT_ASSET_ID::WATER)]);// TODO: Replace with battle map background?
-	gl_has_errors();
+    //glUseProgram(effects[(GLuint)EFFECT_ASSET_ID::GROUND]);
+
+    gl_has_errors();
 	// Clearing backbuffer
 	int w, h;
 	glfwGetFramebufferSize(window, &w, &h); // Note, this will be 2x the resolution given to glfwCreateWindow on retina displays
@@ -174,6 +176,24 @@ void RenderSystem::drawToScreen()
 	glEnableVertexAttribArray(in_position_loc);
 	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), static_cast<void *>(nullptr));
 	gl_has_errors();
+
+    /*
+    const GLuint ground_program = effects[(GLuint)EFFECT_ASSET_ID::GROUND];
+    // Set clock
+    GLuint time_uloc = glGetUniformLocation(ground_program, "time");
+    GLuint dead_timer_uloc = glGetUniformLocation(ground_program, "screen_darken_factor");
+    glUniform1f(time_uloc, (float)(glfwGetTime() * 10.0f));
+    ScreenState &screen = registry.screenStates.get(screen_state_entity);
+    glUniform1f(dead_timer_uloc, screen.screen_darken_factor);
+    gl_has_errors();
+    // Set the vertex position and vertex texture coordinates (both stored in the
+    // same VBO)
+    GLint in_position_loc = glGetAttribLocation(ground_program, "in_position");
+    glEnableVertexAttribArray(in_position_loc);
+    glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void *)0);
+    gl_has_errors();
+     */
+
 
 
 	// Bind our texture in Texture Unit 0

@@ -35,6 +35,7 @@ WorldSystem::~WorldSystem() {
 	if (salmon_eat_sound != nullptr)
 		Mix_FreeChunk(salmon_eat_sound);
 	Mix_CloseAudio();
+	//*/
 
 	// Destroy all created components
 	registry.clear_all_components();
@@ -117,6 +118,7 @@ GLFWwindow* WorldSystem::create_window() {
 			audio_path("salmon_eat.wav").c_str());
 		return nullptr;
 	}
+	//*/
 
 	return window;
 }
