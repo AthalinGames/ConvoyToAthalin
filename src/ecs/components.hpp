@@ -13,7 +13,7 @@ struct Player {
 
 // Enemy components
 struct Enemy {
-    uint health = 1;
+    int health = 1;
 	float enemy_progress = 0.0f;
     float speed = 0.f;
     uint next_checkpoint = 1; // checkpoint 0 is start position
@@ -52,7 +52,7 @@ struct Archer {
 
 // Arrow
 struct Arrow {
-
+    int damage = 1;
 };
 
 // All data relevant to the shape and motion of entities

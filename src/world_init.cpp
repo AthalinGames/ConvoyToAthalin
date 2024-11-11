@@ -11,7 +11,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = M_PI_2;
+	motion.angle = M_PI/2;
 	motion.velocity = vec2(0, 0);
 	motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
 
@@ -39,6 +39,8 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 
 	motion.angle = static_cast<float>(atan2(dir.y, dir.x));
 	motion.velocity = -velocity * normalize(dir);
 	motion.scale = vec2({-ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
+
+    Arrow& arrow = registry.arrows.emplace(entity);
 
 
 	registry.renderRequests.insert(entity, {
