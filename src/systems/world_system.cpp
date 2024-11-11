@@ -330,6 +330,13 @@ void WorldSystem::handle_collisions() {
             printf("enemy hit");
             if (enemy.health <= 0) {
                 enemy.alive = false;
+                // clear tower aiming
+                auto& aimingRegistry = registry.aimingAts;
+                for(Entity& aiming : aimingRegistry.entities) {
+                    if (aimingRegistry.get(aiming).aimed_entity == entity_other) {
+                        aimingRegistry.remove(aiming);
+                    }
+                }
                 registry.remove_all_components_of(entity_other); //TODO slime seems to be called somewhere while it does not longer exist
             }
         } else if (registry.towers.has(entity) && registry.enemies.has(entity_other)) {
