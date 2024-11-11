@@ -36,12 +36,12 @@ struct TowerAimingAt {
 };
 
 struct ShotTimer {
-	float time = 100.0f;
+	float time = 1000.0f;
 };
 
 // Archer
 struct Archer {
-	float arrow_speed = 100.0f;
+	float arrow_speed = 1000.0f;
 };
 
 // Arrow
@@ -158,6 +158,7 @@ enum class TEXTURE_ASSET_ID {
 	FISH = 0,
 	TURTLE,
 	ARCHER,
+	ARROW,
     SLIME,
     MAP,
 	TEXTURE_COUNT
@@ -168,7 +169,8 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::FISH: return "fish.png";
 		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
-        case TEXTURE_ASSET_ID::SLIME: return "slime.png";
+		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
+        case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
         case TEXTURE_ASSET_ID::MAP: return "tdmap.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));

@@ -367,7 +367,7 @@ void WorldSystem::handle_aiming() {
 			auto& archer = registry.archers.get(tower_entity);
 			registry.shotTimers.emplace(tower_entity);
 			if (registry.archers.has(tower_entity)) {
-				createArrow(renderer, tower_motion.position, tower_motion.angle, archer.arrow_speed);
+				createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
 			}
 		}
 	}

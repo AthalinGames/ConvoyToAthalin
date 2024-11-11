@@ -1,34 +1,7 @@
 #include "world_init.hpp"
 #include "ecs/tiny_ecs_registry.hpp"
 
-/* TODO: create player base
-Entity createSalmon(RenderSystem* renderer, vec2 pos)
-{
-	auto entity = Entity();
-
-	// Store a reference to the potentially re-used mesh object
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SALMON);
-	registry.meshPtrs.emplace(entity, &mesh);
-
-	// Setting initial motion values
-	Motion& motion = registry.motions.emplace(entity);
-	motion.position = pos;
-	motion.angle = 0.f;
-	motion.velocity = { 0.f, 0.f };
-	motion.scale = mesh.original_size * 150.f;
-	motion.scale.x *= -1; // point front to the right
-
-	// Create and (empty) Salmon component to be able to refer to all turtles
-	registry.players.emplace(entity);
-	registry.renderRequests.insert(
-		entity,
-		{ TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no texture is needed
-			EFFECT_ASSET_ID::SALMON,
-			GEOMETRY_BUFFER_ID::SALMON });
-
-	return entity;
-}
-*/
+// TODO: create player base
 
 Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	const auto entity = Entity();
@@ -38,7 +11,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = 0.0f;
+	motion.angle = M_PI_2;
 	motion.velocity = vec2(0, 0);
 	motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
 
@@ -55,7 +28,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	return entity;
 }
 
-Entity createArrow(RenderSystem *renderer, const vec2 pos, float angle, float velocity) {
+Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 dir) {
 	const auto entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
@@ -63,17 +36,16 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float angle, float ve
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = angle;
-	motion.velocity = velocity * pos;
+	motion.angle = static_cast<float>(atan2(dir.y, dir.x));
+	motion.velocity = -velocity * normalize(dir);
 	motion.scale = vec2({-ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
 
-	/*
+
 	registry.renderRequests.insert(entity, {
 		TEXTURE_ASSET_ID::ARROW,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
-	 */
 
 	return entity;
 }
@@ -90,7 +62,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 	motion.velocity = vec2(0, 0);
 	motion.scale = vec2({-SLIME_WIDTH, SLIME_HEIGHT});
 
-	auto& enemy = registry.enemies.emplace(entity);
+	registry.enemies.emplace(entity);
 
 	registry.renderRequests.insert(entity, {
 			TEXTURE_ASSET_ID::SLIME,
@@ -99,29 +71,6 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 	});
 
 	return entity;
-}
-
-Entity createMap(RenderSystem *renderer, const vec2 pos) {
-    const auto entity = Entity();
-
-    Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-    registry.meshPtrs.emplace(entity, &mesh);
-
-    Motion& motion = registry.motions.emplace(entity);
-    motion.position = pos;
-    motion.angle = 0.0f;
-    motion.velocity = vec2(0, 0);
-    motion.scale = vec2({-SLIME_WIDTH, SLIME_HEIGHT});
-
-    auto& enemy = registry.enemies.emplace(entity);
-
-    registry.renderRequests.insert(entity, {
-            TEXTURE_ASSET_ID::SLIME,
-            EFFECT_ASSET_ID::TEXTURED,
-            GEOMETRY_BUFFER_ID::SPRITE,
-    });
-
-    return entity;
 }
 
 Entity createMap(RenderSystem *renderer, const vec2 pos, const std::vector<vec2>& checkpoints) { //is & for checkpoint necessary?
@@ -141,7 +90,7 @@ Entity createMap(RenderSystem *renderer, const vec2 pos, const std::vector<vec2>
 	float path_length = 0;
 	if (checkpoints.size() > 1) {
 		path_length += abs(distance(checkpoints[0], checkpoints[1]));
-		for (int i = 2; i < checkpoints.size(); ++i) {
+		for (uint i = 2; i < checkpoints.size(); ++i) {
 			path_length += abs(distance(checkpoints[i-1], checkpoints[i]));
 		}
 	}
