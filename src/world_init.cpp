@@ -68,6 +68,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
     motion.scale = vec2({-SLIME_WIDTH, SLIME_HEIGHT});
 
     auto& enemy = registry.enemies.emplace(entity);
+    auto& slime = registry.slimes.emplace(entity);
 
     registry.renderRequests.insert(entity, {
             TEXTURE_ASSET_ID::SLIME,

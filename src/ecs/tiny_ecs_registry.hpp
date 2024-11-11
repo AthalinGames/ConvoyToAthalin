@@ -21,6 +21,7 @@ public:
     ComponentContainer<Stationary> stationaries;
     ComponentContainer<Map> maps;
 	ComponentContainer<Enemy> enemies;
+    ComponentContainer<Slime> slimes;
 	ComponentContainer<Mesh*> meshPtrs;
 	ComponentContainer<RenderRequest> renderRequests;
 	ComponentContainer<ScreenState> screenStates;
@@ -41,6 +42,7 @@ public:
         registry_list.push_back(&stationaries);
         registry_list.push_back(&maps);
 		registry_list.push_back(&enemies);
+        registry_list.push_back(&slimes);
 		registry_list.push_back(&meshPtrs);
 		registry_list.push_back(&renderRequests);
 		registry_list.push_back(&screenStates);

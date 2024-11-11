@@ -81,7 +81,7 @@ void RenderSystem::initializeGlTextures()
 		}
 		glBindTexture(GL_TEXTURE_2D, texture_gl_handles[i]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dimensions.x, dimensions.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); // TODO GL_LINEAR
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		gl_has_errors();
 		stbi_image_free(data);

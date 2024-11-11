@@ -9,8 +9,8 @@ constexpr float ARCHER_BB_WIDTH = 0.1f * static_cast<float>(window_height_px);
 constexpr float ARCHER_BB_HEIGHT = 0.1f * static_cast<float>(window_height_px);
 constexpr float MAP_WIDTH = static_cast<float>(window_width_px);
 constexpr float MAP_HEIGHT = static_cast<float>(window_height_px);
-constexpr float SLIME_WIDTH = 0.1f * (float)window_width_px;
-constexpr float SLIME_HEIGHT = 0.1f * (float)window_width_px;
+constexpr float SLIME_WIDTH = 0.2f * (float)window_width_px;
+constexpr float SLIME_HEIGHT = 0.2f * (float)window_width_px;
 
 // the player
 Entity createArcher(RenderSystem* renderer, vec2 pos);

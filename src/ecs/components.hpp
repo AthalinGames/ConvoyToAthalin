@@ -13,10 +13,16 @@ struct Player {
 
 // Enemy components
 struct Enemy {
+    uint health = 1;
 	float enemy_progress = 0.0f;
     float speed = 0.f;
     uint next_checkpoint = 1; // checkpoint 0 is start position
     float section_progress = 0.f;
+    bool alive = true;
+};
+
+struct Slime {
+
 };
 
 // Tower components
