@@ -61,6 +61,7 @@ private:
     float next_fish_spawn;
     Entity player_salmon;
     std::vector<Entity> towers;
+    std::vector<Entity> cards;
     std::vector<Entity> maps;
     std::vector<Entity> enemies;
 

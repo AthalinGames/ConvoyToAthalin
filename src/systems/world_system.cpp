@@ -268,6 +268,17 @@ void WorldSystem::restart_game() {
     Enemy& enemy = registry.enemies.get(debug_enemy);
     enemy.speed = 100.f;
 
+    const auto debug_card = createCard(renderer);
+    cards.push_back(debug_card);
+
+    const auto debug_card2 = createCard(renderer);
+    cards.push_back(debug_card2);
+
+    for (int i = 0; i < 6; ++i) {
+        const auto debug_cards = createCard(renderer);
+        cards.push_back(debug_cards);
+    }
+
     registry.list_all_components();
 
 	// !! TODO A2: Enable static pebbles on the ground, for reference

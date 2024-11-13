@@ -37,6 +37,11 @@ struct Tower {
 	bool is_aiming = false;
 };
 
+// given to card representation of tower while off field
+struct Card{
+    bool dragged = false; //TODO: follow mouse pointer when true
+};
+
 struct TowerAimingAt {
 	Entity aimed_entity;
 };
@@ -164,6 +169,7 @@ enum class TEXTURE_ASSET_ID {
 	FISH = 0,
 	TURTLE,
 	ARCHER,
+    ARCHER_CARD,
 	ARROW,
     SLIME,
     MAP,
@@ -175,6 +181,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::FISH: return "fish.png";
 		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
+        case TEXTURE_ASSET_ID::ARCHER_CARD: return "archerCard.png";
 		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
         case TEXTURE_ASSET_ID::MAP: return "tdmap.png";
