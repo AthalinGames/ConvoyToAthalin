@@ -11,10 +11,13 @@ constexpr float ARROW_BB_WIDTH = 0.05f * static_cast<float>(window_height_px);
 constexpr float ARROW_BB_HEIGHT = 0.05f * static_cast<float>(window_height_px);
 constexpr float CARD_HEIGHT = 0.2f * static_cast<float>(window_height_px);
 constexpr float CARD_WIDTH = 0.2f * static_cast<float>(window_height_px);
+constexpr float CARD_AXIS_HEIGHT = window_height_px * 0.9; // axis on which cards are placed
+constexpr float CARD_AXIS_WIDTH = window_width_px;
 constexpr float MAP_WIDTH = static_cast<float>(window_width_px);
 constexpr float MAP_HEIGHT = static_cast<float>(window_height_px);
 constexpr float SLIME_WIDTH = 0.15f * static_cast<float>(window_height_px);
 constexpr float SLIME_HEIGHT = 0.15f * static_cast<float>(window_height_px);
+
 
 // the player
 Entity createArcher(RenderSystem* renderer, vec2 pos);

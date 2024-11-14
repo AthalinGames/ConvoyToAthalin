@@ -27,7 +27,8 @@ struct ContainerInterface
 {
 	virtual void clear() = 0;
 	virtual size_t size() = 0;
-	virtual void remove(Entity e) = 0;
+    // the default parameter here is ignored since it is defined at the original method at compile time, still needs to be here to work in code
+	virtual void remove(Entity e, bool keep_order = false) = 0;
 	virtual bool has(Entity entity) = 0;
 };
 
@@ -85,24 +86,41 @@ public:
 	}
 
 	// Remove an component and pack the container to re-use the empty space
-	void remove(Entity e)
+	void remove(Entity e, bool keep_order = false)
 	{
 		if (has(e))
 		{
-			// Get the current position
-			int cID = map_entity_componentID[e];
+            if (!keep_order) {
+                // Get the current position
+                int cID = map_entity_componentID[e];
 
-			// Move the last element to position cID using the move operator
-			// Note, components[cID] = components.back() would trigger the copy instead of move operator
-			components[cID] = std::move(components.back());
-			entities[cID] = entities.back(); // the entity is only a single index, copy it.
-			map_entity_componentID[entities.back()] = cID;
+                // Move the last element to position cID using the move operator
+                // Note, components[cID] = components.back() would trigger the copy instead of move operator
+                components[cID] = std::move(components.back());
+                entities[cID] = entities.back(); // the entity is only a single index, copy it.
+                map_entity_componentID[entities.back()] = cID;
 
-			// Erase the old component and free its memory
-			map_entity_componentID.erase(e);
-			components.pop_back();
-			entities.pop_back();
-			// Note, one could mark the id for re-use
+                // Erase the old component and free its memory
+                map_entity_componentID.erase(e);
+                components.pop_back();
+                entities.pop_back();
+                // Note, one could mark the id for re-use
+            } else {
+                // Get the current position
+                int cID = map_entity_componentID[e];
+                // Get last position
+                int lID = map_entity_componentID[entities.back()];
+
+                for (int i = cID; i < components.size()-1; ++i) {
+                    components[i] = std::move(components[i+1]);
+                    entities[i] = entities[i+1]; // the entity is only a single index, copy it.
+                    map_entity_componentID[entities[i+1]] = i;
+                }
+                // Erase the old component and free its memory
+                map_entity_componentID.erase(e);
+                components.pop_back();
+                entities.pop_back();
+            }
 		}
 	};
 

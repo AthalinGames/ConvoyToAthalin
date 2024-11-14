@@ -268,16 +268,18 @@ void WorldSystem::restart_game() {
     Enemy& enemy = registry.enemies.get(debug_enemy);
     enemy.speed = 100.f;
 
+
+    for (int i = 0; i < 16; ++i) {
+        const auto debug_cards = createCard(renderer);
+        cards.push_back(debug_cards);
+    }
     const auto debug_card = createCard(renderer);
     cards.push_back(debug_card);
 
     const auto debug_card2 = createCard(renderer);
     cards.push_back(debug_card2);
 
-    for (int i = 0; i < 6; ++i) {
-        const auto debug_cards = createCard(renderer);
-        cards.push_back(debug_cards);
-    }
+
 
     registry.list_all_components();
 
@@ -348,7 +350,8 @@ void WorldSystem::handle_collisions() {
                         aimingRegistry.remove(aiming);
                     }
                 }
-                registry.remove_all_components_of(entity_other); //TODO slime seems to be called somewhere while it does not longer exist
+                registry.renderRequests.remove(entity_other, true);
+                registry.remove_all_components_of(entity_other); //TODO: removing from renderRequests causes last entity to be put in empty space, changing render order
             }
         } else if (registry.towers.has(entity) && registry.enemies.has(entity_other)) {
 			auto& tower = registry.towers.get(entity);
