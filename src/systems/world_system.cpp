@@ -454,9 +454,17 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
         auto& cardRegistry = registry.cards;
         auto card_count = cardRegistry.entities.size();
         float hitbox_width = CARD_AXIS_WIDTH/static_cast<float>(card_count);
-        float x_pos_percent = mouse_position[0]/CARD_AXIS_WIDTH;
-        auto& selected_card = cardRegistry.entities[static_cast<int>(std::floor(x_pos_percent*card_count))];
-        registry.stationaries.get(selected_card).scale = vec2(200.f, 200.f);
+        float x_pos_percent = mouse_position[0]/CARD_AXIS_WIDTH; //TODO currently selection only on right side of card, shift that more to the middle
+        auto selected_card_id = static_cast<int>(std::floor(x_pos_percent*card_count));
+        for (int i = 0; i < card_count; ++i) {
+            auto card = cardRegistry.entities[i];
+            if(i == selected_card_id) {
+                registry.stationaries.get(card).scale = vec2(200.f, 200.f);
+            } else {
+                registry.stationaries.get(card).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
+            }
+        }
+
     }
 
 	(vec2)mouse_position; // dummy to avoid compiler warning
