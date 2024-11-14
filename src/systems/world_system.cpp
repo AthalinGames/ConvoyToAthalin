@@ -450,5 +450,14 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//TODO: handle drag and drop tower placement
 
+    if(mouse_position[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_position[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_position[0] < CARD_AXIS_WIDTH) {
+        auto& cardRegistry = registry.cards;
+        auto card_count = cardRegistry.entities.size();
+        float hitbox_width = CARD_AXIS_WIDTH/static_cast<float>(card_count);
+        float x_pos_percent = mouse_position[0]/CARD_AXIS_WIDTH;
+        auto& selected_card = cardRegistry.entities[static_cast<int>(std::floor(x_pos_percent*card_count))];
+        registry.stationaries.get(selected_card).scale = vec2(200.f, 200.f);
+    }
+
 	(vec2)mouse_position; // dummy to avoid compiler warning
 }

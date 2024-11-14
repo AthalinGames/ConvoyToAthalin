@@ -226,7 +226,7 @@ void RenderSystem::draw()
 	gl_has_errors();
 	mat3 projection_2D = createProjectionMatrix();
 	// Draw all textured meshes that have a position and size component
-	for (Entity entity : registry.renderRequests.entities)
+	for (Entity entity : registry.renderRequests.entities) // TODO: rework this to enable more influence on order of rendering
 	{
 		if (!registry.motions.has(entity) && !registry.stationaries.has(entity))
 			continue;

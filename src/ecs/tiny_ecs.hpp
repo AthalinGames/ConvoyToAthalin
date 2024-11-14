@@ -108,10 +108,7 @@ public:
             } else {
                 // Get the current position
                 int cID = map_entity_componentID[e];
-                // Get last position
-                int lID = map_entity_componentID[entities.back()];
-
-                for (int i = cID; i < components.size()-1; ++i) {
+                for (int i = cID; i < components.size()-1; ++i) { //remove doesnt seem to work
                     components[i] = std::move(components[i+1]);
                     entities[i] = entities[i+1]; // the entity is only a single index, copy it.
                     map_entity_componentID[entities[i+1]] = i;
