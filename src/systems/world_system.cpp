@@ -123,8 +123,8 @@ GLFWwindow* WorldSystem::create_window() {
 	return window;
 }
 
-void WorldSystem::init(RenderSystem* renderer_arg) {
-	this->renderer = renderer_arg;
+void WorldSystem::init(RenderSystem* renderer) {
+	this->renderer = renderer;
 	// Playing background music indefinitely
 	Mix_PlayMusic(background_music, -1); // TODO: Replace with our bgm
 	fprintf(stderr, "Loaded music\n");
@@ -134,7 +134,7 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 }
 
 // Update our game world
-bool WorldSystem::step(float elapsed_ms_since_last_update) {
+bool WorldSystem::step(const float elapsed_ms) {
 	// Updating window title with points
 	std::stringstream title_ss;
 	title_ss << "Points: " << points;
@@ -156,6 +156,11 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 			if(!registry.players.has(motion_container.entities[i])) // don't remove the player
 				registry.remove_all_components_of(motion_container.entities[i]);
 		}
+	}
+
+	// If td system is running, run also its step
+	if (!current_td_system.is_over()) {
+		current_td_system.step(elapsed_ms);
 	}
 
 	// Spawning new turtles
@@ -189,38 +194,6 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 	// Processing the salmon state TODO: Process our player state instead?
-	assert(registry.screenStates.components.size() <= 1);
-    ScreenState &screen = registry.screenStates.components[0];
-
-    float min_timer_ms = 3000.f;
-	for (Entity entity : registry.deathTimers.entities) {
-		// progress timer
-		DeathTimer& timer = registry.deathTimers.get(entity);
-		timer.timer_ms -= elapsed_ms_since_last_update;
-		if(timer.timer_ms < min_timer_ms){
-			min_timer_ms = timer.timer_ms;
-		}
-
-		// restart the game once the death timer expired
-		if (timer.timer_ms < 0) {
-			registry.deathTimers.remove(entity);
-			screen.screen_darken_factor = 0;
-            restart_game();
-			return true;
-		}
-	}
-	// reduce window brightness if any of the present salmons is dying
-	screen.screen_darken_factor = 1 - min_timer_ms / 3000;
-
-	for (const auto tower_entity : registry.shotTimers.entities) {
-		auto& shot_timer = registry.shotTimers.get(tower_entity);
-		shot_timer.time -= elapsed_ms_since_last_update;
-
-		if (shot_timer.time < 0) {
-			registry.shotTimers.remove(tower_entity);
-		}
-	}
-
 	return true;
 }
 
@@ -235,15 +208,14 @@ void WorldSystem::restart_game() {
 
 	// Remove all entities that we created
 	// All that have a motion, we could also iterate over all fish, turtles, ... but that would be more cumbersome
-	while (registry.motions.entities.size() > 0)
-	    registry.remove_all_components_of(registry.motions.entities.back());
+	while (!registry.motions.entities.empty()) {
+		registry.remove_all_components_of(registry.motions.entities.back());
+	}
 
     //Remove all stationaries
-    while (registry.stationaries.entities.size() > 0)
-        registry.remove_all_components_of(registry.stationaries.entities.back());
-
-	towers.clear();
-    maps.clear();
+    while (!registry.stationaries.entities.empty()) {
+	    registry.remove_all_components_of(registry.stationaries.entities.back());
+    }
 
 	// Debugging for memory/component leaks
 	registry.list_all_components();
@@ -253,33 +225,7 @@ void WorldSystem::restart_game() {
 	player_salmon = createSalmon(renderer, { 100, 200 });
 	registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
 	*/
-    const auto debug_map = createMap(renderer,
-                                                {window_width_px/2, window_height_px/2},
-                                                {vec2(0, 180), vec2(510, 180), vec2(510, 450), vec2(930, 450), vec2(1050, 330)}); //TODO percentage relative to window size
-    maps.push_back(debug_map);
-    Map& map = registry.maps.get(debug_map);
-    map.active = true;
 
-	const auto debug_archer = createArcher(renderer, {400, 300});
-	towers.push_back(debug_archer);
-
-    const auto debug_enemy = createEnemy(renderer, {0, 100});
-    enemies.push_back(debug_enemy);
-    Enemy& enemy = registry.enemies.get(debug_enemy);
-    enemy.speed = 100.f;
-
-    const auto debug_card = createCard(renderer);
-    cards.push_back(debug_card);
-
-    const auto debug_card2 = createCard(renderer);
-    cards.push_back(debug_card2);
-
-    for (int i = 0; i < 6; ++i) {
-        const auto debug_cards = createCard(renderer);
-        cards.push_back(debug_cards);
-    }
-
-    registry.list_all_components();
 
 	// !! TODO A2: Enable static pebbles on the ground, for reference
 	// Create pebbles on the floor, use this for reference
@@ -294,16 +240,25 @@ void WorldSystem::restart_game() {
 		registry.colors.insert(pebble, { brightness, brightness, brightness});
 	}
 	*/
+
+	// TODO replace with actual td_fight launches
+	current_td_system = TDSystem(rng());
+	current_td_system.init(renderer);
 }
 
 // Compute collisions between entities
 void WorldSystem::handle_collisions() {
 	// Loop over all collisions detected by the physics system
-	auto& collisionsRegistry = registry.collisions;
+	const auto& collisionsRegistry = registry.collisions;
 	for (uint i = 0; i < collisionsRegistry.components.size(); i++) {
 		// The entity and its collider
-		Entity entity = collisionsRegistry.entities[i];
-		Entity entity_other = collisionsRegistry.components[i].other_entity;
+		const Entity entity = collisionsRegistry.entities[i];
+		const Entity entity_other = collisionsRegistry.components[i].other_entity;
+
+		// If td fight is running handle its collisions
+		if (!current_td_system.is_over()) {
+			current_td_system.handle_collision(entity, entity_other);
+		}
 
 		// For now, we are only interested in collisions that involve the salmon
 		if (registry.players.has(entity)) {
@@ -334,44 +289,6 @@ void WorldSystem::handle_collisions() {
 				}
 			}
 			*/
-		} else if(registry.enemies.has(entity_other) && registry.arrows.has(entity)){
-            auto& enemy = registry.enemies.get(entity_other);
-            auto& arrow = registry.arrows.get(entity);
-            enemy.health -= arrow.damage;
-            printf("enemy hit");
-            if (enemy.health <= 0) {
-                enemy.alive = false;
-                // clear tower aiming
-                auto& aimingRegistry = registry.aimingAts;
-                for(Entity& aiming : aimingRegistry.entities) {
-                    if (aimingRegistry.get(aiming).aimed_entity == entity_other) {
-                        aimingRegistry.remove(aiming);
-                    }
-                }
-                registry.remove_all_components_of(entity_other); //TODO slime seems to be called somewhere while it does not longer exist
-            }
-        } else if (registry.towers.has(entity) && registry.enemies.has(entity_other)) {
-			auto& tower = registry.towers.get(entity);
-			if (registry.aimingAts.has(entity)) {
-				auto& aiming = registry.aimingAts.get(entity);
-				auto& aimedEnemy = registry.enemies.get(aiming.aimed_entity);
-				auto& otherEnemy = registry.enemies.get(entity_other);
-				switch (tower.priority) {
-					case FIRST:
-						if (aimedEnemy.enemy_progress < otherEnemy.enemy_progress) {
-							aiming.aimed_entity = entity_other;
-						}
-						break;
-					case LAST:
-						if (aimedEnemy.enemy_progress > otherEnemy.enemy_progress) {
-							aiming.aimed_entity = entity_other;
-						}
-						break;
-				}
-			} else {
-				auto& aimingAt = registry.aimingAts.emplace(entity);
-				aimingAt.aimed_entity = entity_other;
-			}
 		}
 	}
 
@@ -379,37 +296,26 @@ void WorldSystem::handle_collisions() {
 	registry.collisions.clear();
 }
 
-void WorldSystem::handle_aiming() {
-	auto& aimingRegistry = registry.aimingAts;
-	for (uint i = 0; i < aimingRegistry.entities.size(); i++) {
-		const Entity tower_entity = aimingRegistry.entities[i];
-		const Entity enemy_entity = aimingRegistry.components[i].aimed_entity;
-		auto& tower_motion = registry.motions.get(tower_entity);
-		auto& enemy_motion = registry.motions.get(enemy_entity);
-		const auto d_p = tower_motion.position - enemy_motion.position;
-		const auto angle = atan2(d_p.y, d_p.x);
-		tower_motion.angle = angle;
-
-		if (!registry.shotTimers.has(tower_entity)) {
-			auto& archer = registry.archers.get(tower_entity);
-			registry.shotTimers.emplace(tower_entity);
-			if (registry.archers.has(tower_entity)) {
-				createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
-			}
-		}
+void WorldSystem::handle_post_collision_actions() {
+	// If td fight is running handle its post collision actions
+	if (!current_td_system.is_over()) {
+		current_td_system.handle_aiming();
 	}
-	// Clear aiming for next iteration
-	registry.aimingAts.clear();
 }
 
 // Should the game be over ?
 bool WorldSystem::is_over() const {
-	return bool(glfwWindowShouldClose(window));
+	return static_cast<bool>(glfwWindowShouldClose(window));
 }
 
 // On key callback
-void WorldSystem::on_key(int key, int, int action, int mod) {
+void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	//TODO: handle keyboard shortcuts
+
+	// If td fight is running handle the proper key-presses
+	if (!current_td_system.is_over()) {
+		current_td_system.on_key(key, 0, action, mod);
+	}
 
 	// Resetting game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R) {
@@ -439,7 +345,7 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 	current_speed = fmax(0.f, current_speed);
 }
 
-void WorldSystem::on_mouse_move(vec2 mouse_position) {
+void WorldSystem::on_mouse_move(const vec2 pos) {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// TODO A1: HANDLE SALMON ROTATION HERE
 	// xpos and ypos are relative to the top-left of the window, the salmon's
@@ -447,5 +353,8 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//TODO: handle drag and drop tower placement
 
-	(vec2)mouse_position; // dummy to avoid compiler warning
+	// If td fight is running handle the proper mouse movements
+	if (!current_td_system.is_over()) {
+		current_td_system.on_mouse_move(pos);
+	}
 }

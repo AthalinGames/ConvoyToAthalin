@@ -12,6 +12,7 @@
 #include <SDL_mixer.h>
 
 #include "render_system.hpp"
+#include "td_system.hpp"
 
 // Container for all our entities and game logic. Individual rendering / update is
 // deferred to the relative update() methods
@@ -36,7 +37,7 @@ public:
     void handle_collisions();
 
     // Aim all towers at their current enemy
-    void handle_aiming();
+    void handle_post_collision_actions();
 
     // Should the game be over ?
     bool is_over()const;
@@ -60,10 +61,9 @@ private:
     float next_turtle_spawn;
     float next_fish_spawn;
     Entity player_salmon;
-    std::vector<Entity> towers;
-    std::vector<Entity> cards;
-    std::vector<Entity> maps;
-    std::vector<Entity> enemies;
+
+    // TDSystem handle;
+    TDSystem current_td_system;
 
     // music references
     Mix_Music* background_music;
