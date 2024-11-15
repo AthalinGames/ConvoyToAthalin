@@ -5,7 +5,7 @@
 #include "ecs/tiny_ecs_registry.hpp"
 
 void RenderSystem::drawTexturedMesh(const Entity entity,
-                                    const mat3 &projection)
+                                    mat3 &projection)
 {
 	vec2 position;
     float angle;
@@ -133,7 +133,9 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	GLuint transform_loc = glGetUniformLocation(currProgram, "transform");
 	glUniformMatrix3fv(transform_loc, 1, GL_FALSE, reinterpret_cast<float *>(&transform.mat));
 	GLuint projection_loc = glGetUniformLocation(currProgram, "projection");
-	glUniformMatrix3fv(projection_loc, 1, GL_FALSE, (float *)&projection);
+	glUniformMatrix3fv(projection_loc, 1, GL_FALSE, reinterpret_cast<float *>(&projection));
+	GLuint z_pos_loc = glGetUniformLocation(currProgram, "z_pos");
+	glUniform1f(z_pos_loc, render_request.z_position);
 	gl_has_errors();
 	// Drawing of num_indices/3 triangles specified in the index buffer
 	glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);

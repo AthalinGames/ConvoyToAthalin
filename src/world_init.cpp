@@ -20,6 +20,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	registry.archers.emplace(entity);
 
 	registry.renderRequests.insert(entity, {
+		Z_MIDDLE,
 		TEXTURE_ASSET_ID::ARCHER,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -42,8 +43,8 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 
 
     Arrow& arrow = registry.arrows.emplace(entity);
 
-
 	registry.renderRequests.insert(entity, {
+		Z_MIDDLE,
 		TEXTURE_ASSET_ID::ARROW,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -68,9 +69,10 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
     auto& slime = registry.slimes.emplace(entity);
 
 	registry.renderRequests.insert(entity, {
-			TEXTURE_ASSET_ID::SLIME,
-			EFFECT_ASSET_ID::TEXTURED,
-			GEOMETRY_BUFFER_ID::SPRITE,
+		Z_MIDDLE,
+		TEXTURE_ASSET_ID::SLIME,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
 	return entity;
@@ -106,9 +108,10 @@ Entity createCard(RenderSystem *renderer) {
     }
 
     registry.renderRequests.insert(entity, {
-            TEXTURE_ASSET_ID::ARCHER_CARD,
-            EFFECT_ASSET_ID::TEXTURED,
-            GEOMETRY_BUFFER_ID::SPRITE,
+    	Z_FOREGROUND,
+        TEXTURE_ASSET_ID::ARCHER_CARD,
+    	EFFECT_ASSET_ID::TEXTURED,
+    	GEOMETRY_BUFFER_ID::SPRITE,
     });
 
     return entity;
@@ -138,9 +141,10 @@ Entity createMap(RenderSystem *renderer, const vec2 pos, const std::vector<vec2>
 	map_attributes.path_length = path_length;
 
     registry.renderRequests.insert(entity, {
-            TEXTURE_ASSET_ID::MAP,
-            EFFECT_ASSET_ID::TEXTURED,
-            GEOMETRY_BUFFER_ID::SPRITE,
+    	Z_BACKGROUND,
+    	TEXTURE_ASSET_ID::MAP,
+    	EFFECT_ASSET_ID::TEXTURED,
+    	GEOMETRY_BUFFER_ID::SPRITE,
     });
 
     return entity;
@@ -213,10 +217,12 @@ Entity createLine(vec2 position, vec2 scale)
 
 	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)
 	registry.renderRequests.insert(
-		entity,
-		{ TEXTURE_ASSET_ID::TEXTURE_COUNT,
-		 EFFECT_ASSET_ID::PEBBLE,
-		 GEOMETRY_BUFFER_ID::DEBUG_LINE });
+		entity,{
+			Z_FOREGROUND,
+			TEXTURE_ASSET_ID::TEXTURE_COUNT,
+			EFFECT_ASSET_ID::PEBBLE,
+			GEOMETRY_BUFFER_ID::DEBUG_LINE
+		});
 
 	// Create motion
 	Motion& motion = registry.motions.emplace(entity);

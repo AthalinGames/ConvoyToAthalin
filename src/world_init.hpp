@@ -16,6 +16,11 @@ constexpr float MAP_HEIGHT = static_cast<float>(window_height_px);
 constexpr float SLIME_WIDTH = 0.15f * static_cast<float>(window_height_px);
 constexpr float SLIME_HEIGHT = 0.15f * static_cast<float>(window_height_px);
 
+// These are hard coded for each render layer
+constexpr float Z_BACKGROUND = 1;
+constexpr float Z_MIDDLE = 0;
+constexpr float Z_FOREGROUND = -1;
+
 // the player
 Entity createArcher(RenderSystem* renderer, vec2 pos);
 // the arrows
