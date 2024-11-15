@@ -59,6 +59,8 @@ private:
     float current_speed;
     float next_turtle_spawn;
     float next_fish_spawn;
+    bool dragging; // shows if mouse is currently dragging something
+    Entity dragged_entity;
     Entity player_salmon;
     std::vector<Entity> towers;
     std::vector<Entity> cards;

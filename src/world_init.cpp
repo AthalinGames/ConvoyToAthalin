@@ -76,6 +76,22 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 	return entity;
 }
 
+void realignCards(){
+    auto& current_cards = registry.cards.entities;
+    float card_offset = CARD_AXIS_WIDTH/(static_cast<float>(current_cards.size())+1);
+    auto& first_card = registry.stationaries.get(registry.cards.entities[0]);
+    first_card.position = vec2(card_offset,
+                               CARD_AXIS_HEIGHT);
+    for (uint i = 1; i < current_cards.size(); i++) {
+        Entity& current_card = current_cards[i];
+        Entity& prev_card = current_cards[i-1];
+        auto& stationary = registry.stationaries.get(current_card);
+        auto& prev_stationary = registry.stationaries.get(prev_card);
+        stationary.position = vec2(prev_stationary.position[0]+card_offset,
+                                   CARD_AXIS_HEIGHT);
+    }
+}
+
 Entity createCard(RenderSystem *renderer) {
     const auto entity = Entity();
 
@@ -90,20 +106,8 @@ Entity createCard(RenderSystem *renderer) {
 
     Stationary& card_texture = registry.stationaries.emplace(entity);
     card_texture.scale = vec2({CARD_WIDTH, CARD_HEIGHT});
-    //card_texture.position = pos;
-    auto& current_cards = registry.cards.entities;
-    float card_offset = CARD_AXIS_WIDTH/(static_cast<float>(current_cards.size())+1);
-    auto& first_card = registry.stationaries.get(registry.cards.entities[0]);
-    first_card.position = vec2(card_offset,
-                               CARD_AXIS_HEIGHT);
-    for (uint i = 1; i < current_cards.size(); i++) {
-        Entity& current_card = current_cards[i];
-        Entity& prev_card = current_cards[i-1];
-        auto& stationary = registry.stationaries.get(current_card);
-        auto& prev_stationary = registry.stationaries.get(prev_card);
-        stationary.position = vec2(prev_stationary.position[0]+card_offset,
-                                   CARD_AXIS_HEIGHT);
-    }
+
+    realignCards();
 
     registry.renderRequests.insert(entity, {
             TEXTURE_ASSET_ID::ARCHER_CARD,

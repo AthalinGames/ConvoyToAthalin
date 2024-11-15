@@ -26,6 +26,7 @@ Entity createArrow(RenderSystem* renderer, vec2 pos, float velocity, vec2 dir);
 // the enemy unit
 Entity createEnemy(RenderSystem* renderer, vec2 pos);
 // the cards
+void realignCards();
 Entity createCard(RenderSystem* renderer);
 // the combat map
 Entity createMap(RenderSystem* renderer, vec2 pos, const std::vector<vec2>& checkpoints);

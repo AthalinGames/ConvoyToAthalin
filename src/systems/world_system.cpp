@@ -20,7 +20,8 @@ const size_t FISH_DELAY_MS = 5000 * 3;
 WorldSystem::WorldSystem()
 	: points(0)
 	, next_turtle_spawn(0.f) //TODO: Replace with our spawn time variables
-	, next_fish_spawn(0.f) {
+	, next_fish_spawn(0.f)
+    , dragging(false) {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
 }
@@ -440,6 +441,40 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 		printf("Current speed = %f\n", current_speed);
 	}
 	current_speed = fmax(0.f, current_speed);
+
+    // Drag and drop cards
+    //printf("a\n");
+    int lButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    int rButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
+
+    //if (action == GLFW_PRESS && key == GLFW_MOUSE_BUTTON_LEFT){
+    if (lButton_state == GLFW_PRESS) {
+        printf("dragging\n");
+        auto& cardRegistry = registry.cards;
+        for(auto& entity : cardRegistry.entities) {
+            if(!cardRegistry.get(entity).selected) {
+                continue;
+            }
+            dragging = true;
+
+            cardRegistry.get(entity).dragged = true;
+            dragged_entity = entity;
+            break;
+        }
+    } //else if (action == GLFW_RELEASE && key == GLFW_MOUSE_BUTTON_LEFT) {
+    //else if (lButton_state == GLFW_RELEASE) {
+    //
+    //}
+
+    //if (action == GLFW_PRESS && key == GLFW_MOUSE_BUTTON_RIGHT && dragging) {
+    if(rButton_state == GLFW_PRESS && dragging) {
+        dragging = false;
+        if(registry.cards.has(dragged_entity)) {
+            registry.cards.get(dragged_entity).dragged = false;
+            realignCards();
+
+        }
+    }
 }
 
 void WorldSystem::on_mouse_move(vec2 mouse_position) {
@@ -450,7 +485,53 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//TODO: handle drag and drop tower placement
 
-    if(mouse_position[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_position[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_position[0] < CARD_AXIS_WIDTH) {
+    int lButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    int rButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
+
+    if (lButton_state == GLFW_PRESS) {
+        printf("dragging\n");
+        auto& cardRegistry = registry.cards;
+        for(auto& entity : cardRegistry.entities) {
+            if(!cardRegistry.get(entity).selected) {
+                continue;
+            }
+            dragging = true;
+
+            cardRegistry.get(entity).dragged = true;
+            dragged_entity = entity;
+            break;
+        }
+    }
+    if(rButton_state == GLFW_PRESS && dragging) {
+        dragging = false;
+        if(registry.cards.has(dragged_entity)) {
+            registry.cards.get(dragged_entity).dragged = false;
+            realignCards();
+
+        }
+    }
+    if(dragging && lButton_state == GLFW_PRESS) {
+        if(registry.cards.has(dragged_entity)){
+            registry.stationaries.get(dragged_entity).position = mouse_position;
+            registry.stationaries.get(dragged_entity).scale = vec2(200.f, 200.f);
+        }
+    } else if(dragging && lButton_state == GLFW_RELEASE){
+        //TODO place tower on map
+        registry.stationaries.remove(dragged_entity);
+        registry.renderRequests.remove(dragged_entity, true);
+        registry.cards.remove(dragged_entity);
+        registry.renderRequests.insert(dragged_entity, {
+                TEXTURE_ASSET_ID::ARCHER,
+                EFFECT_ASSET_ID::TEXTURED,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+        auto& motion = registry.motions.emplace(dragged_entity);
+        motion.position = mouse_position;
+        motion.angle = M_PI/2;
+        motion.velocity = vec2(0, 0);
+        motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+
+    }else if(mouse_position[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_position[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_position[0] < CARD_AXIS_WIDTH) {
         auto& cardRegistry = registry.cards;
         auto card_count = cardRegistry.entities.size();
         float card_offset = CARD_AXIS_WIDTH/(static_cast<float>(card_count)+1);
@@ -462,11 +543,15 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
                 auto card = cardRegistry.entities[i];
                 if (i == selected_card_id) {
                     registry.stationaries.get(card).scale = vec2(200.f, 200.f);
+                    cardRegistry.components[i].selected = true;
                 } else {
                     registry.stationaries.get(card).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
+                    cardRegistry.components[i].selected = false;
                 }
             }
         //}
+
+    } else {
 
     }
 

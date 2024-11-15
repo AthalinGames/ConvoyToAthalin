@@ -39,8 +39,9 @@ struct Tower {
 
 // given to card representation of tower while off field
 struct Card{
+    bool selected = false;
     bool dragged = false; //TODO: follow mouse pointer when true
-    // TODO: add int parameter for position from left to right on screen
+    // TODO: add int parameter for position from left to right on screen?
 };
 
 struct TowerAimingAt {
