@@ -173,6 +173,9 @@ enum class TEXTURE_ASSET_ID {
 	ARROW,
     SLIME,
     MAP,
+	OVERVIEW_MAP,
+	BLACK_PIXEL,
+	FIGHT_ICON,
 	TEXTURE_COUNT
 };
 
@@ -185,6 +188,9 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
         case TEXTURE_ASSET_ID::MAP: return "tdmap.png";
+		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
+		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
+		case TEXTURE_ASSET_ID::FIGHT_ICON: return "fightIcon.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);

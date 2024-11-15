@@ -96,9 +96,9 @@ void TDSystem::restart_td_fight() {
     // Debugging for memory/component leaks
     registry.list_all_components();
 
-    const auto debug_map = createMap(renderer,
-                                                {window_width_px/2, window_height_px/2},
-                                                {vec2(0, 180), vec2(510, 180), vec2(510, 450), vec2(930, 450), vec2(1050, 330)}); //TODO percentage relative to window size
+    const auto debug_map = createMap(renderer,{
+        vec2(0, 180), vec2(510, 180), vec2(510, 450), vec2(930, 450), vec2(1050, 330)
+    }); //TODO percentage relative to window size
     map = debug_map;
     Map& map = registry.maps.get(debug_map);
     map.active = true;

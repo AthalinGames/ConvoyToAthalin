@@ -18,9 +18,7 @@ const size_t FISH_DELAY_MS = 5000 * 3;
 
 // Create the fish world
 WorldSystem::WorldSystem()
-	: points(0)
-	, next_turtle_spawn(0.f) //TODO: Replace with our spawn time variables
-	, next_fish_spawn(0.f) {
+	: points(0) {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
 }
@@ -220,30 +218,64 @@ void WorldSystem::restart_game() {
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
-	// Create a new salmon
-	/* TODO: create player base?
-	player_salmon = createSalmon(renderer, { 100, 200 });
-	registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
-	*/
-
-
-	// !! TODO A2: Enable static pebbles on the ground, for reference
-	// Create pebbles on the floor, use this for reference
-	/*
-	for (uint i = 0; i < 20; i++) {
-		int w, h;
-		glfwGetWindowSize(window, &w, &h);
-		float radius = 30 * (uniform_dist(rng) + 0.3f); // range 0.3 .. 1.3
-		Entity pebble = createPebble({ uniform_dist(rng) * w, h - uniform_dist(rng) * 20 },
-			         { radius, radius });
-		float brightness = uniform_dist(rng) * 0.5 + 0.5;
-		registry.colors.insert(pebble, { brightness, brightness, brightness});
+	overview_map = createOverviewMap(renderer);
+	// Generate possible paths
+	std::array<std::array<bool, grid_width>, grid_height> visited;
+	std::array<std::array<uint8_t, grid_height>, path_count> paths{};
+	for (int path_no = 0; path_no < path_count; ++path_no) {
+		auto next_pos = overview_path_start_dist(rng);
+		paths[path_no][0] = next_pos;
+		visited[0][next_pos] = true;
+		for (int height = 1; height < grid_height; ++height) {
+			std::vector<uint8_t> next_positions;
+			next_positions.push_back(next_pos);
+			if (next_pos != 0) {
+				next_positions.push_back(next_pos - 1);
+			} else if (next_pos == grid_width - 1) {
+				next_positions.push_back(next_pos + 1);
+			}
+			std::shuffle(next_positions.begin(), next_positions.end(), rng);
+			paths[path_no][height] = next_positions.back();
+			visited[height][paths[path_no][height]] = true;
+		}
 	}
-	*/
+	// Render locations
+	std::array<std::array<vec2, grid_width>, grid_height> location_position;
+	for (int height = 0; height < grid_height; ++height) {
+		for (int width = 0; width < grid_width; ++width) {
+			if (visited[height][width]) {
+				const auto y_percentage = static_cast<float>(width) / grid_width;
+				const auto x_percentage = static_cast<float>(height) / grid_height;
+				const auto lerp_x_1 = overview_locations[0] * x_percentage + overview_locations[1] * (1 - x_percentage);
+				const auto lerp_x_2 = overview_locations[2] * x_percentage + overview_locations[3] * (1 - x_percentage);
+				const auto location_pos = lerp_x_1 * y_percentage + lerp_x_2 * (1 - y_percentage);
+				location_position[height][width] = location_pos;
+				createFightLocation(renderer, location_pos);
+			}
+		}
+	}
+	// Render path connections
+	for (int path_no = 0; path_no < path_count; ++path_no) {
+		auto width_location = paths[path_no][0];
+		auto last_pos = location_position[0][width_location];
+		for (int height = 1; height < grid_height; ++height) {
+			width_location = paths[path_no][height];
+			const auto current_pos = location_position[height][width_location];
+			printf("First Pos {%f, %f} Second Pos {%f, %f} Distance %f\n", last_pos.x, last_pos.y, current_pos.x, current_pos.y, length(last_pos - current_pos));
+			createOverviewLine(renderer, last_pos, current_pos);
+			last_pos = current_pos;
+		}
+	}
+
+	printf("Debug drawings:\n");
+
+	createOverviewLine(renderer, vec2{100, 100}, vec2{200, 200});
+	createFightLocation(renderer, vec2{100, 100});
+	createFightLocation(renderer, vec2{200, 200});
 
 	// TODO replace with actual td_fight launches
 	current_td_system = TDSystem(rng());
-	current_td_system.init(renderer);
+	//current_td_system.init(renderer);
 }
 
 // Compute collisions between entities

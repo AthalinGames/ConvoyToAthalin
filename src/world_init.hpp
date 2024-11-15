@@ -11,10 +11,13 @@ constexpr float ARROW_BB_WIDTH = 0.05f * static_cast<float>(window_height_px);
 constexpr float ARROW_BB_HEIGHT = 0.05f * static_cast<float>(window_height_px);
 constexpr float CARD_HEIGHT = 0.2f * static_cast<float>(window_height_px);
 constexpr float CARD_WIDTH = 0.2f * static_cast<float>(window_height_px);
-constexpr float MAP_WIDTH = static_cast<float>(window_width_px);
-constexpr float MAP_HEIGHT = static_cast<float>(window_height_px);
+constexpr float BACKGROUND_WIDTH = static_cast<float>(window_width_px);
+constexpr float BACKGROUND_HEIGHT = static_cast<float>(window_height_px);
 constexpr float SLIME_WIDTH = 0.15f * static_cast<float>(window_height_px);
 constexpr float SLIME_HEIGHT = 0.15f * static_cast<float>(window_height_px);
+constexpr float LINE_WIDTH = 0.005f * static_cast<float>(window_height_px);
+constexpr float FIGHT_LOCATION_WIDTH = 0.05f * static_cast<float>(window_height_px);
+constexpr float FIGHT_LOCATION_HEIGHT = 0.05f * static_cast<float>(window_height_px);
 
 // These are hard coded for each render layer
 constexpr float Z_BACKGROUND = 1;
@@ -30,6 +33,12 @@ Entity createEnemy(RenderSystem* renderer, vec2 pos);
 // the cards
 Entity createCard(RenderSystem* renderer);
 // the combat map
-Entity createMap(RenderSystem* renderer, vec2 pos, const std::vector<vec2>& checkpoints);
+Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints);
+// the overview map
+Entity createOverviewMap(RenderSystem* renderer);
+// location on the overview map
+Entity createFightLocation(RenderSystem* renderer, vec2 pos);
+// line between locations on the overview map
+Entity createOverviewLine(RenderSystem* renderer, vec2 firstPos, vec2 secondPos);
 // a red line for debugging purposes
 Entity createLine(vec2 position, vec2 size);

@@ -117,15 +117,15 @@ Entity createCard(RenderSystem *renderer) {
     return entity;
 }
 
-Entity createMap(RenderSystem *renderer, const vec2 pos, const std::vector<vec2>& checkpoints) { //is & for checkpoint necessary?
+Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints) { //is & for checkpoint necessary?
 	const auto entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
 	Stationary& map_texture = registry.stationaries.emplace(entity);
-	map_texture.position = pos;
-	map_texture.scale = vec2({MAP_WIDTH, MAP_HEIGHT});
+	map_texture.position = vec2({window_width_px/2, window_height_px/2});
+	map_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
 
 	Map& map_attributes = registry.maps.emplace(entity);
 	map_attributes.checkpoints = checkpoints;//{vec2(0, 100), vec2(300, 100), vec2(300, 400)};
@@ -149,6 +149,71 @@ Entity createMap(RenderSystem *renderer, const vec2 pos, const std::vector<vec2>
 
     return entity;
 }
+
+Entity createOverviewMap(RenderSystem *renderer) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& overview_texture = registry.stationaries.emplace(entity);
+	overview_texture.position = vec2({window_width_px/2, window_height_px/2});
+	overview_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
+
+	registry.renderRequests.insert(entity, {
+		Z_BACKGROUND,
+		TEXTURE_ASSET_ID::OVERVIEW_MAP,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+Entity createFightLocation(RenderSystem *renderer, vec2 pos) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& fight_location_pos = registry.stationaries.emplace(entity);
+	fight_location_pos.position = pos;
+	fight_location_pos.scale = vec2({FIGHT_LOCATION_WIDTH, FIGHT_LOCATION_HEIGHT});
+
+	registry.renderRequests.insert(entity, {
+		Z_MIDDLE,
+		TEXTURE_ASSET_ID::FIGHT_ICON,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+Entity createOverviewLine(RenderSystem *renderer, const vec2 firstPos, const vec2 secondPos) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& line_texture = registry.stationaries.emplace(entity);
+	const auto dp = firstPos - secondPos;
+	line_texture.position =  0.5f * (firstPos + secondPos);
+	line_texture.angle = atan2(dp.y, dp.x) + M_PI_2;
+	line_texture.scale = vec2({LINE_WIDTH, 0.7f * length(dp)});
+
+	printf("Line Angle: %f, Line Position: {%f, %f}, Line length: %f\n", line_texture.angle, line_texture.position.x, line_texture.position.y, line_texture.scale.y);
+
+	registry.renderRequests.insert(entity, {
+		Z_MIDDLE,
+		TEXTURE_ASSET_ID::BLACK_PIXEL,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
 
 /*
 Entity createFish(RenderSystem* renderer, vec2 position)
