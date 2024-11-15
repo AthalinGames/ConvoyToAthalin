@@ -489,7 +489,6 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
     int rButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
 
     if (lButton_state == GLFW_PRESS) {
-        printf("dragging\n");
         auto& cardRegistry = registry.cards;
         for(auto& entity : cardRegistry.entities) {
             if(!cardRegistry.get(entity).selected) {
@@ -517,9 +516,15 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
         }
     } else if(dragging && lButton_state == GLFW_RELEASE){
         //TODO place tower on map
-        registry.stationaries.remove(dragged_entity);
+        dragging = false;
         registry.renderRequests.remove(dragged_entity, true);
-        registry.cards.remove(dragged_entity);
+        //if (registry.archers.has(dragged_entity))
+        //{
+        //    registry.remove_all_components_of(dragged_entity);
+        //    createArcher(renderer, dragged_entity, mouse_position);
+        //}
+        registry.stationaries.remove(dragged_entity);
+        registry.cards.remove(dragged_entity, true);
         registry.renderRequests.insert(dragged_entity, {
                 TEXTURE_ASSET_ID::ARCHER,
                 EFFECT_ASSET_ID::TEXTURED,
@@ -530,6 +535,8 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
         motion.angle = M_PI/2;
         motion.velocity = vec2(0, 0);
         motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+
+        realignCards();
 
     }else if(mouse_position[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_position[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_position[0] < CARD_AXIS_WIDTH) {
         auto& cardRegistry = registry.cards;
