@@ -588,7 +588,7 @@ void WorldSystem::on_mouse_button(int button, int action, int mods) {
                 registry.stationaries.get(dragged_entity).scale = vec2(200.f, 200.f);
             }
         } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-            //TODO range of placed tower seems really small
+            //TODO range of placed tower seems really small, maybe only on collision with tower
             dragging = false;
             registry.renderRequests.remove(dragged_entity, true);
             //if (registry.archers.has(dragged_entity))
@@ -608,6 +608,7 @@ void WorldSystem::on_mouse_button(int button, int action, int mods) {
             motion.angle = M_PI/2;
             motion.velocity = vec2(0, 0);
             motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+            printf("%f\n", registry.towers.get(dragged_entity).range);
 
             realignCards();
         }
