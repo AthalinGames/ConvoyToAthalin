@@ -453,17 +453,20 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
     if(mouse_position[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_position[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_position[0] < CARD_AXIS_WIDTH) {
         auto& cardRegistry = registry.cards;
         auto card_count = cardRegistry.entities.size();
-        float hitbox_width = CARD_AXIS_WIDTH/static_cast<float>(card_count);
-        float x_pos_percent = mouse_position[0]/CARD_AXIS_WIDTH; //TODO currently selection only on right side of card, shift that more to the middle
-        auto selected_card_id = static_cast<int>(std::floor(x_pos_percent*card_count));
-        for (int i = 0; i < card_count; ++i) {
-            auto card = cardRegistry.entities[i];
-            if(i == selected_card_id) {
-                registry.stationaries.get(card).scale = vec2(200.f, 200.f);
-            } else {
-                registry.stationaries.get(card).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
+        float card_offset = CARD_AXIS_WIDTH/(static_cast<float>(card_count)+1);
+        float x_pos_percent = (mouse_position[0]-card_offset/2)/CARD_AXIS_WIDTH; // offset selection area to middle of card
+        // generate 1 more selection area since card positions are aligned with card_count+1/CARD_AXIS_WIDTH
+        auto selected_card_id = static_cast<int>(std::floor(x_pos_percent*(card_count+1)));
+        //if(selected_card_id<card_count) {
+            for (int i = 0; i < card_count; ++i) {
+                auto card = cardRegistry.entities[i];
+                if (i == selected_card_id) {
+                    registry.stationaries.get(card).scale = vec2(200.f, 200.f);
+                } else {
+                    registry.stationaries.get(card).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
+                }
             }
-        }
+        //}
 
     }
 
