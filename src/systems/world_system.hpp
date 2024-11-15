@@ -62,6 +62,7 @@ private:
     float next_fish_spawn;
     bool dragging; // shows if mouse is currently dragging something
     Entity dragged_entity;
+    Entity active_map;
     Entity player_salmon;
     std::vector<Entity> towers;
     std::vector<Entity> cards;

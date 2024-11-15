@@ -264,6 +264,7 @@ void WorldSystem::restart_game() {
     maps.push_back(debug_map);
     Map& map = registry.maps.get(debug_map);
     map.active = true;
+    active_map = debug_map;
 
 	//const auto debug_archer = createArcher(renderer, {400, 300});
 	//towers.push_back(debug_archer);
@@ -588,12 +589,42 @@ void WorldSystem::on_mouse_button(int button, int action, int mods) {
         } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
             //TODO range of placed tower seems really small, maybe only on collision with tower
             dragging = false;
+
+            // block placement on other towers
             bool place_occupied = false;
+            float tower_blocked_radius = ARCHER_BB_HEIGHT;//abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
             for (auto& tower_entity : registry.towers.entities) {
-                float tower_blocked_radius = abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
                 if(abs(distance(registry.motions.get(tower_entity).position, vec2(mouse_x, mouse_y))) < tower_blocked_radius) {
                     place_occupied = true;
                 }
+            }
+
+            // block placement on enemy path
+            float path_blocked_radius = window_height_px*0.05;
+            if (abs(distance(registry.maps.get(active_map).checkpoints[0], vec2(mouse_x, mouse_y))) < path_blocked_radius) {
+                place_occupied = true;
+            }
+            for (int i = 1; i < registry.maps.get(active_map).checkpoints.size(); i++) {
+                vec2 prev_checkpoint = registry.maps.get(active_map).checkpoints[i-1];
+                vec2 curr_checkpoint = registry.maps.get(active_map).checkpoints[i];
+                if (abs(distance(registry.maps.get(active_map).checkpoints[i], vec2(mouse_x, mouse_y))) < path_blocked_radius) {
+                    place_occupied = true;
+                    break;
+                }
+                vec2 vec_prev = prev_checkpoint - vec2 (mouse_x, mouse_y);
+                vec2 vec_curr = curr_checkpoint - vec2 (mouse_x, mouse_y);
+                vec2 vec_prod = vec_prev * vec_curr;
+                if (!(vec_prod[0] > 0 && vec_prod[1] > 0)) { // cursor between prev and curr checkpoint
+                    float d = abs((curr_checkpoint[1]-prev_checkpoint[1])*mouse_x
+                            - (curr_checkpoint[0]-prev_checkpoint[0])*mouse_y
+                            + curr_checkpoint[0]*prev_checkpoint[1]
+                            - curr_checkpoint[1]*prev_checkpoint[0]) / distance(prev_checkpoint, curr_checkpoint);
+                    if(d < path_blocked_radius) {
+                        place_occupied = true;
+                    }
+                }
+                //printf("%f %f, %f %f, %f %f\n", a[0], a[1], b[0], b[1], ab[0], ab[1]);
+                //printf("%f %f\n", distance(prev_checkpoint, vec2 (mouse_x, mouse_y)), distance(curr_checkpoint, vec2 (mouse_x, mouse_y)));
             }
             if (place_occupied || (mouse_y > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_y < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_x < CARD_AXIS_WIDTH)) {
                 registry.cards.get(dragged_entity).dragged = false;
