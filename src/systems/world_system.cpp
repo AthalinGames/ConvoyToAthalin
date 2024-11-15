@@ -93,8 +93,12 @@ GLFWwindow* WorldSystem::create_window() {
 	auto cursor_pos_redirect = [](GLFWwindow *wnd, double _0, double _1) {
 		static_cast<WorldSystem *>(glfwGetWindowUserPointer(wnd))->on_mouse_move({_0, _1});
 	};
+    auto mouse_button_redirect = [](GLFWwindow *wnd, int _0, int _1, int _2) {
+        static_cast<WorldSystem *>(glfwGetWindowUserPointer(wnd))->on_mouse_button(_0, _1, _2);
+    };
 	glfwSetKeyCallback(window, key_redirect);
 	glfwSetCursorPosCallback(window, cursor_pos_redirect);
+    glfwSetMouseButtonCallback(window, mouse_button_redirect);
 
 	//////////////////////////////////////
 	// Loading music and sounds with SDL
@@ -261,8 +265,8 @@ void WorldSystem::restart_game() {
     Map& map = registry.maps.get(debug_map);
     map.active = true;
 
-	const auto debug_archer = createArcher(renderer, {400, 300});
-	towers.push_back(debug_archer);
+	//const auto debug_archer = createArcher(renderer, {400, 300});
+	//towers.push_back(debug_archer);
 
     const auto debug_enemy = createEnemy(renderer, {0, 100});
     enemies.push_back(debug_enemy);
@@ -448,33 +452,33 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
     int rButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
 
     //if (action == GLFW_PRESS && key == GLFW_MOUSE_BUTTON_LEFT){
-    if (lButton_state == GLFW_PRESS) {
-        printf("dragging\n");
-        auto& cardRegistry = registry.cards;
-        for(auto& entity : cardRegistry.entities) {
-            if(!cardRegistry.get(entity).selected) {
-                continue;
-            }
-            dragging = true;
-
-            cardRegistry.get(entity).dragged = true;
-            dragged_entity = entity;
-            break;
-        }
-    } //else if (action == GLFW_RELEASE && key == GLFW_MOUSE_BUTTON_LEFT) {
+    //if (lButton_state == GLFW_PRESS) {
+    //    printf("dragging\n");
+    //    auto& cardRegistry = registry.cards;
+    //    for(auto& entity : cardRegistry.entities) {
+    //        if(!cardRegistry.get(entity).selected) {
+    //            continue;
+    //        }
+    //        dragging = true;
+//
+    //        cardRegistry.get(entity).dragged = true;
+    //        dragged_entity = entity;
+    //        break;
+    //    }
+    //} //else if (action == GLFW_RELEASE && key == GLFW_MOUSE_BUTTON_LEFT) {
     //else if (lButton_state == GLFW_RELEASE) {
     //
     //}
 
     //if (action == GLFW_PRESS && key == GLFW_MOUSE_BUTTON_RIGHT && dragging) {
-    if(rButton_state == GLFW_PRESS && dragging) {
-        dragging = false;
-        if(registry.cards.has(dragged_entity)) {
-            registry.cards.get(dragged_entity).dragged = false;
-            realignCards();
-
-        }
-    }
+    //if(rButton_state == GLFW_PRESS && dragging) {
+    //    dragging = false;
+    //    if(registry.cards.has(dragged_entity)) {
+    //        registry.cards.get(dragged_entity).dragged = false;
+    //        realignCards();
+//
+    //    }
+    //}
 }
 
 void WorldSystem::on_mouse_move(vec2 mouse_position) {
@@ -488,57 +492,51 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
     int lButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     int rButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
 
-    if (lButton_state == GLFW_PRESS) {
-        auto& cardRegistry = registry.cards;
-        for(auto& entity : cardRegistry.entities) {
-            if(!cardRegistry.get(entity).selected) {
-                continue;
-            }
-            dragging = true;
+    //if (lButton_state == GLFW_PRESS) {
+    //    auto& cardRegistry = registry.cards;
+    //    for(auto& entity : cardRegistry.entities) {
+    //        if(!cardRegistry.get(entity).selected) {
+    //            continue;
+    //        }
+    //        dragging = true;
+//
+    //        cardRegistry.get(entity).dragged = true;
+    //        dragged_entity = entity;
+    //        break;
+    //    }
+    //}
 
-            cardRegistry.get(entity).dragged = true;
-            dragged_entity = entity;
-            break;
-        }
-    }
-    if(rButton_state == GLFW_PRESS && dragging) {
-        dragging = false;
-        if(registry.cards.has(dragged_entity)) {
-            registry.cards.get(dragged_entity).dragged = false;
-            realignCards();
+    //if(dragging && lButton_state == GLFW_RELEASE){
+    //    //TODO place tower on map
+    //    dragging = false;
+    //    registry.renderRequests.remove(dragged_entity, true);
+    //    //if (registry.archers.has(dragged_entity))
+    //    //{
+    //    //    registry.remove_all_components_of(dragged_entity);
+    //    //    createArcher(renderer, dragged_entity, mouse_position);
+    //    //}
+    //    registry.stationaries.remove(dragged_entity);
+    //    registry.cards.remove(dragged_entity, true);
+    //    registry.renderRequests.insert(dragged_entity, {
+    //            TEXTURE_ASSET_ID::ARCHER,
+    //            EFFECT_ASSET_ID::TEXTURED,
+    //            GEOMETRY_BUFFER_ID::SPRITE,
+    //    });
+    //    auto& motion = registry.motions.emplace(dragged_entity);
+    //    motion.position = mouse_position;
+    //    motion.angle = M_PI/2;
+    //    motion.velocity = vec2(0, 0);
+    //    motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+//
+    //    realignCards();
 
-        }
-    }
-    if(dragging && lButton_state == GLFW_PRESS) {
+    //}else
+    if(dragging) {
         if(registry.cards.has(dragged_entity)){
             registry.stationaries.get(dragged_entity).position = mouse_position;
-            registry.stationaries.get(dragged_entity).scale = vec2(200.f, 200.f);
         }
-    } else if(dragging && lButton_state == GLFW_RELEASE){
-        //TODO place tower on map
-        dragging = false;
-        registry.renderRequests.remove(dragged_entity, true);
-        //if (registry.archers.has(dragged_entity))
-        //{
-        //    registry.remove_all_components_of(dragged_entity);
-        //    createArcher(renderer, dragged_entity, mouse_position);
-        //}
-        registry.stationaries.remove(dragged_entity);
-        registry.cards.remove(dragged_entity, true);
-        registry.renderRequests.insert(dragged_entity, {
-                TEXTURE_ASSET_ID::ARCHER,
-                EFFECT_ASSET_ID::TEXTURED,
-                GEOMETRY_BUFFER_ID::SPRITE,
-        });
-        auto& motion = registry.motions.emplace(dragged_entity);
-        motion.position = mouse_position;
-        motion.angle = M_PI/2;
-        motion.velocity = vec2(0, 0);
-        motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
 
-        realignCards();
-
-    }else if(mouse_position[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_position[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_position[0] < CARD_AXIS_WIDTH) {
+    } else if(mouse_position[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_position[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_position[0] < CARD_AXIS_WIDTH) {
         auto& cardRegistry = registry.cards;
         auto card_count = cardRegistry.entities.size();
         float card_offset = CARD_AXIS_WIDTH/(static_cast<float>(card_count)+1);
@@ -547,20 +545,73 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
         auto selected_card_id = static_cast<int>(std::floor(x_pos_percent*(card_count+1)));
         //if(selected_card_id<card_count) {
             for (int i = 0; i < card_count; ++i) {
-                auto card = cardRegistry.entities[i];
+                auto card_entity = cardRegistry.entities[i];
                 if (i == selected_card_id) {
-                    registry.stationaries.get(card).scale = vec2(200.f, 200.f);
+                    registry.stationaries.get(card_entity).scale = vec2(200.f, 200.f);
                     cardRegistry.components[i].selected = true;
+                    if (lButton_state == GLFW_PRESS) {
+                        cardRegistry.components[i].dragged = true;
+                        dragged_entity = card_entity;
+                        dragging = true;
+                    }
                 } else {
-                    registry.stationaries.get(card).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
+                    registry.stationaries.get(card_entity).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
                     cardRegistry.components[i].selected = false;
                 }
             }
         //}
 
+    }
+
+
+	(vec2)mouse_position; // dummy to avoid compiler warning
+}
+
+void WorldSystem::on_mouse_button(int button, int action, int mods) {
+    printf("mouse button\n");
+    if (dragging) {
+        double mouse_x;
+        double mouse_y;
+        glfwGetCursorPos(window, &mouse_x, &mouse_y);
+
+        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+            dragging = false;
+            if (registry.cards.has(dragged_entity)) {
+                registry.cards.get(dragged_entity).dragged = false;
+                realignCards();
+
+            }
+        }
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+            if (registry.cards.has(dragged_entity)) {
+                registry.stationaries.get(dragged_entity).position = vec2(mouse_x, mouse_y);
+                registry.stationaries.get(dragged_entity).scale = vec2(200.f, 200.f);
+            }
+        } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+            //TODO range of placed tower seems really small
+            dragging = false;
+            registry.renderRequests.remove(dragged_entity, true);
+            //if (registry.archers.has(dragged_entity))
+            //{
+            //    registry.remove_all_components_of(dragged_entity);
+            //    createArcher(renderer, dragged_entity, mouse_position);
+            //}
+            registry.stationaries.remove(dragged_entity);
+            registry.cards.remove(dragged_entity, true);
+            registry.renderRequests.insert(dragged_entity, {
+                    TEXTURE_ASSET_ID::ARCHER,
+                    EFFECT_ASSET_ID::TEXTURED,
+                    GEOMETRY_BUFFER_ID::SPRITE,
+            });
+            auto& motion = registry.motions.emplace(dragged_entity);
+            motion.position = vec2(mouse_x, mouse_y);
+            motion.angle = M_PI/2;
+            motion.velocity = vec2(0, 0);
+            motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+
+            realignCards();
+        }
     } else {
 
     }
-
-	(vec2)mouse_position; // dummy to avoid compiler warning
 }
