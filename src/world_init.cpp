@@ -103,8 +103,6 @@ Entity createCard(RenderSystem *renderer) {
 
     auto& card = registry.cards.emplace(entity);
 
-    auto& tower = registry.towers.emplace(entity); //TODO: when converting card to tower on field, pass this to createArcher
-    tower.range = 50;
     registry.archers.emplace(entity);
 
     Stationary& card_texture = registry.stationaries.emplace(entity);

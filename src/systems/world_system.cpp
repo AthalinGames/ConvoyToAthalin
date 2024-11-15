@@ -356,7 +356,7 @@ void WorldSystem::handle_collisions() {
                     }
                 }
                 registry.renderRequests.remove(entity_other, true);
-                registry.remove_all_components_of(entity_other); //TODO: removing from renderRequests causes last entity to be put in empty space, changing render order
+                registry.remove_all_components_of(entity_other);
             }
         } else if (registry.towers.has(entity) && registry.enemies.has(entity_other)) {
 			auto& tower = registry.towers.get(entity);
@@ -576,11 +576,9 @@ void WorldSystem::on_mouse_button(int button, int action, int mods) {
 
         if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
             dragging = false;
-            if (registry.cards.has(dragged_entity)) {
-                registry.cards.get(dragged_entity).dragged = false;
-                realignCards();
+            registry.cards.get(dragged_entity).dragged = false;
+            realignCards();
 
-            }
         }
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
             if (registry.cards.has(dragged_entity)) {
@@ -590,26 +588,33 @@ void WorldSystem::on_mouse_button(int button, int action, int mods) {
         } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
             //TODO range of placed tower seems really small, maybe only on collision with tower
             dragging = false;
-            registry.renderRequests.remove(dragged_entity, true);
-            //if (registry.archers.has(dragged_entity))
-            //{
-            //    registry.remove_all_components_of(dragged_entity);
-            //    createArcher(renderer, dragged_entity, mouse_position);
-            //}
-            registry.stationaries.remove(dragged_entity);
-            registry.cards.remove(dragged_entity, true);
-            registry.renderRequests.insert(dragged_entity, {
-                    TEXTURE_ASSET_ID::ARCHER,
-                    EFFECT_ASSET_ID::TEXTURED,
-                    GEOMETRY_BUFFER_ID::SPRITE,
-            });
-            auto& motion = registry.motions.emplace(dragged_entity);
-            motion.position = vec2(mouse_x, mouse_y);
-            motion.angle = M_PI/2;
-            motion.velocity = vec2(0, 0);
-            motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
-            printf("%f\n", registry.towers.get(dragged_entity).range);
-
+            bool place_occupied = false;
+            for (auto& tower_entity : registry.towers.entities) {
+                float tower_blocked_radius = abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
+                if(abs(distance(registry.motions.get(tower_entity).position, vec2(mouse_x, mouse_y))) < tower_blocked_radius) {
+                    place_occupied = true;
+                }
+            }
+            if (place_occupied || (mouse_y > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_y < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_x < CARD_AXIS_WIDTH)) {
+                registry.cards.get(dragged_entity).dragged = false;
+            } else {
+                registry.renderRequests.remove(dragged_entity, true);
+                registry.stationaries.remove(dragged_entity);
+                registry.cards.remove(dragged_entity, true);
+                registry.renderRequests.insert(dragged_entity, {
+                        TEXTURE_ASSET_ID::ARCHER,
+                        EFFECT_ASSET_ID::TEXTURED,
+                        GEOMETRY_BUFFER_ID::SPRITE,
+                });
+                auto &motion = registry.motions.emplace(dragged_entity);
+                motion.position = vec2(mouse_x, mouse_y);
+                motion.angle = M_PI / 2;
+                motion.velocity = vec2(0, 0);
+                motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+                auto &tower = registry.towers.emplace(dragged_entity);
+                tower.range = 50;
+                printf("%f\n", registry.towers.get(dragged_entity).range);
+            }
             realignCards();
         }
     } else {
