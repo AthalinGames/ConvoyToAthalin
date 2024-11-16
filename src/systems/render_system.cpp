@@ -7,6 +7,8 @@
 void RenderSystem::drawTexturedMesh(const Entity entity,
                                     mat3 &projection)
 {
+	if (registry.invisibles.has(entity))
+		return;
 	vec2 position;
     float angle;
     vec2 scale;

@@ -52,3 +52,5 @@ Entity createLine(vec2 position, vec2 size);
 Entity createGoalIcon(RenderSystem* renderer);
 
 Entity createStartIcon(RenderSystem* renderer);
+
+Entity createOverviewSelection(RenderSystem* renderer, vec2 pos);

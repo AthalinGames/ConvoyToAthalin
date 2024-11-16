@@ -60,6 +60,7 @@ private:
     float current_speed;
 
     Entity overview_map;
+    Entity current_map_pos;
 
     // Overview params
     static constexpr uint8_t grid_width = 5;

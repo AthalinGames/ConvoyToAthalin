@@ -170,7 +170,7 @@ Entity createOverviewMap(RenderSystem *renderer) {
 	return entity;
 }
 
-Entity createFightLocation(RenderSystem *renderer, vec2 pos) {
+Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 	const auto entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
@@ -179,6 +179,10 @@ Entity createFightLocation(RenderSystem *renderer, vec2 pos) {
 	Stationary& fight_location_pos = registry.stationaries.emplace(entity);
 	fight_location_pos.position = pos;
 	fight_location_pos.scale = vec2({FIGHT_LOCATION_WIDTH, FIGHT_LOCATION_HEIGHT});
+
+	auto &properties = registry.overviewMapLocations.emplace(entity);
+	properties.active = true;
+	properties.overview_selection = createOverviewSelection(renderer, pos);
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
@@ -200,6 +204,8 @@ Entity createStartIcon(RenderSystem *renderer) {
 	start_icon.position = vec2(START_ICON_LOC_X, START_ICON_LOC_Y);
 	start_icon.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
 
+	registry.overviewMapLocations.emplace(entity);
+
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
 		TEXTURE_ASSET_ID::START_ICON,
@@ -219,6 +225,8 @@ Entity createGoalIcon(RenderSystem *renderer) {
 	Stationary& goal_icon = registry.stationaries.emplace(entity);
 	goal_icon.position = vec2(GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y);
 	goal_icon.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
+
+	registry.overviewMapLocations.emplace(entity);
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
@@ -252,6 +260,29 @@ Entity createOverviewLine(RenderSystem *renderer, const vec2 firstPos, const vec
 
 	return entity;
 }
+
+Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& selection = registry.stationaries.emplace(entity);
+	selection.position = pos;
+	selection.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
+
+	registry.invisibles.insert(entity, {});
+
+	registry.renderRequests.insert(entity, {
+		Z_MIDDLE,
+		TEXTURE_ASSET_ID::MAP_SELECTION,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
 
 
 /*

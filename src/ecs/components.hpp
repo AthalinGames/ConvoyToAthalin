@@ -93,6 +93,17 @@ struct Map
     bool active = false;
 };
 
+struct OverviewMapLocation {
+	std::vector<Entity> next_locations{};
+	std::vector<Entity> previous_locations{};
+	Entity overview_selection;
+	bool selectable = false;
+	bool active = false;
+};
+
+struct Invisible {
+};
+
 // Data structure for toggling debug mode
 struct Debug {
 	bool in_debug_mode = false;
@@ -178,6 +189,7 @@ enum class TEXTURE_ASSET_ID {
 	FIGHT_ICON,
 	START_ICON,
 	GOAL_ICON,
+	MAP_SELECTION,
 	TEXTURE_COUNT
 };
 
@@ -195,6 +207,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::FIGHT_ICON: return "fightIcon.png";
 		case TEXTURE_ASSET_ID::START_ICON: return "start_icon.png";
 		case TEXTURE_ASSET_ID::GOAL_ICON: return "goal_icon.png";
+		case TEXTURE_ASSET_ID::MAP_SELECTION: return "map_selection.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);

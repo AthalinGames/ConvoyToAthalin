@@ -243,10 +243,10 @@ void WorldSystem::restart_game() {
 	}
 	// Render locations
 	std::array<std::array<vec2, grid_width>, grid_height> location_position;
+	std::array<std::array<Entity, grid_width>, grid_height> location_entities;
 	for (int height = 0; height < grid_height; ++height) {
 		for (int width = 0; width < grid_width; ++width) {
 			if (visited[height][width]) {
-				//printf(".");
 				constexpr float grid_offset_y = (1.0f / grid_width) / 2;
 				constexpr float grid_offset_x = (1.0f / grid_height) / 2;
 				const auto y_percentage = static_cast<float>(width) / grid_width + grid_offset_y;
@@ -257,36 +257,48 @@ void WorldSystem::restart_game() {
 				location_pos.x += (uniform_dist(rng) - 0.5f) * 30;
 				location_pos.y += (uniform_dist(rng) - 0.5f) * 30;
 				location_position[height][width] = location_pos;
-				createFightLocation(renderer, location_pos);
-			} /*else {
-				printf(" ");
-			}*/
+				const auto location_entity = createFightLocation(renderer, location_pos);
+				location_entities[height][width] = location_entity;
+			}
 		}
-		//printf("\n");
 	}
 	// Add Start and Goal
-	createStartIcon(renderer);
-	createGoalIcon(renderer);
+	current_map_pos = createStartIcon(renderer);
+	auto &start_loc_props = registry.overviewMapLocations.get(current_map_pos);
+	auto &end_loc_props = registry.overviewMapLocations.get(createGoalIcon(renderer));
 
-	// Render path connections
+	// Render path connections and connect internal graph
 	for (int path_no = 0; path_no < path_count; ++path_no) {
 		auto width_location = paths[path_no][0];
-		//printf("New path\n");
-		//printf("%s.\n", std::string(width_location, ' ').c_str());
+		Entity last_loc_entity = location_entities[0][width_location];
+		auto &loc_props = registry.overviewMapLocations.get(last_loc_entity);
+		// Make starting positions selectable
+		loc_props.selectable = true;
+		loc_props.previous_locations.push_back(current_map_pos);
+		start_loc_props.next_locations.push_back(last_loc_entity);
 		auto last_pos = location_position[0][width_location];
 		createOverviewLine(renderer, vec2{START_ICON_LOC_X, START_ICON_LOC_Y}, last_pos);
 		for (int height = 1; height < grid_height; ++height) {
 			width_location = paths[path_no][height];
-			//printf("%s.\n", std::string(width_location, ' ').c_str());
+			Entity current_loc_entity = location_entities[height][width_location];
+			auto &curr_loc_props = registry.overviewMapLocations.get(current_loc_entity);
+			auto &last_loc_props = registry.overviewMapLocations.get(last_loc_entity);
+			// Setup location linking
+			curr_loc_props.previous_locations.push_back(last_loc_entity);
+			last_loc_props.next_locations.push_back(current_loc_entity);
+			// Render connection between locations
 			const auto current_pos = location_position[height][width_location];
 			createOverviewLine(renderer, last_pos, current_pos);
+			// Fetch next
 			last_pos = current_pos;
+			last_loc_entity = current_loc_entity;
 		}
+		end_loc_props.previous_locations.push_back(last_loc_entity);
 		createOverviewLine(renderer, last_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
 	}
 
 	// TODO replace with actual td_fight launches
-	current_td_system = TDSystem(rng());
+	//current_td_system = TDSystem(rng());
 	//current_td_system.init(renderer);
 }
 
@@ -400,5 +412,24 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 	// If td fight is running handle the proper mouse movements
 	if (!current_td_system.is_over()) {
 		current_td_system.on_mouse_move(pos);
+	} else {
+		auto &overview_map_reg = registry.overviewMapLocations;
+
+		for (const auto entity : overview_map_reg.entities) {
+			auto &loc_props = registry.overviewMapLocations.get(entity);
+			if (loc_props.selectable) {
+				const auto map_pos = registry.stationaries.get(entity);
+				const vec2 dp = map_pos.position - pos;
+				const float dist_squared = dot(dp, dp);
+				const vec2 bounding_box = {abs(map_pos.scale.x), abs(map_pos.scale.y)};
+				const float element_r_squared = dot(bounding_box, bounding_box);
+				// TODO fix selection flickering
+				if (dist_squared < element_r_squared && registry.invisibles.has(loc_props.overview_selection)) {
+					registry.invisibles.remove(loc_props.overview_selection);
+				} else if (!registry.invisibles.has(loc_props.overview_selection)) {
+					registry.invisibles.insert(loc_props.overview_selection, {});
+				}
+			}
+		}
 	}
 }
