@@ -220,23 +220,24 @@ void WorldSystem::restart_game() {
 
 	overview_map = createOverviewMap(renderer);
 	// Generate possible paths
-	std::array<std::array<bool, grid_width>, grid_height> visited;
+	std::array<std::array<bool, grid_width>, grid_height> visited{};
 	std::array<std::array<uint8_t, grid_height>, path_count> paths{};
 	for (int path_no = 0; path_no < path_count; ++path_no) {
 		auto next_pos = overview_path_start_dist(rng);
 		paths[path_no][0] = next_pos;
 		visited[0][next_pos] = true;
 		for (int height = 1; height < grid_height; ++height) {
-			std::vector<uint8_t> next_positions;
+			std::vector<uint8_t> next_positions{};
 			next_positions.push_back(next_pos);
-			if (next_pos != 0) {
+			if (next_pos > 0 && !(visited[height - 1][next_pos - 1] && visited[height][next_pos])) {
 				next_positions.push_back(next_pos - 1);
-			} else if (next_pos == grid_width - 1) {
+			} else if (next_pos < grid_width - 1 && !(visited[height - 1][next_pos + 1] && visited[height][next_pos])) {
 				next_positions.push_back(next_pos + 1);
 			}
 			std::shuffle(next_positions.begin(), next_positions.end(), rng);
-			paths[path_no][height] = next_positions.back();
-			visited[height][paths[path_no][height]] = true;
+			const auto width_location = next_positions.back();
+			paths[path_no][height] = width_location;
+			visited[height][width_location] = true;
 		}
 	}
 	// Render locations
@@ -244,34 +245,36 @@ void WorldSystem::restart_game() {
 	for (int height = 0; height < grid_height; ++height) {
 		for (int width = 0; width < grid_width; ++width) {
 			if (visited[height][width]) {
+				printf(".");
 				const auto y_percentage = static_cast<float>(width) / grid_width;
 				const auto x_percentage = static_cast<float>(height) / grid_height;
 				const auto lerp_x_1 = overview_locations[0] * x_percentage + overview_locations[1] * (1 - x_percentage);
 				const auto lerp_x_2 = overview_locations[2] * x_percentage + overview_locations[3] * (1 - x_percentage);
-				const auto location_pos = lerp_x_1 * y_percentage + lerp_x_2 * (1 - y_percentage);
+				auto location_pos = lerp_x_1 * y_percentage + lerp_x_2 * (1 - y_percentage);
+				location_pos.x += (uniform_dist(rng) - 0.5f) * 30;
+				location_pos.y += (uniform_dist(rng) - 0.5f) * 30;
 				location_position[height][width] = location_pos;
 				createFightLocation(renderer, location_pos);
+			} else {
+				printf(" ");
 			}
 		}
+		printf("\n");
 	}
 	// Render path connections
 	for (int path_no = 0; path_no < path_count; ++path_no) {
 		auto width_location = paths[path_no][0];
+		printf("New path\n");
+		printf("%s.\n", std::string(width_location, ' ').c_str());
 		auto last_pos = location_position[0][width_location];
 		for (int height = 1; height < grid_height; ++height) {
 			width_location = paths[path_no][height];
+			printf("%s.\n", std::string(width_location, ' ').c_str());
 			const auto current_pos = location_position[height][width_location];
-			printf("First Pos {%f, %f} Second Pos {%f, %f} Distance %f\n", last_pos.x, last_pos.y, current_pos.x, current_pos.y, length(last_pos - current_pos));
 			createOverviewLine(renderer, last_pos, current_pos);
 			last_pos = current_pos;
 		}
 	}
-
-	printf("Debug drawings:\n");
-
-	createOverviewLine(renderer, vec2{100, 100}, vec2{200, 200});
-	createFightLocation(renderer, vec2{100, 100});
-	createFightLocation(renderer, vec2{200, 200});
 
 	// TODO replace with actual td_fight launches
 	current_td_system = TDSystem(rng());

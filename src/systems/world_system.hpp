@@ -64,14 +64,14 @@ private:
     // Overview params
     static constexpr uint8_t grid_width = 5;
     static constexpr uint8_t grid_height = 8;
-    static constexpr uint8_t path_count = 3;
+    static constexpr uint8_t path_count = 4;
 
     static constexpr std::array<vec2, 4> overview_locations{
         vec2{0.3f * window_width_px, 0.9f * window_height_px},
-        vec2{1025, 320},
-        vec2{120, 400},
-        vec2{750, 100}
-    }; // TODO make positions adapt to window size
+        vec2{0.9f * window_width_px, 0.35f * window_height_px},
+        vec2{0.05f * window_width_px, 0.65f * window_height_px},
+        vec2{0.65f * window_width_px, 0.15f * window_height_px}
+    };
 
     // TDSystem handle;
     TDSystem current_td_system;
@@ -84,5 +84,5 @@ private:
     // C++ random number generator
     std::default_random_engine rng;
     std::uniform_real_distribution<float> uniform_dist; // number between 0..1
-    std::uniform_int_distribution<uint8_t> overview_path_start_dist = std::uniform_int_distribution<uint8_t>(0, grid_width);
+    std::uniform_int_distribution<uint8_t> overview_path_start_dist = std::uniform_int_distribution<uint8_t>(0, grid_width - 1);
 };

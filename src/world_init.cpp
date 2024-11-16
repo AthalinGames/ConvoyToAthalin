@@ -202,8 +202,6 @@ Entity createOverviewLine(RenderSystem *renderer, const vec2 firstPos, const vec
 	line_texture.angle = atan2(dp.y, dp.x) + M_PI_2;
 	line_texture.scale = vec2({LINE_WIDTH, 0.7f * length(dp)});
 
-	printf("Line Angle: %f, Line Position: {%f, %f}, Line length: %f\n", line_texture.angle, line_texture.position.x, line_texture.position.y, line_texture.scale.y);
-
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
 		TEXTURE_ASSET_ID::BLACK_PIXEL,
