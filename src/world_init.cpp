@@ -190,6 +190,47 @@ Entity createFightLocation(RenderSystem *renderer, vec2 pos) {
 	return entity;
 }
 
+Entity createStartIcon(RenderSystem *renderer) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& start_icon = registry.stationaries.emplace(entity);
+	start_icon.position = vec2(START_ICON_LOC_X, START_ICON_LOC_Y);
+	start_icon.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
+
+	registry.renderRequests.insert(entity, {
+		Z_MIDDLE,
+		TEXTURE_ASSET_ID::START_ICON,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+Entity createGoalIcon(RenderSystem *renderer) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& goal_icon = registry.stationaries.emplace(entity);
+	goal_icon.position = vec2(GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y);
+	goal_icon.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
+
+	registry.renderRequests.insert(entity, {
+		Z_MIDDLE,
+		TEXTURE_ASSET_ID::GOAL_ICON,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+
 Entity createOverviewLine(RenderSystem *renderer, const vec2 firstPos, const vec2 secondPos) {
 	const auto entity = Entity();
 
@@ -200,7 +241,7 @@ Entity createOverviewLine(RenderSystem *renderer, const vec2 firstPos, const vec
 	const auto dp = firstPos - secondPos;
 	line_texture.position =  0.5f * (firstPos + secondPos);
 	line_texture.angle = atan2(dp.y, dp.x) + M_PI_2;
-	line_texture.scale = vec2({LINE_WIDTH, 0.7f * length(dp)});
+	line_texture.scale = vec2({LINE_WIDTH, 0.5f * length(dp)});
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,

@@ -67,10 +67,10 @@ private:
     static constexpr uint8_t path_count = 4;
 
     static constexpr std::array<vec2, 4> overview_locations{
-        vec2{0.3f * window_width_px, 0.9f * window_height_px},
-        vec2{0.9f * window_width_px, 0.35f * window_height_px},
-        vec2{0.05f * window_width_px, 0.65f * window_height_px},
-        vec2{0.65f * window_width_px, 0.15f * window_height_px}
+        vec2{0.4f * window_width_px, START_ICON_LOC_Y},
+        vec2{GOAL_ICON_LOC_X, 0.4f * window_height_px},
+        vec2{START_ICON_LOC_X, 0.55f * window_height_px},
+        vec2{0.65f * window_width_px, GOAL_ICON_LOC_Y}
     };
 
     // TDSystem handle;
