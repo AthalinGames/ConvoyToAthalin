@@ -8,6 +8,7 @@
 #include <random>
 
 #define SDL_MAIN_HANDLED
+#include <memory>
 #include <SDL.h>
 #include <SDL_mixer.h>
 
@@ -45,6 +46,7 @@ private:
     // Input callback functions
     void on_key(int key, int, int action, int mod);
     void on_mouse_move(vec2 pos);
+    void on_mouse_button(int button, int action, int mods);
 
     // restart level
     void restart_game();
@@ -61,6 +63,8 @@ private:
 
     Entity overview_map;
     Entity current_map_pos;
+    Entity next_map_pos;
+    bool td_fight_launched = false;
 
     // Overview params
     static constexpr uint8_t grid_width = 5;
@@ -75,7 +79,7 @@ private:
     };
 
     // TDSystem handle;
-    TDSystem current_td_system;
+    std::unique_ptr<TDSystem> current_td_system;
 
     // music references
     Mix_Music* background_music;

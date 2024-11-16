@@ -21,6 +21,7 @@ WorldSystem::WorldSystem()
 	: points(0) {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
+	current_td_system.reset(new TDSystem());
 }
 
 WorldSystem::~WorldSystem() {
@@ -90,8 +91,12 @@ GLFWwindow* WorldSystem::create_window() {
 	auto cursor_pos_redirect = [](GLFWwindow *wnd, double _0, double _1) {
 		static_cast<WorldSystem *>(glfwGetWindowUserPointer(wnd))->on_mouse_move({_0, _1});
 	};
+	auto mouse_key_redirect = [](GLFWwindow *wnd, int key, int action, int mods) {
+		static_cast<WorldSystem *>(glfwGetWindowUserPointer(wnd))->on_mouse_button(key, action, mods);
+	};
 	glfwSetKeyCallback(window, key_redirect);
 	glfwSetCursorPosCallback(window, cursor_pos_redirect);
+	glfwSetMouseButtonCallback(window, mouse_key_redirect);
 
 	//////////////////////////////////////
 	// Loading music and sounds with SDL
@@ -157,41 +162,29 @@ bool WorldSystem::step(const float elapsed_ms) {
 	}
 
 	// If td system is running, run also its step
-	if (!current_td_system.is_over()) {
-		current_td_system.step(elapsed_ms);
+	if (!current_td_system->is_over()) {
+		current_td_system->step(elapsed_ms);
+	} else if (td_fight_launched) {
+		// TD Fight should be finished
+		current_td_system.reset(new TDSystem());
+		// Setup Overview-Map for next selection
+		auto &current_map_pos_props = registry.overviewMapLocations.get(current_map_pos);
+		current_map_pos_props.active = false;
+		for (const Entity next_location : current_map_pos_props.next_locations) {
+			auto &location_props = registry.overviewMapLocations.get(next_location);
+			location_props.active = false;
+			location_props.selectable = false;
+		}
+		auto &next_map_pos_props = registry.overviewMapLocations.get(next_map_pos);
+		for (const Entity next_location : next_map_pos_props.next_locations) {
+			auto &location_props = registry.overviewMapLocations.get(next_location);
+			location_props.selectable = true;
+		}
+		current_map_pos = next_map_pos;
+		// Finally get back to normal steps
+		td_fight_launched = false;
 	}
 
-	// Spawning new turtles
-	/* TODO: Spawn our own enemies
-	next_turtle_spawn -= elapsed_ms_since_last_update * current_speed;
-	if (registry.hardShells.components.size() <= MAX_TURTLES && next_turtle_spawn < 0.f) {
-		// Reset timer
-		next_turtle_spawn = (TURTLE_DELAY_MS / 2) + uniform_dist(rng) * (TURTLE_DELAY_MS / 2);
-		// Create turtle
-		Entity entity = createTurtle(renderer, {0,0});
-		// Setting random initial position and constant velocity
-		Motion& motion = registry.motions.get(entity);
-		motion.position =
-			vec2(window_width_px -200.f,
-				 50.f + uniform_dist(rng) * (window_height_px - 100.f));
-		motion.velocity = vec2(-100.f, 0.f);
-	}
-
-
-	// Spawning new fish
-
-	next_fish_spawn -= elapsed_ms_since_last_update * current_speed;
-	if (registry.softShells.components.size() <= MAX_FISH && next_fish_spawn < 0.f) {
-		// !!!  TODO A1: Create new fish with createFish({0,0}), as for the Turtles above
-	}
-	*/
-
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// TODO A2: HANDLE PEBBLE SPAWN HERE
-	// DON'T WORRY ABOUT THIS UNTIL ASSIGNMENT 2
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-	// Processing the salmon state TODO: Process our player state instead?
 	return true;
 }
 
@@ -218,6 +211,7 @@ void WorldSystem::restart_game() {
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
+	current_td_system.reset(new TDSystem());
 	overview_map = createOverviewMap(renderer);
 	// Generate possible paths
 	// TODO fix path crossing
@@ -312,8 +306,8 @@ void WorldSystem::handle_collisions() {
 		const Entity entity_other = collisionsRegistry.components[i].other_entity;
 
 		// If td fight is running handle its collisions
-		if (!current_td_system.is_over()) {
-			current_td_system.handle_collision(entity, entity_other);
+		if (!current_td_system->is_over()) {
+			current_td_system->handle_collision(entity, entity_other);
 		}
 
 		// For now, we are only interested in collisions that involve the salmon
@@ -354,8 +348,8 @@ void WorldSystem::handle_collisions() {
 
 void WorldSystem::handle_post_collision_actions() {
 	// If td fight is running handle its post collision actions
-	if (!current_td_system.is_over()) {
-		current_td_system.handle_aiming();
+	if (!current_td_system->is_over()) {
+		current_td_system->handle_aiming();
 	}
 }
 
@@ -369,8 +363,8 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	//TODO: handle keyboard shortcuts
 
 	// If td fight is running handle the proper key-presses
-	if (!current_td_system.is_over()) {
-		current_td_system.on_key(key, 0, action, mod);
+	if (!current_td_system->is_over()) {
+		current_td_system->on_key(key, 0, action, mod);
 	}
 
 	// Resetting game
@@ -410,11 +404,12 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 	//TODO: handle drag and drop tower placement
 
 	// If td fight is running handle the proper mouse movements
-	if (!current_td_system.is_over()) {
-		current_td_system.on_mouse_move(pos);
+	if (!current_td_system->is_over()) {
+		current_td_system->on_mouse_move(pos);
 	} else {
 		auto &overview_map_reg = registry.overviewMapLocations;
 
+		registry.clickables.clear();
 		for (const auto entity : overview_map_reg.entities) {
 			auto &loc_props = registry.overviewMapLocations.get(entity);
 			if (loc_props.selectable) {
@@ -426,10 +421,29 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 				// TODO fix selection flickering
 				if (dist_squared < element_r_squared && registry.invisibles.has(loc_props.overview_selection)) {
 					registry.invisibles.remove(loc_props.overview_selection);
+					registry.clickables.insert(entity, {});
 				} else if (!registry.invisibles.has(loc_props.overview_selection)) {
 					registry.invisibles.insert(loc_props.overview_selection, {});
 				}
 			}
 		}
+	}
+}
+
+void WorldSystem::on_mouse_button(const int button, const int action, const int mods) {
+	if (!current_td_system->is_over()) {
+	} else {
+		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+			auto &clickables = registry.clickables;
+			for (const auto entity : clickables.entities) {
+				if (registry.overviewMapLocations.has(entity)) {
+					current_td_system.reset( new TDSystem(rng()));
+					current_td_system->init(renderer);
+					td_fight_launched = true;
+					next_map_pos = entity;
+				}
+			}
+		}
+
 	}
 }

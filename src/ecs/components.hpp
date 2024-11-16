@@ -104,6 +104,9 @@ struct OverviewMapLocation {
 struct Invisible {
 };
 
+struct Clickable {
+};
+
 // Data structure for toggling debug mode
 struct Debug {
 	bool in_debug_mode = false;
