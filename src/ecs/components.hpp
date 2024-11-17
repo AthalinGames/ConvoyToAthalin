@@ -13,7 +13,7 @@ struct Player {
 
 // Enemy components
 struct Enemy {
-    int health = 1;
+    int health = 100;
 	float enemy_progress = 0.0f;
     float speed = 0.f;
     uint next_checkpoint = 1; // checkpoint 0 is start position

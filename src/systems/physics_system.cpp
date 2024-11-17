@@ -106,12 +106,17 @@ void PhysicsSystem::step(float elapsed_ms)
 		{
 			Motion& motion_j = motion_container.components[j];
 			Entity entity_j = motion_container.entities[j];
-			if (registry.towers.has(entity_i) && registry.enemies.has(entity_j)) {
-				if (enemyInTowerRange(motion_i, registry.towers.get(entity_i), motion_j)) {
+			if ((registry.towers.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j))){
+                if (enemyInTowerRange(motion_i, registry.towers.get(entity_i), motion_j)) {
 					registry.collisions.emplace_with_duplicates(entity_i, entity_j);
 					registry.collisions.emplace_with_duplicates(entity_j, entity_i);
 				}
-			} else if (collides(motion_i, motion_j)) {
+			} else if (registry.towers.has(entity_j) && !registry.cards.has(entity_j) && registry.enemies.has(entity_i)) {
+                if (enemyInTowerRange(motion_j, registry.towers.get(entity_j), motion_i)) {
+                    registry.collisions.emplace_with_duplicates(entity_i, entity_j);
+                    registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+                }
+            }else if (collides(motion_i, motion_j)) {
 				// Create a collisions event
 				// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
 				registry.collisions.emplace_with_duplicates(entity_i, entity_j);

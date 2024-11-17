@@ -113,14 +113,14 @@ void TDSystem::restart_td_fight() {
     Enemy& enemy = registry.enemies.get(debug_enemy);
     enemy.speed = 100.f;
 
-    const auto debug_card = createCard(renderer);
+    const Entity debug_card = createCard(renderer);
     cards.push_back(debug_card);
 
-    const auto debug_card2 = createCard(renderer);
+    const Entity debug_card2 = createCard(renderer);
     cards.push_back(debug_card2);
 
     for (int i = 0; i < 6; ++i) {
-        const auto debug_cards = createCard(renderer);
+        const Entity debug_cards = createCard(renderer);
         cards.push_back(debug_cards);
     }
 
@@ -142,7 +142,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
                     aimingRegistry.remove(aiming);
                 }
             }
-            registry.remove_all_components_of(second); //TODO slime seems to be called somewhere while it does not longer exist
+            registry.remove_all_components_of(second);
         }
     } else if (registry.towers.has(first) && registry.enemies.has(second)) {
         auto& tower = registry.towers.get(first);
@@ -263,7 +263,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
             // block placement on other towers
             bool place_occupied = false;
             float tower_blocked_radius = ARCHER_BB_HEIGHT;//abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
-            for (auto& tower_entity : registry.towers.entities) {
+            for (Entity& tower_entity : registry.towers.entities) {
                 if(abs(distance(registry.motions.get(tower_entity).position, card_pos)) < tower_blocked_radius) {
                     place_occupied = true;
                 }
@@ -307,7 +307,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
                         cards.erase(cards.cbegin()+i);
                     }
                 }
-                dragged_entity = createArcher(renderer, card_pos); // TODO: for some reason the z position does still not work
+                dragged_entity = createArcher(renderer, card_pos); // TODO: for some reason the z position does still not work and only 1st placed archer is below card after next archer placed
                 //registry.renderRequests.insert(dragged_entity, {
                 //        Z_MIDDLE,
                 //        TEXTURE_ASSET_ID::ARCHER,
