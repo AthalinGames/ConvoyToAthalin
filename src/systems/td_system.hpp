@@ -35,7 +35,8 @@ public:
 
     // Input callback functions
     void on_key(int key, int, int action, int mods);
-    void on_mouse_move(vec2 pos);
+    void on_mouse_move(vec2 pos, GLFWwindow* window);
+    void on_mouse_button(int button, int action, int mods, GLFWwindow* window);
 private:
 
     // restart TD fight
@@ -45,7 +46,9 @@ private:
 
     // Game state
     RenderSystem* renderer;
-    float current_speed{};
+    float current_speed;
+    bool dragging; // shows if mouse is currently dragging something
+    Entity dragged_entity;
     std::vector<Entity> towers;
     std::vector<Entity> cards;
     std::vector<Entity> enemies;

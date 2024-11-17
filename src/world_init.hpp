@@ -24,6 +24,10 @@ constexpr float START_ICON_LOC_X = 0.15f * window_width_px;
 constexpr float START_ICON_LOC_Y = 0.8f * window_height_px;
 constexpr float GOAL_ICON_LOC_X = 0.85f * window_width_px;
 constexpr float GOAL_ICON_LOC_Y = 0.15f * window_height_px;
+constexpr float CARD_AXIS_HEIGHT = window_height_px * 0.9; // axis on which cards are placed
+constexpr float CARD_AXIS_WIDTH = window_width_px;
+constexpr float MAP_WIDTH = static_cast<float>(window_width_px);
+constexpr float MAP_HEIGHT = static_cast<float>(window_height_px);
 
 // These are hard coded for each render layer
 constexpr float Z_BACKGROUND = 1;
@@ -37,6 +41,7 @@ Entity createArrow(RenderSystem* renderer, vec2 pos, float velocity, vec2 dir);
 // the enemy unit
 Entity createEnemy(RenderSystem* renderer, vec2 pos);
 // the cards
+void realignCards();
 Entity createCard(RenderSystem* renderer);
 // the combat map
 Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints);

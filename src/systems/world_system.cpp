@@ -235,6 +235,7 @@ void WorldSystem::restart_game() {
 			visited[height][width_location] = true;
 		}
 	}
+
 	// Render locations
 	std::array<std::array<vec2, grid_width>, grid_height> location_position;
 	std::array<std::array<Entity, grid_width>, grid_height> location_entities;
@@ -309,37 +310,6 @@ void WorldSystem::handle_collisions() {
 		if (!current_td_system->is_over()) {
 			current_td_system->handle_collision(entity, entity_other);
 		}
-
-		// For now, we are only interested in collisions that involve the salmon
-		if (registry.players.has(entity)) {
-			//Player& player = registry.players.get(entity);
-
-			// Checking Player - HardShell collisions
-			/* TODO: check instead enemy collision with player base?
-			if (registry.hardShells.has(entity_other)) {
-				// initiate death unless already dying
-				if (!registry.deathTimers.has(entity)) {
-					// Scream, reset timer, and make the salmon sink
-					registry.deathTimers.emplace(entity);
-					Mix_PlayChannel(-1, salmon_dead_sound, 0);
-
-					// !!! TODO A1: change the salmon orientation and color on death
-				}
-			}
-			// Checking Player - SoftShell collisions
-			// TODO: later check collision of enemy and player projectile
-			else if (registry.softShells.has(entity_other)) {
-				if (!registry.deathTimers.has(entity)) {
-					// chew, count points, and set the LightUp timer
-					registry.remove_all_components_of(entity_other);
-					Mix_PlayChannel(-1, salmon_eat_sound, 0);
-					++points;
-
-					// !!! TODO A1: create a new struct called LightUp in components.hpp and add an instance to the salmon entity by modifying the ECS registry
-				}
-			}
-			*/
-		}
 	}
 
 	// Remove all collisions from this simulation step
@@ -405,7 +375,7 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 
 	// If td fight is running handle the proper mouse movements
 	if (!current_td_system->is_over()) {
-		current_td_system->on_mouse_move(pos);
+		current_td_system->on_mouse_move(pos, window);
 	} else {
 		auto &overview_map_reg = registry.overviewMapLocations;
 
@@ -432,6 +402,7 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 
 void WorldSystem::on_mouse_button(const int button, const int action, const int mods) {
 	if (!current_td_system->is_over()) {
+		current_td_system->on_mouse_button(button, action, mods, window);
 	} else {
 		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 			auto &clickables = registry.clickables;
@@ -444,6 +415,5 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 				}
 			}
 		}
-
 	}
 }
