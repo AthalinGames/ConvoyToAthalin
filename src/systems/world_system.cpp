@@ -18,12 +18,10 @@ const size_t FISH_DELAY_MS = 5000 * 3;
 
 // Create the fish world
 WorldSystem::WorldSystem()
-	: points(0)
-	, next_turtle_spawn(0.f) //TODO: Replace with our spawn time variables
-	, next_fish_spawn(0.f)
-    , dragging(false) {
+	: points(0) {
 	// Seeding rng with random device
 	rng = std::default_random_engine(std::random_device()());
+	current_td_system.reset(new TDSystem());
 }
 
 WorldSystem::~WorldSystem() {
@@ -93,12 +91,12 @@ GLFWwindow* WorldSystem::create_window() {
 	auto cursor_pos_redirect = [](GLFWwindow *wnd, double _0, double _1) {
 		static_cast<WorldSystem *>(glfwGetWindowUserPointer(wnd))->on_mouse_move({_0, _1});
 	};
-    auto mouse_button_redirect = [](GLFWwindow *wnd, int _0, int _1, int _2) {
-        static_cast<WorldSystem *>(glfwGetWindowUserPointer(wnd))->on_mouse_button(_0, _1, _2);
-    };
+	auto mouse_key_redirect = [](GLFWwindow *wnd, int key, int action, int mods) {
+		static_cast<WorldSystem *>(glfwGetWindowUserPointer(wnd))->on_mouse_button(key, action, mods);
+	};
 	glfwSetKeyCallback(window, key_redirect);
 	glfwSetCursorPosCallback(window, cursor_pos_redirect);
-    glfwSetMouseButtonCallback(window, mouse_button_redirect);
+	glfwSetMouseButtonCallback(window, mouse_key_redirect);
 
 	//////////////////////////////////////
 	// Loading music and sounds with SDL
@@ -128,8 +126,8 @@ GLFWwindow* WorldSystem::create_window() {
 	return window;
 }
 
-void WorldSystem::init(RenderSystem* renderer_arg) {
-	this->renderer = renderer_arg;
+void WorldSystem::init(RenderSystem* renderer) {
+	this->renderer = renderer;
 	// Playing background music indefinitely
 	Mix_PlayMusic(background_music, -1); // TODO: Replace with our bgm
 	fprintf(stderr, "Loaded music\n");
@@ -139,7 +137,7 @@ void WorldSystem::init(RenderSystem* renderer_arg) {
 }
 
 // Update our game world
-bool WorldSystem::step(float elapsed_ms_since_last_update) {
+bool WorldSystem::step(const float elapsed_ms) {
 	// Updating window title with points
 	std::stringstream title_ss;
 	title_ss << "Points: " << points;
@@ -163,67 +161,28 @@ bool WorldSystem::step(float elapsed_ms_since_last_update) {
 		}
 	}
 
-	// Spawning new turtles
-	/* TODO: Spawn our own enemies
-	next_turtle_spawn -= elapsed_ms_since_last_update * current_speed;
-	if (registry.hardShells.components.size() <= MAX_TURTLES && next_turtle_spawn < 0.f) {
-		// Reset timer
-		next_turtle_spawn = (TURTLE_DELAY_MS / 2) + uniform_dist(rng) * (TURTLE_DELAY_MS / 2);
-		// Create turtle
-		Entity entity = createTurtle(renderer, {0,0});
-		// Setting random initial position and constant velocity
-		Motion& motion = registry.motions.get(entity);
-		motion.position =
-			vec2(window_width_px -200.f,
-				 50.f + uniform_dist(rng) * (window_height_px - 100.f));
-		motion.velocity = vec2(-100.f, 0.f);
-	}
-
-
-	// Spawning new fish
-
-	next_fish_spawn -= elapsed_ms_since_last_update * current_speed;
-	if (registry.softShells.components.size() <= MAX_FISH && next_fish_spawn < 0.f) {
-		// !!!  TODO A1: Create new fish with createFish({0,0}), as for the Turtles above
-	}
-	*/
-
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	// TODO A2: HANDLE PEBBLE SPAWN HERE
-	// DON'T WORRY ABOUT THIS UNTIL ASSIGNMENT 2
-	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-	// Processing the salmon state TODO: Process our player state instead?
-	assert(registry.screenStates.components.size() <= 1);
-    ScreenState &screen = registry.screenStates.components[0];
-
-    float min_timer_ms = 3000.f;
-	for (Entity entity : registry.deathTimers.entities) {
-		// progress timer
-		DeathTimer& timer = registry.deathTimers.get(entity);
-		timer.timer_ms -= elapsed_ms_since_last_update;
-		if(timer.timer_ms < min_timer_ms){
-			min_timer_ms = timer.timer_ms;
+	// If td system is running, run also its step
+	if (!current_td_system->is_over()) {
+		current_td_system->step(elapsed_ms);
+	} else if (td_fight_launched) {
+		// TD Fight should be finished
+		current_td_system.reset(new TDSystem());
+		// Setup Overview-Map for next selection
+		auto &current_map_pos_props = registry.overviewMapLocations.get(current_map_pos);
+		current_map_pos_props.active = false;
+		for (const Entity next_location : current_map_pos_props.next_locations) {
+			auto &location_props = registry.overviewMapLocations.get(next_location);
+			location_props.active = false;
+			location_props.selectable = false;
 		}
-
-		// restart the game once the death timer expired
-		if (timer.timer_ms < 0) {
-			registry.deathTimers.remove(entity);
-			screen.screen_darken_factor = 0;
-            restart_game();
-			return true;
+		auto &next_map_pos_props = registry.overviewMapLocations.get(next_map_pos);
+		for (const Entity next_location : next_map_pos_props.next_locations) {
+			auto &location_props = registry.overviewMapLocations.get(next_location);
+			location_props.selectable = true;
 		}
-	}
-	// reduce window brightness if any of the present salmons is dying
-	screen.screen_darken_factor = 1 - min_timer_ms / 3000;
-
-	for (const auto tower_entity : registry.shotTimers.entities) {
-		auto& shot_timer = registry.shotTimers.get(tower_entity);
-		shot_timer.time -= elapsed_ms_since_last_update;
-
-		if (shot_timer.time < 0) {
-			registry.shotTimers.remove(tower_entity);
-		}
+		current_map_pos = next_map_pos;
+		// Finally get back to normal steps
+		td_fight_launched = false;
 	}
 
 	return true;
@@ -240,147 +199,116 @@ void WorldSystem::restart_game() {
 
 	// Remove all entities that we created
 	// All that have a motion, we could also iterate over all fish, turtles, ... but that would be more cumbersome
-	while (registry.motions.entities.size() > 0)
-	    registry.remove_all_components_of(registry.motions.entities.back());
+	while (!registry.motions.entities.empty()) {
+		registry.remove_all_components_of(registry.motions.entities.back());
+	}
 
     //Remove all stationaries
-    while (registry.stationaries.entities.size() > 0)
-        registry.remove_all_components_of(registry.stationaries.entities.back());
-
-	towers.clear();
-    maps.clear();
+    while (!registry.stationaries.entities.empty()) {
+	    registry.remove_all_components_of(registry.stationaries.entities.back());
+    }
 
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
-	// Create a new salmon
-	/* TODO: create player base?
-	player_salmon = createSalmon(renderer, { 100, 200 });
-	registry.colors.insert(player_salmon, {1, 0.8f, 0.8f});
-	*/
-    const auto debug_map = createMap(renderer,
-                                                {window_width_px/2, window_height_px/2},
-                                                {vec2(0, 180), vec2(510, 180), vec2(510, 450), vec2(930, 450), vec2(1050, 330)}); //TODO percentage relative to window size
-    maps.push_back(debug_map);
-    Map& map = registry.maps.get(debug_map);
-    map.active = true;
-    active_map = debug_map;
-
-	//const auto debug_archer = createArcher(renderer, {400, 300});
-	//towers.push_back(debug_archer);
-
-    const auto debug_enemy = createEnemy(renderer, {0, 100});
-    enemies.push_back(debug_enemy);
-    Enemy& enemy = registry.enemies.get(debug_enemy);
-    enemy.speed = 100.f;
-
-
-    for (int i = 0; i < 16; ++i) {
-        const auto debug_cards = createCard(renderer);
-        cards.push_back(debug_cards);
-    }
-    const auto debug_card = createCard(renderer);
-    cards.push_back(debug_card);
-
-    const auto debug_card2 = createCard(renderer);
-    cards.push_back(debug_card2);
-
-
-
-    registry.list_all_components();
-
-	// !! TODO A2: Enable static pebbles on the ground, for reference
-	// Create pebbles on the floor, use this for reference
-	/*
-	for (uint i = 0; i < 20; i++) {
-		int w, h;
-		glfwGetWindowSize(window, &w, &h);
-		float radius = 30 * (uniform_dist(rng) + 0.3f); // range 0.3 .. 1.3
-		Entity pebble = createPebble({ uniform_dist(rng) * w, h - uniform_dist(rng) * 20 },
-			         { radius, radius });
-		float brightness = uniform_dist(rng) * 0.5 + 0.5;
-		registry.colors.insert(pebble, { brightness, brightness, brightness});
+	current_td_system.reset(new TDSystem());
+	overview_map = createOverviewMap(renderer);
+	// Generate possible paths
+	// TODO fix path crossing
+	std::array<std::array<bool, grid_width>, grid_height> visited{};
+	std::array<std::array<uint8_t, grid_height>, path_count> paths{};
+	for (int path_no = 0; path_no < path_count; ++path_no) {
+		auto next_pos = overview_path_start_dist(rng);
+		paths[path_no][0] = next_pos;
+		visited[0][next_pos] = true;
+		for (int height = 1; height < grid_height; ++height) {
+			std::vector<uint8_t> next_positions{};
+			next_positions.push_back(next_pos);
+			if (next_pos > 0 && !(visited[height - 1][next_pos - 1] && visited[height][next_pos])) {
+				next_positions.push_back(next_pos - 1);
+			} else if (next_pos < grid_width - 1 && !(visited[height - 1][next_pos + 1] && visited[height][next_pos])) {
+				next_positions.push_back(next_pos + 1);
+			}
+			std::shuffle(next_positions.begin(), next_positions.end(), rng);
+			const auto width_location = next_positions.back();
+			paths[path_no][height] = width_location;
+			visited[height][width_location] = true;
+		}
 	}
-	*/
+
+	// Render locations
+	std::array<std::array<vec2, grid_width>, grid_height> location_position;
+	std::array<std::array<Entity, grid_width>, grid_height> location_entities;
+	for (int height = 0; height < grid_height; ++height) {
+		for (int width = 0; width < grid_width; ++width) {
+			if (visited[height][width]) {
+				constexpr float grid_offset_y = (1.0f / grid_width) / 2;
+				constexpr float grid_offset_x = (1.0f / grid_height) / 2;
+				const auto y_percentage = static_cast<float>(width) / grid_width + grid_offset_y;
+				const auto x_percentage = static_cast<float>(height) / grid_height + grid_offset_x;
+				const auto lerp_x_1 = overview_locations[1] * x_percentage + overview_locations[0] * (1 - x_percentage);
+				const auto lerp_x_2 = overview_locations[3] * x_percentage + overview_locations[2] * (1 - x_percentage);
+				auto location_pos = lerp_x_1 * y_percentage + lerp_x_2 * (1 - y_percentage);
+				location_pos.x += (uniform_dist(rng) - 0.5f) * 30;
+				location_pos.y += (uniform_dist(rng) - 0.5f) * 30;
+				location_position[height][width] = location_pos;
+				const auto location_entity = createFightLocation(renderer, location_pos);
+				location_entities[height][width] = location_entity;
+			}
+		}
+	}
+	// Add Start and Goal
+	current_map_pos = createStartIcon(renderer);
+	auto &start_loc_props = registry.overviewMapLocations.get(current_map_pos);
+	auto &end_loc_props = registry.overviewMapLocations.get(createGoalIcon(renderer));
+
+	// Render path connections and connect internal graph
+	for (int path_no = 0; path_no < path_count; ++path_no) {
+		auto width_location = paths[path_no][0];
+		Entity last_loc_entity = location_entities[0][width_location];
+		auto &loc_props = registry.overviewMapLocations.get(last_loc_entity);
+		// Make starting positions selectable
+		loc_props.selectable = true;
+		loc_props.previous_locations.push_back(current_map_pos);
+		start_loc_props.next_locations.push_back(last_loc_entity);
+		auto last_pos = location_position[0][width_location];
+		createOverviewLine(renderer, vec2{START_ICON_LOC_X, START_ICON_LOC_Y}, last_pos);
+		for (int height = 1; height < grid_height; ++height) {
+			width_location = paths[path_no][height];
+			Entity current_loc_entity = location_entities[height][width_location];
+			auto &curr_loc_props = registry.overviewMapLocations.get(current_loc_entity);
+			auto &last_loc_props = registry.overviewMapLocations.get(last_loc_entity);
+			// Setup location linking
+			curr_loc_props.previous_locations.push_back(last_loc_entity);
+			last_loc_props.next_locations.push_back(current_loc_entity);
+			// Render connection between locations
+			const auto current_pos = location_position[height][width_location];
+			createOverviewLine(renderer, last_pos, current_pos);
+			// Fetch next
+			last_pos = current_pos;
+			last_loc_entity = current_loc_entity;
+		}
+		end_loc_props.previous_locations.push_back(last_loc_entity);
+		createOverviewLine(renderer, last_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
+	}
+
+	// TODO replace with actual td_fight launches
+	//current_td_system = TDSystem(rng());
+	//current_td_system.init(renderer);
 }
 
 // Compute collisions between entities
 void WorldSystem::handle_collisions() {
 	// Loop over all collisions detected by the physics system
-	auto& collisionsRegistry = registry.collisions;
+	const auto& collisionsRegistry = registry.collisions;
 	for (uint i = 0; i < collisionsRegistry.components.size(); i++) {
 		// The entity and its collider
-		Entity entity = collisionsRegistry.entities[i];
-		Entity entity_other = collisionsRegistry.components[i].other_entity;
+		const Entity entity = collisionsRegistry.entities[i];
+		const Entity entity_other = collisionsRegistry.components[i].other_entity;
 
-		// For now, we are only interested in collisions that involve the salmon
-		if (registry.players.has(entity)) {
-			//Player& player = registry.players.get(entity);
-
-			// Checking Player - HardShell collisions
-			/* TODO: check instead enemy collision with player base?
-			if (registry.hardShells.has(entity_other)) {
-				// initiate death unless already dying
-				if (!registry.deathTimers.has(entity)) {
-					// Scream, reset timer, and make the salmon sink
-					registry.deathTimers.emplace(entity);
-					Mix_PlayChannel(-1, salmon_dead_sound, 0);
-
-					// !!! TODO A1: change the salmon orientation and color on death
-				}
-			}
-			// Checking Player - SoftShell collisions
-			// TODO: later check collision of enemy and player projectile
-			else if (registry.softShells.has(entity_other)) {
-				if (!registry.deathTimers.has(entity)) {
-					// chew, count points, and set the LightUp timer
-					registry.remove_all_components_of(entity_other);
-					Mix_PlayChannel(-1, salmon_eat_sound, 0);
-					++points;
-
-					// !!! TODO A1: create a new struct called LightUp in components.hpp and add an instance to the salmon entity by modifying the ECS registry
-				}
-			}
-			*/
-		} else if(registry.enemies.has(entity_other) && registry.arrows.has(entity)){
-            auto& enemy = registry.enemies.get(entity_other);
-            auto& arrow = registry.arrows.get(entity);
-            enemy.health -= arrow.damage;
-            printf("enemy hit");
-            if (enemy.health <= 0) {
-                enemy.alive = false;
-                // clear tower aiming
-                auto& aimingRegistry = registry.aimingAts;
-                for(Entity& aiming : aimingRegistry.entities) {
-                    if (aimingRegistry.get(aiming).aimed_entity == entity_other) {
-                        aimingRegistry.remove(aiming);
-                    }
-                }
-                registry.renderRequests.remove(entity_other, true);
-                registry.remove_all_components_of(entity_other);
-            }
-        } else if (registry.towers.has(entity) && registry.enemies.has(entity_other)) {
-			auto& tower = registry.towers.get(entity);
-			if (registry.aimingAts.has(entity)) {
-				auto& aiming = registry.aimingAts.get(entity);
-				auto& aimedEnemy = registry.enemies.get(aiming.aimed_entity);
-				auto& otherEnemy = registry.enemies.get(entity_other);
-				switch (tower.priority) {
-					case FIRST:
-						if (aimedEnemy.enemy_progress < otherEnemy.enemy_progress) {
-							aiming.aimed_entity = entity_other;
-						}
-						break;
-					case LAST:
-						if (aimedEnemy.enemy_progress > otherEnemy.enemy_progress) {
-							aiming.aimed_entity = entity_other;
-						}
-						break;
-				}
-			} else {
-				auto& aimingAt = registry.aimingAts.emplace(entity);
-				aimingAt.aimed_entity = entity_other;
-			}
+		// If td fight is running handle its collisions
+		if (!current_td_system->is_over()) {
+			current_td_system->handle_collision(entity, entity_other);
 		}
 	}
 
@@ -388,37 +316,26 @@ void WorldSystem::handle_collisions() {
 	registry.collisions.clear();
 }
 
-void WorldSystem::handle_aiming() {
-	auto& aimingRegistry = registry.aimingAts;
-	for (uint i = 0; i < aimingRegistry.entities.size(); i++) {
-		const Entity tower_entity = aimingRegistry.entities[i];
-		const Entity enemy_entity = aimingRegistry.components[i].aimed_entity;
-		auto& tower_motion = registry.motions.get(tower_entity);
-		auto& enemy_motion = registry.motions.get(enemy_entity);
-		const auto d_p = tower_motion.position - enemy_motion.position;
-		const auto angle = atan2(d_p.y, d_p.x);
-		tower_motion.angle = angle;
-
-		if (!registry.shotTimers.has(tower_entity)) {
-			auto& archer = registry.archers.get(tower_entity);
-			registry.shotTimers.emplace(tower_entity);
-			if (registry.archers.has(tower_entity)) {
-				createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
-			}
-		}
+void WorldSystem::handle_post_collision_actions() {
+	// If td fight is running handle its post collision actions
+	if (!current_td_system->is_over()) {
+		current_td_system->handle_aiming();
 	}
-	// Clear aiming for next iteration
-	registry.aimingAts.clear();
 }
 
 // Should the game be over ?
 bool WorldSystem::is_over() const {
-	return bool(glfwWindowShouldClose(window));
+	return static_cast<bool>(glfwWindowShouldClose(window));
 }
 
 // On key callback
-void WorldSystem::on_key(int key, int, int action, int mod) {
+void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	//TODO: handle keyboard shortcuts
+
+	// If td fight is running handle the proper key-presses
+	if (!current_td_system->is_over()) {
+		current_td_system->on_key(key, 0, action, mod);
+	}
 
 	// Resetting game
 	if (action == GLFW_RELEASE && key == GLFW_KEY_R) {
@@ -446,43 +363,9 @@ void WorldSystem::on_key(int key, int, int action, int mod) {
 		printf("Current speed = %f\n", current_speed);
 	}
 	current_speed = fmax(0.f, current_speed);
-
-    // Drag and drop cards
-    //printf("a\n");
-    int lButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-    int rButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
-
-    //if (action == GLFW_PRESS && key == GLFW_MOUSE_BUTTON_LEFT){
-    //if (lButton_state == GLFW_PRESS) {
-    //    printf("dragging\n");
-    //    auto& cardRegistry = registry.cards;
-    //    for(auto& entity : cardRegistry.entities) {
-    //        if(!cardRegistry.get(entity).selected) {
-    //            continue;
-    //        }
-    //        dragging = true;
-//
-    //        cardRegistry.get(entity).dragged = true;
-    //        dragged_entity = entity;
-    //        break;
-    //    }
-    //} //else if (action == GLFW_RELEASE && key == GLFW_MOUSE_BUTTON_LEFT) {
-    //else if (lButton_state == GLFW_RELEASE) {
-    //
-    //}
-
-    //if (action == GLFW_PRESS && key == GLFW_MOUSE_BUTTON_RIGHT && dragging) {
-    //if(rButton_state == GLFW_PRESS && dragging) {
-    //    dragging = false;
-    //    if(registry.cards.has(dragged_entity)) {
-    //        registry.cards.get(dragged_entity).dragged = false;
-    //        realignCards();
-//
-    //    }
-    //}
 }
 
-void WorldSystem::on_mouse_move(vec2 mouse_position) {
+void WorldSystem::on_mouse_move(const vec2 pos) {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// TODO A1: HANDLE SALMON ROTATION HERE
 	// xpos and ypos are relative to the top-left of the window, the salmon's
@@ -490,165 +373,47 @@ void WorldSystem::on_mouse_move(vec2 mouse_position) {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//TODO: handle drag and drop tower placement
 
-    int lButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-    int rButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
+	// If td fight is running handle the proper mouse movements
+	if (!current_td_system->is_over()) {
+		current_td_system->on_mouse_move(pos, window);
+	} else {
+		auto &overview_map_reg = registry.overviewMapLocations;
 
-    //if (lButton_state == GLFW_PRESS) {
-    //    auto& cardRegistry = registry.cards;
-    //    for(auto& entity : cardRegistry.entities) {
-    //        if(!cardRegistry.get(entity).selected) {
-    //            continue;
-    //        }
-    //        dragging = true;
-//
-    //        cardRegistry.get(entity).dragged = true;
-    //        dragged_entity = entity;
-    //        break;
-    //    }
-    //}
-
-    //if(dragging && lButton_state == GLFW_RELEASE){
-    //    //TODO place tower on map
-    //    dragging = false;
-    //    registry.renderRequests.remove(dragged_entity, true);
-    //    //if (registry.archers.has(dragged_entity))
-    //    //{
-    //    //    registry.remove_all_components_of(dragged_entity);
-    //    //    createArcher(renderer, dragged_entity, mouse_position);
-    //    //}
-    //    registry.stationaries.remove(dragged_entity);
-    //    registry.cards.remove(dragged_entity, true);
-    //    registry.renderRequests.insert(dragged_entity, {
-    //            TEXTURE_ASSET_ID::ARCHER,
-    //            EFFECT_ASSET_ID::TEXTURED,
-    //            GEOMETRY_BUFFER_ID::SPRITE,
-    //    });
-    //    auto& motion = registry.motions.emplace(dragged_entity);
-    //    motion.position = mouse_position;
-    //    motion.angle = M_PI/2;
-    //    motion.velocity = vec2(0, 0);
-    //    motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
-//
-    //    realignCards();
-
-    //}else
-    if(dragging) {
-        if(registry.cards.has(dragged_entity)){
-            registry.stationaries.get(dragged_entity).position = mouse_position;
-        }
-
-    } else if(mouse_position[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_position[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_position[0] < CARD_AXIS_WIDTH) {
-        auto& cardRegistry = registry.cards;
-        auto card_count = cardRegistry.entities.size();
-        float card_offset = CARD_AXIS_WIDTH/(static_cast<float>(card_count)+1);
-        float x_pos_percent = (mouse_position[0]-card_offset/2)/CARD_AXIS_WIDTH; // offset selection area to middle of card
-        // generate 1 more selection area since card positions are aligned with card_count+1/CARD_AXIS_WIDTH
-        auto selected_card_id = static_cast<int>(std::floor(x_pos_percent*(card_count+1)));
-        //if(selected_card_id<card_count) {
-            for (int i = 0; i < card_count; ++i) {
-                auto card_entity = cardRegistry.entities[i];
-                if (i == selected_card_id) {
-                    registry.stationaries.get(card_entity).scale = vec2(200.f, 200.f);
-                    cardRegistry.components[i].selected = true;
-                    if (lButton_state == GLFW_PRESS) {
-                        cardRegistry.components[i].dragged = true;
-                        dragged_entity = card_entity;
-                        dragging = true;
-                    }
-                } else {
-                    registry.stationaries.get(card_entity).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
-                    cardRegistry.components[i].selected = false;
-                }
-            }
-        //}
-
-    }
-
-
-	(vec2)mouse_position; // dummy to avoid compiler warning
+		registry.clickables.clear();
+		for (const auto entity : overview_map_reg.entities) {
+			auto &loc_props = registry.overviewMapLocations.get(entity);
+			if (loc_props.selectable) {
+				const auto map_pos = registry.stationaries.get(entity);
+				const vec2 dp = map_pos.position - pos;
+				const float dist_squared = dot(dp, dp);
+				const vec2 bounding_box = {abs(map_pos.scale.x), abs(map_pos.scale.y)};
+				const float element_r_squared = dot(bounding_box, bounding_box);
+				// TODO fix selection flickering
+				if (dist_squared < element_r_squared && registry.invisibles.has(loc_props.overview_selection)) {
+					registry.invisibles.remove(loc_props.overview_selection);
+					registry.clickables.insert(entity, {});
+				} else if (!registry.invisibles.has(loc_props.overview_selection)) {
+					registry.invisibles.insert(loc_props.overview_selection, {});
+				}
+			}
+		}
+	}
 }
 
-void WorldSystem::on_mouse_button(int button, int action, int mods) {
-    printf("mouse button\n");
-    if (dragging) {
-        double mouse_x;
-        double mouse_y;
-        glfwGetCursorPos(window, &mouse_x, &mouse_y);
-
-        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
-            dragging = false;
-            registry.cards.get(dragged_entity).dragged = false;
-            realignCards();
-
-        }
-        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-            if (registry.cards.has(dragged_entity)) {
-                registry.stationaries.get(dragged_entity).position = vec2(mouse_x, mouse_y);
-                registry.stationaries.get(dragged_entity).scale = vec2(200.f, 200.f);
-            }
-        } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-            //TODO range of placed tower seems really small, maybe only on collision with tower
-            dragging = false;
-
-            // block placement on other towers
-            bool place_occupied = false;
-            float tower_blocked_radius = ARCHER_BB_HEIGHT;//abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
-            for (auto& tower_entity : registry.towers.entities) {
-                if(abs(distance(registry.motions.get(tower_entity).position, vec2(mouse_x, mouse_y))) < tower_blocked_radius) {
-                    place_occupied = true;
-                }
-            }
-
-            // block placement on enemy path
-            float path_blocked_radius = window_height_px*0.05;
-            if (abs(distance(registry.maps.get(active_map).checkpoints[0], vec2(mouse_x, mouse_y))) < path_blocked_radius) {
-                place_occupied = true;
-            }
-            for (int i = 1; i < registry.maps.get(active_map).checkpoints.size(); i++) {
-                vec2 prev_checkpoint = registry.maps.get(active_map).checkpoints[i-1];
-                vec2 curr_checkpoint = registry.maps.get(active_map).checkpoints[i];
-                if (abs(distance(registry.maps.get(active_map).checkpoints[i], vec2(mouse_x, mouse_y))) < path_blocked_radius) {
-                    place_occupied = true;
-                    break;
-                }
-                vec2 vec_prev = prev_checkpoint - vec2 (mouse_x, mouse_y);
-                vec2 vec_curr = curr_checkpoint - vec2 (mouse_x, mouse_y);
-                vec2 vec_prod = vec_prev * vec_curr;
-                if (!(vec_prod[0] > 0 && vec_prod[1] > 0)) { // cursor between prev and curr checkpoint
-                    float d = abs((curr_checkpoint[1]-prev_checkpoint[1])*mouse_x
-                            - (curr_checkpoint[0]-prev_checkpoint[0])*mouse_y
-                            + curr_checkpoint[0]*prev_checkpoint[1]
-                            - curr_checkpoint[1]*prev_checkpoint[0]) / distance(prev_checkpoint, curr_checkpoint);
-                    if(d < path_blocked_radius) {
-                        place_occupied = true;
-                    }
-                }
-                //printf("%f %f, %f %f, %f %f\n", a[0], a[1], b[0], b[1], ab[0], ab[1]);
-                //printf("%f %f\n", distance(prev_checkpoint, vec2 (mouse_x, mouse_y)), distance(curr_checkpoint, vec2 (mouse_x, mouse_y)));
-            }
-            if (place_occupied || (mouse_y > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_y < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_x < CARD_AXIS_WIDTH)) {
-                registry.cards.get(dragged_entity).dragged = false;
-            } else {
-                registry.renderRequests.remove(dragged_entity, true);
-                registry.stationaries.remove(dragged_entity);
-                registry.cards.remove(dragged_entity, true);
-                registry.renderRequests.insert(dragged_entity, {
-                        TEXTURE_ASSET_ID::ARCHER,
-                        EFFECT_ASSET_ID::TEXTURED,
-                        GEOMETRY_BUFFER_ID::SPRITE,
-                });
-                auto &motion = registry.motions.emplace(dragged_entity);
-                motion.position = vec2(mouse_x, mouse_y);
-                motion.angle = M_PI / 2;
-                motion.velocity = vec2(0, 0);
-                motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
-                auto &tower = registry.towers.emplace(dragged_entity);
-                tower.range = 50;
-                printf("%f\n", registry.towers.get(dragged_entity).range);
-            }
-            realignCards();
-        }
-    } else {
-
-    }
+void WorldSystem::on_mouse_button(const int button, const int action, const int mods) {
+	if (!current_td_system->is_over()) {
+		current_td_system->on_mouse_button(button, action, mods, window);
+	} else {
+		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+			auto &clickables = registry.clickables;
+			for (const auto entity : clickables.entities) {
+				if (registry.overviewMapLocations.has(entity)) {
+					current_td_system.reset( new TDSystem(rng()));
+					current_td_system->init(renderer);
+					td_fight_launched = true;
+					next_map_pos = entity;
+				}
+			}
+		}
+	}
 }

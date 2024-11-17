@@ -95,6 +95,20 @@ struct Map
     bool active = false;
 };
 
+struct OverviewMapLocation {
+	std::vector<Entity> next_locations{};
+	std::vector<Entity> previous_locations{};
+	Entity overview_selection;
+	bool selectable = false;
+	bool active = false;
+};
+
+struct Invisible {
+};
+
+struct Clickable {
+};
+
 // Data structure for toggling debug mode
 struct Debug {
 	bool in_debug_mode = false;
@@ -175,6 +189,12 @@ enum class TEXTURE_ASSET_ID {
 	ARROW,
     SLIME,
     MAP,
+	OVERVIEW_MAP,
+	BLACK_PIXEL,
+	FIGHT_ICON,
+	START_ICON,
+	GOAL_ICON,
+	MAP_SELECTION,
 	TEXTURE_COUNT
 };
 
@@ -187,6 +207,12 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
         case TEXTURE_ASSET_ID::MAP: return "tdmap.png";
+		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
+		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
+		case TEXTURE_ASSET_ID::FIGHT_ICON: return "fightIcon.png";
+		case TEXTURE_ASSET_ID::START_ICON: return "start_icon.png";
+		case TEXTURE_ASSET_ID::GOAL_ICON: return "goal_icon.png";
+		case TEXTURE_ASSET_ID::MAP_SELECTION: return "map_selection.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
@@ -235,6 +261,7 @@ enum class GEOMETRY_BUFFER_ID {
 constexpr int geometry_count = static_cast<int>(GEOMETRY_BUFFER_ID::GEOMETRY_COUNT);
 
 struct RenderRequest {
+	float z_position;
 	TEXTURE_ASSET_ID used_texture = TEXTURE_ASSET_ID::TEXTURE_COUNT;
 	EFFECT_ASSET_ID used_effect = EFFECT_ASSET_ID::EFFECT_COUNT;
 	GEOMETRY_BUFFER_ID used_geometry = GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;

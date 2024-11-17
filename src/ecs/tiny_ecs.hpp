@@ -19,7 +19,7 @@ public:
 		id = id_count++;
 		// Note, indices of already deleted entities arent re-used in this simple implementation.
 	}
-	operator unsigned int() { return id; } // this enables automatic casting to int
+	operator unsigned int() const { return id; } // this enables automatic casting to int
 };
 
 // Common interface to refer to all containers in the ECS registry
@@ -108,7 +108,7 @@ public:
             } else {
                 // Get the current position
                 int cID = map_entity_componentID[e];
-                for (int i = cID; i < components.size()-1; ++i) { //remove doesnt seem to work
+                for (std::size_t i = cID; i < components.size()-1; ++i) { //remove doesnt seem to work
                     components[i] = std::move(components[i+1]);
                     entities[i] = entities[i+1]; // the entity is only a single index, copy it.
                     map_entity_componentID[entities[i+1]] = i;

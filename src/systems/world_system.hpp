@@ -8,10 +8,12 @@
 #include <random>
 
 #define SDL_MAIN_HANDLED
+#include <memory>
 #include <SDL.h>
 #include <SDL_mixer.h>
 
 #include "render_system.hpp"
+#include "td_system.hpp"
 
 // Container for all our entities and game logic. Individual rendering / update is
 // deferred to the relative update() methods
@@ -36,7 +38,7 @@ public:
     void handle_collisions();
 
     // Aim all towers at their current enemy
-    void handle_aiming();
+    void handle_post_collision_actions();
 
     // Should the game be over ?
     bool is_over()const;
@@ -44,7 +46,7 @@ private:
     // Input callback functions
     void on_key(int key, int, int action, int mod);
     void on_mouse_move(vec2 pos);
-    void on_mouse_button(int button, int action, int mod);
+    void on_mouse_button(int button, int action, int mods);
 
     // restart level
     void restart_game();
@@ -58,16 +60,26 @@ private:
     // Game state
     RenderSystem* renderer;
     float current_speed;
-    float next_turtle_spawn;
-    float next_fish_spawn;
-    bool dragging; // shows if mouse is currently dragging something
-    Entity dragged_entity;
-    Entity active_map;
-    Entity player_salmon;
-    std::vector<Entity> towers;
-    std::vector<Entity> cards;
-    std::vector<Entity> maps;
-    std::vector<Entity> enemies;
+
+    Entity overview_map;
+    Entity current_map_pos;
+    Entity next_map_pos;
+    bool td_fight_launched = false;
+
+    // Overview params
+    static constexpr uint8_t grid_width = 5;
+    static constexpr uint8_t grid_height = 8;
+    static constexpr uint8_t path_count = 4;
+
+    static constexpr std::array<vec2, 4> overview_locations{
+        vec2{0.4f * window_width_px, START_ICON_LOC_Y},
+        vec2{GOAL_ICON_LOC_X, 0.4f * window_height_px},
+        vec2{START_ICON_LOC_X, 0.55f * window_height_px},
+        vec2{0.65f * window_width_px, GOAL_ICON_LOC_Y}
+    };
+
+    // TDSystem handle;
+    std::unique_ptr<TDSystem> current_td_system;
 
     // music references
     Mix_Music* background_music;
@@ -77,4 +89,5 @@ private:
     // C++ random number generator
     std::default_random_engine rng;
     std::uniform_real_distribution<float> uniform_dist; // number between 0..1
+    std::uniform_int_distribution<uint8_t> overview_path_start_dist = std::uniform_int_distribution<uint8_t>(0, grid_width - 1);
 };

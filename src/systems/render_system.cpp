@@ -5,8 +5,10 @@
 #include "ecs/tiny_ecs_registry.hpp"
 
 void RenderSystem::drawTexturedMesh(const Entity entity,
-                                    const mat3 &projection)
+                                    mat3 &projection)
 {
+	if (registry.invisibles.has(entity))
+		return;
 	vec2 position;
     float angle;
     vec2 scale;
@@ -52,8 +54,8 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	// Input data location as in the vertex buffer
 	if (render_request.used_effect == EFFECT_ASSET_ID::TEXTURED)
 	{
-		GLint in_position_loc = glGetAttribLocation(program, "in_position");
-		GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
+		const GLint in_position_loc = glGetAttribLocation(program, "in_position");
+		const GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
 		gl_has_errors();
 		assert(in_texcoord_loc >= 0);
 
@@ -65,8 +67,7 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 		glEnableVertexAttribArray(in_texcoord_loc);
 		glVertexAttribPointer(
 			in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
-			reinterpret_cast<void *>(sizeof(
-				vec3))); // note the stride to skip the preceeding vertex position
+			reinterpret_cast<void *>(sizeof(vec3))); // note the stride to skip the preceeding vertex position
 
 		// Enabling and binding texture to slot 0
 		glActiveTexture(GL_TEXTURE0);
@@ -114,7 +115,7 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	}
 
 	// Getting uniform locations for glUniform* calls
-	GLint color_uloc = glGetUniformLocation(program, "fcolor");
+	const GLint color_uloc = glGetUniformLocation(program, "fcolor");
 	vec3 color = registry.colors.has(entity) ? registry.colors.get(entity) : vec3(1);
 	glUniform3fv(color_uloc, 1, reinterpret_cast<float *>(&color));
 	gl_has_errors();
@@ -124,16 +125,18 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
 	gl_has_errors();
 
-	GLsizei num_indices = size / sizeof(uint16_t);
+	const GLsizei num_indices = size / sizeof(uint16_t);
 	// GLsizei num_triangles = num_indices / 3;
 
 	GLint currProgram;
 	glGetIntegerv(GL_CURRENT_PROGRAM, &currProgram);
 	// Setting uniform values to the currently bound program
-	GLuint transform_loc = glGetUniformLocation(currProgram, "transform");
+	const GLuint transform_loc = glGetUniformLocation(currProgram, "transform");
 	glUniformMatrix3fv(transform_loc, 1, GL_FALSE, reinterpret_cast<float *>(&transform.mat));
-	GLuint projection_loc = glGetUniformLocation(currProgram, "projection");
-	glUniformMatrix3fv(projection_loc, 1, GL_FALSE, (float *)&projection);
+	const GLuint projection_loc = glGetUniformLocation(currProgram, "projection");
+	glUniformMatrix3fv(projection_loc, 1, GL_FALSE, reinterpret_cast<float *>(&projection));
+	const GLuint z_pos_loc = glGetUniformLocation(currProgram, "z_pos");
+	glUniform1f(z_pos_loc, render_request.z_position);
 	gl_has_errors();
 	// Drawing of num_indices/3 triangles specified in the index buffer
 	glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);

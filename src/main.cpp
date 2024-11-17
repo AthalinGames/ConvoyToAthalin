@@ -51,7 +51,7 @@ int main()
 		physics_system.step(elapsed_ms);
 
 		world_system.handle_collisions();
-		world_system.handle_aiming();
+		world_system.handle_post_collision_actions();
 
 		render_system.draw();
 	}
