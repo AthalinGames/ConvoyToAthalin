@@ -209,6 +209,7 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow* window) {
     if(dragging) {
         if(registry.cards.has(dragged_entity)){
             registry.stationaries.get(dragged_entity).position = pos;
+            registry.stationaries.get(dragged_entity).scale = vec2(0.5 * CARD_WIDTH, 0.5 * CARD_HEIGHT);
         }
 
     } else if(pos[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && pos[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && pos[0] < CARD_AXIS_WIDTH) {
@@ -220,15 +221,10 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow* window) {
         auto selected_card_id = static_cast<unsigned int>(std::floor(x_pos_percent*(card_count+1)));
         //if(selected_card_id<card_count) {
             for (std::size_t i = 0; i < card_count; ++i) {
-                auto card_entity = cardRegistry.entities[i];
+                Entity card_entity = cardRegistry.entities[i];
                 if (i == selected_card_id) {
-                    registry.stationaries.get(card_entity).scale = vec2(200.f, 200.f);
+                    registry.stationaries.get(card_entity).scale = vec2(1.3 * CARD_WIDTH, 1.3 * CARD_HEIGHT);
                     cardRegistry.components[i].selected = true;
-                    if (lButton_state == GLFW_PRESS) {
-                        cardRegistry.components[i].dragged = true;
-                        dragged_entity = card_entity;
-                        dragging = true;
-                    }
                 } else {
                     registry.stationaries.get(card_entity).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
                     cardRegistry.components[i].selected = false;
@@ -241,9 +237,9 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow* window) {
 void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* window) {
     printf("mouse button\n");
     if (dragging) {
-        double mouse_x;
-        double mouse_y;
-        glfwGetCursorPos(window, &mouse_x, &mouse_y);
+        //double mouse_x;
+        //double mouse_y;
+        //glfwGetCursorPos(window, &mouse_x, &mouse_y);
 
         if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
             dragging = false;
@@ -251,44 +247,46 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
             realignCards();
 
         }
-        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-            if (registry.cards.has(dragged_entity)) {
-                registry.stationaries.get(dragged_entity).position = vec2(mouse_x, mouse_y);
-                registry.stationaries.get(dragged_entity).scale = vec2(200.f, 200.f);
-            }
-        } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        //if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) { //TODO move this to on_mouse_move
+        //    if (registry.cards.has(dragged_entity)) {
+        //        registry.stationaries.get(dragged_entity).position = vec2(mouse_x, mouse_y);
+        //        registry.stationaries.get(dragged_entity).scale = vec2(200.f, 200.f);
+        //    }
+        //} else
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
             //TODO range of placed tower seems really small, maybe only on collision with tower
             dragging = false;
             auto maps = registry.maps;
             const auto &mapProperties = maps.get(map);
+            vec2 card_pos = registry.stationaries.get(dragged_entity).position;
 
             // block placement on other towers
             bool place_occupied = false;
             float tower_blocked_radius = ARCHER_BB_HEIGHT;//abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
             for (auto& tower_entity : registry.towers.entities) {
-                if(abs(distance(registry.motions.get(tower_entity).position, vec2(mouse_x, mouse_y))) < tower_blocked_radius) {
+                if(abs(distance(registry.motions.get(tower_entity).position, card_pos)) < tower_blocked_radius) {
                     place_occupied = true;
                 }
             }
 
             // block placement on enemy path
             float path_blocked_radius = window_height_px*0.05;
-            if (abs(distance(mapProperties.checkpoints[0], vec2(mouse_x, mouse_y))) < path_blocked_radius) {
+            if (abs(distance(mapProperties.checkpoints[0], card_pos)) < path_blocked_radius) {
                 place_occupied = true;
             }
             for (std::size_t i = 1; i < mapProperties.checkpoints.size(); i++) {
                 vec2 prev_checkpoint = mapProperties.checkpoints[i-1];
                 vec2 curr_checkpoint = mapProperties.checkpoints[i];
-                if (abs(distance(mapProperties.checkpoints[i], vec2(mouse_x, mouse_y))) < path_blocked_radius) {
+                if (abs(distance(mapProperties.checkpoints[i], card_pos)) < path_blocked_radius) {
                     place_occupied = true;
                     break;
                 }
-                vec2 vec_prev = prev_checkpoint - vec2 (mouse_x, mouse_y);
-                vec2 vec_curr = curr_checkpoint - vec2 (mouse_x, mouse_y);
+                vec2 vec_prev = prev_checkpoint - card_pos;
+                vec2 vec_curr = curr_checkpoint - card_pos;
                 vec2 vec_prod = vec_prev * vec_curr;
                 if (!(vec_prod[0] > 0 && vec_prod[1] > 0)) { // cursor between prev and curr checkpoint
-                    float d = abs((curr_checkpoint[1]-prev_checkpoint[1])*mouse_x
-                            - (curr_checkpoint[0]-prev_checkpoint[0])*mouse_y
+                    float d = abs((curr_checkpoint[1]-prev_checkpoint[1])*card_pos[0]
+                            - (curr_checkpoint[0]-prev_checkpoint[0])*card_pos[1]
                             + curr_checkpoint[0]*prev_checkpoint[1]
                             - curr_checkpoint[1]*prev_checkpoint[0]) / distance(prev_checkpoint, curr_checkpoint);
                     if(d < path_blocked_radius) {
@@ -298,31 +296,47 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
                 //printf("%f %f, %f %f, %f %f\n", a[0], a[1], b[0], b[1], ab[0], ab[1]);
                 //printf("%f %f\n", distance(prev_checkpoint, vec2 (mouse_x, mouse_y)), distance(curr_checkpoint, vec2 (mouse_x, mouse_y)));
             }
-            if (place_occupied || (mouse_y > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && mouse_y < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && mouse_x < CARD_AXIS_WIDTH)) {
+            if (place_occupied || (card_pos[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && card_pos[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && card_pos[0] < CARD_AXIS_WIDTH)) {
                 registry.cards.get(dragged_entity).dragged = false;
-            } else {
+            } else { // successfully place card as tower
                 registry.renderRequests.remove(dragged_entity, true);
-                registry.stationaries.remove(dragged_entity);
                 registry.cards.remove(dragged_entity, true);
-                registry.renderRequests.insert(dragged_entity, {
-                        Z_MIDDLE,
-                        TEXTURE_ASSET_ID::ARCHER,
-                        EFFECT_ASSET_ID::TEXTURED,
-                        GEOMETRY_BUFFER_ID::SPRITE,
-                });
-                auto &motion = registry.motions.emplace(dragged_entity);
-                motion.position = vec2(mouse_x, mouse_y);
-                motion.angle = M_PI / 2;
-                motion.velocity = vec2(0, 0);
-                motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
-                auto &tower = registry.towers.emplace(dragged_entity);
-                tower.range = 50;
-                printf("%f\n", registry.towers.get(dragged_entity).range);
+                registry.remove_all_components_of(dragged_entity);
+                for(uint i = 0; i < cards.size(); i++){ // delete old card entity
+                    if(cards[i] == dragged_entity){
+                        cards.erase(cards.cbegin()+i);
+                    }
+                }
+                dragged_entity = createArcher(renderer, card_pos); // TODO: for some reason the z position does still not work
+                //registry.renderRequests.insert(dragged_entity, {
+                //        Z_MIDDLE,
+                //        TEXTURE_ASSET_ID::ARCHER,
+                //        EFFECT_ASSET_ID::TEXTURED,
+                //        GEOMETRY_BUFFER_ID::SPRITE,
+                //});
+                //auto &motion = registry.motions.emplace(dragged_entity);
+                //motion.position = card_pos;
+                //motion.angle = M_PI / 2;
+                //motion.velocity = vec2(0, 0);
+                //motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+                //auto &tower = registry.towers.emplace(dragged_entity);
+                //tower.range = 50;
+                printf("rage: %f, z: %f\n", registry.towers.get(dragged_entity).range, registry.renderRequests.get(dragged_entity).z_position);
             }
             realignCards();
         }
     } else {
-
+        //TODO: move start of dragging here
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+            for (uint i = 0; i < registry.cards.entities.size(); i++) {
+                if (registry.cards.components[i].selected) {
+                    registry.cards.components[i].dragged = true;
+                    dragged_entity = registry.cards.entities[i];
+                    dragging = true;
+                    printf("z:%f\n", registry.renderRequests.get(dragged_entity).z_position);
+                }
+            }
+        }
     }
 }
 

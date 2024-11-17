@@ -37,6 +37,12 @@ constexpr int window_height_px = 800;
 #define M_PI 3.14159265358979323846f
 #endif
 
+#if _WIN32
+#define M_PI_2 M_PI/2
+#endif
+
+
+
 // The 'Transform' component handles transformations passed to the Vertex shader
 // (similar to the gl Immediate mode equivalent, e.g., glTranslate()...)
 // We recomment making all components non-copyable by derving from ComponentNonCopyable

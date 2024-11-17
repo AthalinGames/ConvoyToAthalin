@@ -89,5 +89,5 @@ private:
     // C++ random number generator
     std::default_random_engine rng;
     std::uniform_real_distribution<float> uniform_dist; // number between 0..1
-    std::uniform_int_distribution<uint8_t> overview_path_start_dist = std::uniform_int_distribution<uint8_t>(0, grid_width - 1);
+    std::uniform_int_distribution<uint16_t> overview_path_start_dist = std::uniform_int_distribution<uint16_t>(0, grid_width - 1);
 };

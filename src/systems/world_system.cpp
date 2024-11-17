@@ -218,7 +218,7 @@ void WorldSystem::restart_game() {
 	std::array<std::array<bool, grid_width>, grid_height> visited{};
 	std::array<std::array<uint8_t, grid_height>, path_count> paths{};
 	for (int path_no = 0; path_no < path_count; ++path_no) {
-		auto next_pos = overview_path_start_dist(rng);
+		auto next_pos = static_cast<uint8_t>(overview_path_start_dist(rng));
 		paths[path_no][0] = next_pos;
 		visited[0][next_pos] = true;
 		for (int height = 1; height < grid_height; ++height) {
