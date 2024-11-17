@@ -38,6 +38,7 @@ void TDSystem::init(RenderSystem *renderer) {
 bool TDSystem::step(float elapsed_ms) {
     assert(registry.screenStates.components.size() <= 1);
     ScreenState &screen = registry.screenStates.components[0];
+    Map& td_map = registry.maps.get(map);
 
     float min_timer_ms = 3000.f;
     for (Entity entity : registry.deathTimers.entities) {
@@ -60,13 +61,22 @@ bool TDSystem::step(float elapsed_ms) {
     // reduce window brightness if any of the present salmons is dying
     screen.screen_darken_factor = 1 - min_timer_ms / 3000;
 
-    if(registry.maps.get(map).combat_started) {
+    if(td_map.combat_started) {
+        td_map.combat_time += elapsed_ms;
         for (const auto tower_entity: registry.shotTimers.entities) {
             auto &shot_timer = registry.shotTimers.get(tower_entity);
             shot_timer.time -= elapsed_ms;
 
             if (shot_timer.time < 0) {
                 registry.shotTimers.remove(tower_entity);
+            }
+        }
+        if(!td_map.enemies.empty()){
+            Enemy& next_enemy = registry.enemies.get(td_map.enemies[0]);
+            if(td_map.combat_time > next_enemy.spawn_time) {
+                next_enemy.spawned = true;
+                registry.invisibles.remove(td_map.enemies[0]);
+                td_map.enemies.erase(td_map.enemies.begin());
             }
         }
     }
@@ -104,6 +114,20 @@ void TDSystem::restart_td_fight() {
     map = debug_map;
     Map& map = registry.maps.get(debug_map);
     map.active = true;
+
+    const auto debug_enemy = createEnemy(renderer, {0, 100});
+    enemies.push_back(debug_enemy);
+    Enemy& enemy = registry.enemies.get(debug_enemy);
+    enemy.speed = 100.f;
+
+    const auto debug_enemy2 = createEnemy(renderer, {0, 100});
+    enemies.push_back(debug_enemy2);
+    Enemy& enemy2 = registry.enemies.get(debug_enemy2);
+    enemy2.speed = 100.f;
+    enemy2.spawn_time = 1000;
+
+    map.enemies = {debug_enemy, debug_enemy2};
+
     printf("Created active map\n");
     printf("Mapcount: %lu\n", registry.maps.size());
 
@@ -170,17 +194,19 @@ void TDSystem::handle_aiming() {
     for (uint i = 0; i < aimingRegistry.entities.size(); i++) {
         const Entity tower_entity = aimingRegistry.entities[i];
         const Entity enemy_entity = aimingRegistry.components[i].aimed_entity;
-        auto& tower_motion = registry.motions.get(tower_entity);
-        auto& enemy_motion = registry.motions.get(enemy_entity);
-        const auto d_p = tower_motion.position - enemy_motion.position;
-        const auto angle = atan2(d_p.y, d_p.x);
-        tower_motion.angle = angle;
+        if(registry.enemies.get(enemy_entity).spawned) {
+            auto &tower_motion = registry.motions.get(tower_entity);
+            auto &enemy_motion = registry.motions.get(enemy_entity);
+            const auto d_p = tower_motion.position - enemy_motion.position;
+            const auto angle = atan2(d_p.y, d_p.x);
+            tower_motion.angle = angle;
 
-        if (!registry.shotTimers.has(tower_entity)) {
-            auto& archer = registry.archers.get(tower_entity);
-            registry.shotTimers.emplace(tower_entity);
-            if (registry.archers.has(tower_entity)) {
-                createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
+            if (!registry.shotTimers.has(tower_entity)) {
+                auto &archer = registry.archers.get(tower_entity);
+                registry.shotTimers.emplace(tower_entity);
+                if (registry.archers.has(tower_entity)) {
+                    createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
+                }
             }
         }
     }
@@ -197,17 +223,18 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
     if(key == GLFW_KEY_C && !registry.maps.get(map).combat_started) { // press C to start combat
         realignCards();
         registry.maps.get(map).combat_started = true;
+        registry.maps.get(map).combat_time = 0.f;
 
         // spawn enemies TODO: for more enemies this has to happen elsewhere to not block keyboard input
-        const auto debug_enemy = createEnemy(renderer, {0, 100});
-        enemies.push_back(debug_enemy);
-        Enemy& enemy = registry.enemies.get(debug_enemy);
-        enemy.speed = 100.f;
+        //const auto debug_enemy = createEnemy(renderer, {0, 100});
+        //enemies.push_back(debug_enemy);
+        //Enemy& enemy = registry.enemies.get(debug_enemy);
+        //enemy.speed = 100.f;
 
-        const auto debug_enemy2 = createEnemy(renderer, {0, 100});
-        enemies.push_back(debug_enemy2);
-        Enemy& enemy2 = registry.enemies.get(debug_enemy2);
-        enemy2.speed = 100.f;
+        //const auto debug_enemy2 = createEnemy(renderer, {0, 100});
+        //enemies.push_back(debug_enemy2);
+        //Enemy& enemy2 = registry.enemies.get(debug_enemy2);
+        //enemy2.speed = 100.f;
     }
 }
 

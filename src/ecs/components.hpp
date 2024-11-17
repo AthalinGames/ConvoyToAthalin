@@ -16,6 +16,8 @@ struct Enemy {
     int health = 100;
 	float enemy_progress = 0.0f;
     float speed = 0.f;
+    float spawn_time = 0.f; // spawn time after combat started(in ms)
+    bool spawned = false;
     uint next_checkpoint = 1; // checkpoint 0 is start position
     float section_progress = 0.f;
     bool alive = true;
@@ -92,6 +94,7 @@ struct Map
     float path_length = 0;
     std::vector<Entity> enemies = {};
     bool combat_started = false;
+    float combat_time = 0.f; // time passed since combat started (in ms)
     bool active = false;
 };
 

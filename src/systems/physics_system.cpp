@@ -65,28 +65,31 @@ void PhysicsSystem::step(float elapsed_ms)
     	auto& enemy_container = registry.enemies;
     	for (uint i = 0; i < enemy_container.size(); i++) {
     		Enemy& enemy = enemy_container.components[i];
-    		Motion& motion = registry.motions.get(enemy_container.entities[i]);
-    		float step_seconds = elapsed_ms / 1000.f;
-    		vec2 previous_checkpoint = active_map.checkpoints[enemy.next_checkpoint-1];
-    		if(enemy.next_checkpoint >= active_map.checkpoints.size()) {
-    			break;
-    		}
-    		vec2 next_checkpoint = active_map.checkpoints[enemy.next_checkpoint];
-    		enemy.enemy_progress += (enemy.speed * step_seconds)/active_map.path_length;
-    		float section_length = abs(distance(previous_checkpoint, next_checkpoint)); //TODO maybe already calc this in create_map and save with map
-    		enemy.section_progress += (enemy.speed * step_seconds)/section_length;
-    		//printf("%f\n", enemy.section_progress);
-    		if (enemy.section_progress >= 1) {
-    			enemy.next_checkpoint++;
-    			if(enemy.next_checkpoint >= active_map.checkpoints.size()) {
-    				break;
-    			}
-    			enemy.section_progress = 0.f;
-    			previous_checkpoint = active_map.checkpoints[enemy.next_checkpoint-1];
-    			next_checkpoint = active_map.checkpoints[enemy.next_checkpoint];
-    		}
-    		motion.position = previous_checkpoint + (next_checkpoint - previous_checkpoint) * enemy.section_progress;
-    		//printf("%f %f\n", motion.position[0], motion.position[0]);
+            if(enemy.spawned) {
+                Motion &motion = registry.motions.get(enemy_container.entities[i]);
+                float step_seconds = elapsed_ms / 1000.f;
+                vec2 previous_checkpoint = active_map.checkpoints[enemy.next_checkpoint - 1];
+                if (enemy.next_checkpoint >= active_map.checkpoints.size()) {
+                    break;
+                }
+                vec2 next_checkpoint = active_map.checkpoints[enemy.next_checkpoint];
+                enemy.enemy_progress += (enemy.speed * step_seconds) / active_map.path_length;
+                float section_length = abs(distance(previous_checkpoint,
+                                                    next_checkpoint)); //TODO maybe already calc this in create_map and save with map
+                enemy.section_progress += (enemy.speed * step_seconds) / section_length;
+                //printf("%f\n", enemy.section_progress);
+                if (enemy.section_progress >= 1) {
+                    enemy.next_checkpoint++;
+                    if (enemy.next_checkpoint >= active_map.checkpoints.size()) {
+                        break;
+                    }
+                    enemy.section_progress = 0.f;
+                    previous_checkpoint = active_map.checkpoints[enemy.next_checkpoint - 1];
+                    next_checkpoint = active_map.checkpoints[enemy.next_checkpoint];
+                }
+                motion.position = previous_checkpoint + (next_checkpoint - previous_checkpoint) * enemy.section_progress;
+                //printf("%f %f\n", motion.position[0], motion.position[0]);
+            }
     	}
     }
 
@@ -107,14 +110,18 @@ void PhysicsSystem::step(float elapsed_ms)
 			Motion& motion_j = motion_container.components[j];
 			Entity entity_j = motion_container.entities[j];
 			if ((registry.towers.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j))){
-                if (enemyInTowerRange(motion_i, registry.towers.get(entity_i), motion_j)) {
-					registry.collisions.emplace_with_duplicates(entity_i, entity_j);
-					registry.collisions.emplace_with_duplicates(entity_j, entity_i);
-				}
+                if(registry.enemies.get(entity_j).spawned) {
+                    if (enemyInTowerRange(motion_i, registry.towers.get(entity_i), motion_j)) {
+                        registry.collisions.emplace_with_duplicates(entity_i, entity_j);
+                        registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+                    }
+                }
 			} else if (registry.towers.has(entity_j) && !registry.cards.has(entity_j) && registry.enemies.has(entity_i)) {
-                if (enemyInTowerRange(motion_j, registry.towers.get(entity_j), motion_i)) {
-                    registry.collisions.emplace_with_duplicates(entity_i, entity_j);
-                    registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+                if(registry.enemies.get(entity_i).spawned) {
+                    if (enemyInTowerRange(motion_j, registry.towers.get(entity_j), motion_i)) {
+                        registry.collisions.emplace_with_duplicates(entity_i, entity_j);
+                        registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+                    }
                 }
             }else if (collides(motion_i, motion_j)) {
 				// Create a collisions event
