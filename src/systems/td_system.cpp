@@ -38,6 +38,7 @@ void TDSystem::init(RenderSystem *renderer) {
 bool TDSystem::step(float elapsed_ms) {
     assert(registry.screenStates.components.size() <= 1);
     ScreenState &screen = registry.screenStates.components[0];
+    Map& td_map = registry.maps.get(map);
 
     float min_timer_ms = 3000.f;
     for (Entity entity : registry.deathTimers.entities) {
@@ -60,12 +61,23 @@ bool TDSystem::step(float elapsed_ms) {
     // reduce window brightness if any of the present salmons is dying
     screen.screen_darken_factor = 1 - min_timer_ms / 3000;
 
-    for (const auto tower_entity : registry.shotTimers.entities) {
-        auto& shot_timer = registry.shotTimers.get(tower_entity);
-        shot_timer.time -= elapsed_ms;
+    if(td_map.combat_started) {
+        td_map.combat_time += elapsed_ms;
+        for (const auto tower_entity: registry.shotTimers.entities) {
+            auto &shot_timer = registry.shotTimers.get(tower_entity);
+            shot_timer.time -= elapsed_ms;
 
-        if (shot_timer.time < 0) {
-            registry.shotTimers.remove(tower_entity);
+            if (shot_timer.time < 0) {
+                registry.shotTimers.remove(tower_entity);
+            }
+        }
+        if(!td_map.enemies.empty()){
+            Enemy& next_enemy = registry.enemies.get(td_map.enemies[0]);
+            if(td_map.combat_time > next_enemy.spawn_time) {
+                next_enemy.spawned = true;
+                registry.invisibles.remove(td_map.enemies[0]);
+                td_map.enemies.erase(td_map.enemies.begin());
+            }
         }
     }
     
@@ -102,16 +114,25 @@ void TDSystem::restart_td_fight() {
     map = debug_map;
     Map& map = registry.maps.get(debug_map);
     map.active = true;
-    printf("Created active map\n");
-    printf("Mapcount: %lu\n", registry.maps.size());
-
-    const auto debug_archer = createArcher(renderer, {400, 300});
-    towers.push_back(debug_archer);
 
     const auto debug_enemy = createEnemy(renderer, {0, 100});
     enemies.push_back(debug_enemy);
     Enemy& enemy = registry.enemies.get(debug_enemy);
     enemy.speed = 100.f;
+
+    const auto debug_enemy2 = createEnemy(renderer, {0, 100});
+    enemies.push_back(debug_enemy2);
+    Enemy& enemy2 = registry.enemies.get(debug_enemy2);
+    enemy2.speed = 100.f;
+    enemy2.spawn_time = 1000;
+
+    map.enemies = {debug_enemy, debug_enemy2};
+
+    printf("Created active map\n");
+    printf("Mapcount: %lu\n", registry.maps.size());
+
+    const auto debug_archer = createArcher(renderer, {400, 300});
+    towers.push_back(debug_archer);
 
     const Entity debug_card = createCard(renderer);
     cards.push_back(debug_card);
@@ -132,7 +153,6 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         auto& enemy = registry.enemies.get(second);
         auto& arrow = registry.arrows.get(first);
         enemy.health -= arrow.damage;
-        printf("enemy hit");
         if (enemy.health <= 0) {
             enemy.alive = false;
             // clear tower aiming
@@ -174,17 +194,19 @@ void TDSystem::handle_aiming() {
     for (uint i = 0; i < aimingRegistry.entities.size(); i++) {
         const Entity tower_entity = aimingRegistry.entities[i];
         const Entity enemy_entity = aimingRegistry.components[i].aimed_entity;
-        auto& tower_motion = registry.motions.get(tower_entity);
-        auto& enemy_motion = registry.motions.get(enemy_entity);
-        const auto d_p = tower_motion.position - enemy_motion.position;
-        const auto angle = atan2(d_p.y, d_p.x);
-        tower_motion.angle = angle;
+        if(registry.enemies.get(enemy_entity).spawned) {
+            auto &tower_motion = registry.motions.get(tower_entity);
+            auto &enemy_motion = registry.motions.get(enemy_entity);
+            const auto d_p = tower_motion.position - enemy_motion.position;
+            const auto angle = atan2(d_p.y, d_p.x);
+            tower_motion.angle = angle;
 
-        if (!registry.shotTimers.has(tower_entity)) {
-            auto& archer = registry.archers.get(tower_entity);
-            registry.shotTimers.emplace(tower_entity);
-            if (registry.archers.has(tower_entity)) {
-                createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
+            if (!registry.shotTimers.has(tower_entity)) {
+                auto &archer = registry.archers.get(tower_entity);
+                registry.shotTimers.emplace(tower_entity);
+                if (registry.archers.has(tower_entity)) {
+                    createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
+                }
             }
         }
     }
@@ -198,28 +220,44 @@ bool TDSystem::is_over() const {
 
 void TDSystem::on_key(const int key, int, const int action, const int mods) {
     // TODO fight specific key handling
-    (int) key, action, mods; // dummy to avoid compiler warning
+    if(key == GLFW_KEY_C && !registry.maps.get(map).combat_started) { // press C to start combat
+        realignCards();
+        registry.maps.get(map).combat_started = true;
+        registry.maps.get(map).combat_time = 0.f;
+
+        // spawn enemies TODO: for more enemies this has to happen elsewhere to not block keyboard input
+        //const auto debug_enemy = createEnemy(renderer, {0, 100});
+        //enemies.push_back(debug_enemy);
+        //Enemy& enemy = registry.enemies.get(debug_enemy);
+        //enemy.speed = 100.f;
+
+        //const auto debug_enemy2 = createEnemy(renderer, {0, 100});
+        //enemies.push_back(debug_enemy2);
+        //Enemy& enemy2 = registry.enemies.get(debug_enemy2);
+        //enemy2.speed = 100.f;
+    }
 }
 
 void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow* window) {
     // TODO fight specific mouse handling
-    int lButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-    int rButton_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
 
-    if(dragging) {
-        if(registry.cards.has(dragged_entity)){
-            registry.stationaries.get(dragged_entity).position = pos;
-            registry.stationaries.get(dragged_entity).scale = vec2(0.5 * CARD_WIDTH, 0.5 * CARD_HEIGHT);
-        }
+    if (!registry.maps.get(map).combat_started) {
+        if (dragging) {
+            if (registry.cards.has(dragged_entity)) {
+                registry.stationaries.get(dragged_entity).position = pos;
+                registry.stationaries.get(dragged_entity).scale = vec2(0.5 * CARD_WIDTH, 0.5 * CARD_HEIGHT);
+            }
 
-    } else if(pos[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && pos[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && pos[0] < CARD_AXIS_WIDTH) {
-        auto& cardRegistry = registry.cards;
-        auto card_count = cardRegistry.entities.size();
-        float card_offset = CARD_AXIS_WIDTH/(static_cast<float>(card_count)+1);
-        float x_pos_percent = (pos[0]-card_offset/2)/CARD_AXIS_WIDTH; // offset selection area to middle of card
-        // generate 1 more selection area since card positions are aligned with card_count+1/CARD_AXIS_WIDTH
-        auto selected_card_id = static_cast<unsigned int>(std::floor(x_pos_percent*(card_count+1)));
-        //if(selected_card_id<card_count) {
+        } else if (pos[1] > (CARD_AXIS_HEIGHT - CARD_HEIGHT / 2) && pos[1] < (CARD_AXIS_HEIGHT + CARD_HEIGHT / 2) &&
+                   pos[0] < CARD_AXIS_WIDTH) {
+            auto &cardRegistry = registry.cards;
+            auto card_count = cardRegistry.entities.size();
+            float card_offset = CARD_AXIS_WIDTH / (static_cast<float>(card_count) + 1);
+            float x_pos_percent =
+                    (pos[0] - card_offset / 2) / CARD_AXIS_WIDTH; // offset selection area to middle of card
+            // generate 1 more selection area since card positions are aligned with card_count+1/CARD_AXIS_WIDTH
+            auto selected_card_id = static_cast<unsigned int>(std::floor(x_pos_percent * (card_count + 1)));
+            //if(selected_card_id<card_count) {
             for (std::size_t i = 0; i < card_count; ++i) {
                 Entity card_entity = cardRegistry.entities[i];
                 if (i == selected_card_id) {
@@ -230,110 +268,117 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow* window) {
                     cardRegistry.components[i].selected = false;
                 }
             }
-        //}
+        }
     }
 }
 
 void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* window) {
     printf("mouse button\n");
-    if (dragging) {
-        //double mouse_x;
-        //double mouse_y;
-        //glfwGetCursorPos(window, &mouse_x, &mouse_y);
+    if (!registry.maps.get(map).combat_started) {
+        if (dragging) {
+            //double mouse_x;
+            //double mouse_y;
+            //glfwGetCursorPos(window, &mouse_x, &mouse_y);
 
-        if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
-            dragging = false;
-            registry.cards.get(dragged_entity).dragged = false;
-            realignCards();
+            if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+                dragging = false;
+                registry.cards.get(dragged_entity).dragged = false;
+                realignCards();
 
-        }
-        //if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) { //TODO move this to on_mouse_move
-        //    if (registry.cards.has(dragged_entity)) {
-        //        registry.stationaries.get(dragged_entity).position = vec2(mouse_x, mouse_y);
-        //        registry.stationaries.get(dragged_entity).scale = vec2(200.f, 200.f);
-        //    }
-        //} else
-        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-            //TODO range of placed tower seems really small, maybe only on collision with tower
-            dragging = false;
-            auto maps = registry.maps;
-            const auto &mapProperties = maps.get(map);
-            vec2 card_pos = registry.stationaries.get(dragged_entity).position;
-
-            // block placement on other towers
-            bool place_occupied = false;
-            float tower_blocked_radius = ARCHER_BB_HEIGHT;//abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
-            for (Entity& tower_entity : registry.towers.entities) {
-                if(abs(distance(registry.motions.get(tower_entity).position, card_pos)) < tower_blocked_radius) {
-                    place_occupied = true;
-                }
             }
+            //if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) { //TODO move this to on_mouse_move
+            //    if (registry.cards.has(dragged_entity)) {
+            //        registry.stationaries.get(dragged_entity).position = vec2(mouse_x, mouse_y);
+            //        registry.stationaries.get(dragged_entity).scale = vec2(200.f, 200.f);
+            //    }
+            //} else
+            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+                //TODO range of placed tower seems really small, maybe only on collision with tower
+                dragging = false;
+                auto maps = registry.maps;
+                const auto &mapProperties = maps.get(map);
+                vec2 card_pos = registry.stationaries.get(dragged_entity).position;
 
-            // block placement on enemy path
-            float path_blocked_radius = window_height_px*0.05;
-            if (abs(distance(mapProperties.checkpoints[0], card_pos)) < path_blocked_radius) {
-                place_occupied = true;
-            }
-            for (std::size_t i = 1; i < mapProperties.checkpoints.size(); i++) {
-                vec2 prev_checkpoint = mapProperties.checkpoints[i-1];
-                vec2 curr_checkpoint = mapProperties.checkpoints[i];
-                if (abs(distance(mapProperties.checkpoints[i], card_pos)) < path_blocked_radius) {
-                    place_occupied = true;
-                    break;
-                }
-                vec2 vec_prev = prev_checkpoint - card_pos;
-                vec2 vec_curr = curr_checkpoint - card_pos;
-                vec2 vec_prod = vec_prev * vec_curr;
-                if (!(vec_prod[0] > 0 && vec_prod[1] > 0)) { // cursor between prev and curr checkpoint
-                    float d = abs((curr_checkpoint[1]-prev_checkpoint[1])*card_pos[0]
-                            - (curr_checkpoint[0]-prev_checkpoint[0])*card_pos[1]
-                            + curr_checkpoint[0]*prev_checkpoint[1]
-                            - curr_checkpoint[1]*prev_checkpoint[0]) / distance(prev_checkpoint, curr_checkpoint);
-                    if(d < path_blocked_radius) {
+                // block placement on other towers
+                bool place_occupied = false;
+                float tower_blocked_radius = ARCHER_BB_HEIGHT;//abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
+                for (Entity &tower_entity: registry.towers.entities) {
+                    if (abs(distance(registry.motions.get(tower_entity).position, card_pos)) < tower_blocked_radius) {
                         place_occupied = true;
                     }
                 }
-                //printf("%f %f, %f %f, %f %f\n", a[0], a[1], b[0], b[1], ab[0], ab[1]);
-                //printf("%f %f\n", distance(prev_checkpoint, vec2 (mouse_x, mouse_y)), distance(curr_checkpoint, vec2 (mouse_x, mouse_y)));
-            }
-            if (place_occupied || (card_pos[1] > (CARD_AXIS_HEIGHT-CARD_HEIGHT/2) && card_pos[1] < (CARD_AXIS_HEIGHT+CARD_HEIGHT/2) && card_pos[0] < CARD_AXIS_WIDTH)) {
-                registry.cards.get(dragged_entity).dragged = false;
-            } else { // successfully place card as tower
-                registry.renderRequests.remove(dragged_entity, true);
-                registry.cards.remove(dragged_entity, true);
-                registry.remove_all_components_of(dragged_entity);
-                for(uint i = 0; i < cards.size(); i++){ // delete old card entity
-                    if(cards[i] == dragged_entity){
-                        cards.erase(cards.cbegin()+i);
-                    }
+
+                // block placement on enemy path
+                float path_blocked_radius = window_height_px * 0.05;
+                if (abs(distance(mapProperties.checkpoints[0], card_pos)) < path_blocked_radius) {
+                    place_occupied = true;
                 }
-                dragged_entity = createArcher(renderer, card_pos); // TODO: for some reason the z position does still not work and only 1st placed archer is below card after next archer placed
-                //registry.renderRequests.insert(dragged_entity, {
-                //        Z_MIDDLE,
-                //        TEXTURE_ASSET_ID::ARCHER,
-                //        EFFECT_ASSET_ID::TEXTURED,
-                //        GEOMETRY_BUFFER_ID::SPRITE,
-                //});
-                //auto &motion = registry.motions.emplace(dragged_entity);
-                //motion.position = card_pos;
-                //motion.angle = M_PI / 2;
-                //motion.velocity = vec2(0, 0);
-                //motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
-                //auto &tower = registry.towers.emplace(dragged_entity);
-                //tower.range = 50;
-                printf("rage: %f, z: %f\n", registry.towers.get(dragged_entity).range, registry.renderRequests.get(dragged_entity).z_position);
+                for (std::size_t i = 1; i < mapProperties.checkpoints.size(); i++) {
+                    vec2 prev_checkpoint = mapProperties.checkpoints[i - 1];
+                    vec2 curr_checkpoint = mapProperties.checkpoints[i];
+                    if (abs(distance(mapProperties.checkpoints[i], card_pos)) < path_blocked_radius) {
+                        place_occupied = true;
+                        break;
+                    }
+                    vec2 vec_prev = prev_checkpoint - card_pos;
+                    vec2 vec_curr = curr_checkpoint - card_pos;
+                    vec2 vec_prod = vec_prev * vec_curr;
+                    if (!(vec_prod[0] > 0 && vec_prod[1] > 0)) { // cursor between prev and curr checkpoint
+                        float d = abs((curr_checkpoint[1] - prev_checkpoint[1]) * card_pos[0]
+                                      - (curr_checkpoint[0] - prev_checkpoint[0]) * card_pos[1]
+                                      + curr_checkpoint[0] * prev_checkpoint[1]
+                                      - curr_checkpoint[1] * prev_checkpoint[0]) /
+                                  distance(prev_checkpoint, curr_checkpoint);
+                        if (d < path_blocked_radius) {
+                            place_occupied = true;
+                        }
+                    }
+                    //printf("%f %f, %f %f, %f %f\n", a[0], a[1], b[0], b[1], ab[0], ab[1]);
+                    //printf("%f %f\n", distance(prev_checkpoint, vec2 (mouse_x, mouse_y)), distance(curr_checkpoint, vec2 (mouse_x, mouse_y)));
+                }
+                if (place_occupied || (card_pos[1] > (CARD_AXIS_HEIGHT - CARD_HEIGHT / 2) &&
+                                       card_pos[1] < (CARD_AXIS_HEIGHT + CARD_HEIGHT / 2) &&
+                                       card_pos[0] < CARD_AXIS_WIDTH)) {
+                    registry.cards.get(dragged_entity).dragged = false;
+                } else { // successfully place card as tower
+                    registry.renderRequests.remove(dragged_entity, true);
+                    registry.cards.remove(dragged_entity, true);
+                    registry.remove_all_components_of(dragged_entity);
+                    for (uint i = 0; i < cards.size(); i++) { // delete old card entity
+                        if (cards[i] == dragged_entity) {
+                            cards.erase(cards.cbegin() + i);
+                        }
+                    }
+                    dragged_entity = createArcher(renderer,
+                                                  card_pos); // TODO: for some reason the z position does still not work and only 1st placed archer is below card after next archer placed
+                    //registry.renderRequests.insert(dragged_entity, {
+                    //        Z_MIDDLE,
+                    //        TEXTURE_ASSET_ID::ARCHER,
+                    //        EFFECT_ASSET_ID::TEXTURED,
+                    //        GEOMETRY_BUFFER_ID::SPRITE,
+                    //});
+                    //auto &motion = registry.motions.emplace(dragged_entity);
+                    //motion.position = card_pos;
+                    //motion.angle = M_PI / 2;
+                    //motion.velocity = vec2(0, 0);
+                    //motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+                    //auto &tower = registry.towers.emplace(dragged_entity);
+                    //tower.range = 50;
+                    printf("rage: %f, z: %f\n", registry.towers.get(dragged_entity).range,
+                           registry.renderRequests.get(dragged_entity).z_position);
+                }
+                realignCards();
             }
-            realignCards();
-        }
-    } else {
-        //TODO: move start of dragging here
-        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-            for (uint i = 0; i < registry.cards.entities.size(); i++) {
-                if (registry.cards.components[i].selected) {
-                    registry.cards.components[i].dragged = true;
-                    dragged_entity = registry.cards.entities[i];
-                    dragging = true;
-                    printf("z:%f\n", registry.renderRequests.get(dragged_entity).z_position);
+        } else {
+            //TODO: move start of dragging here
+            if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+                for (uint i = 0; i < registry.cards.entities.size(); i++) {
+                    if (registry.cards.components[i].selected) {
+                        registry.cards.components[i].dragged = true;
+                        dragged_entity = registry.cards.entities[i];
+                        dragging = true;
+                        printf("z:%f\n", registry.renderRequests.get(dragged_entity).z_position);
+                    }
                 }
             }
         }

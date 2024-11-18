@@ -54,7 +54,7 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 
 }
 
 Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
-	const auto entity = Entity();
+	const Entity entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
@@ -67,6 +67,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 
     auto& enemy = registry.enemies.emplace(entity);
     auto& slime = registry.slimes.emplace(entity);
+    registry.invisibles.emplace(entity);
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
@@ -74,6 +75,8 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
+
+
 
 	return entity;
 }
