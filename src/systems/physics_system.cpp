@@ -83,7 +83,7 @@ void PhysicsSystem::step(float elapsed_ms)
                     if (enemy.next_checkpoint >= active_map.checkpoints.size()) {
                         break;
                     }
-                    enemy.section_progress = 0.f;
+                    enemy.section_progress -= 1.f;
                     previous_checkpoint = active_map.checkpoints[enemy.next_checkpoint - 1];
                     next_checkpoint = active_map.checkpoints[enemy.next_checkpoint];
                 }
