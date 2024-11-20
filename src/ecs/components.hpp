@@ -77,7 +77,7 @@ struct Collision
 {
 	// Note, the first object is stored in the ECS container.entities
 	Entity other_entity; // the second object involved in the collision
-	explicit Collision(const Entity& other_entity) { this->other_entity = other_entity; };
+	explicit Collision(const Entity other_entity) : other_entity(other_entity) {};
 };
 
 // Defines attributes of stationary entity
