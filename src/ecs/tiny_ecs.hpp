@@ -11,7 +11,7 @@
 // Unique identifyer for all entities
 class Entity
 {
-	unsigned int id;
+	unsigned int id = 0;
 	static unsigned int id_count; // starts from 1, entit 0 is the default initialization
 public:
 	Entity()
