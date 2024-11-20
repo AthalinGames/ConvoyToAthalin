@@ -211,6 +211,8 @@ void WorldSystem::restart_game() {
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
+	td_fight_launched = false;
+
 	current_td_system.reset(new TDSystem());
 	overview_map = createOverviewMap(renderer);
 	// Generate possible paths
