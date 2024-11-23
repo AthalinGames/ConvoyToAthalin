@@ -61,7 +61,9 @@ struct Archer {
 
 // Arrow
 struct Arrow {
-    int damage = 1;
+    int damage = 50;
+	int max_hitcount = 1;
+	std::set<Entity> hit_entities{};
 };
 
 // All data relevant to the shape and motion of entities

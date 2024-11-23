@@ -153,6 +153,11 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         auto& enemy = registry.enemies.get(second);
         auto& arrow = registry.arrows.get(first);
         enemy.health -= arrow.damage;
+        if (arrow.hit_entities.count(second)) {
+            // Arrow has already hit that enemy
+            return;
+        }
+        arrow.hit_entities.emplace(second);
         if (enemy.health <= 0) {
             enemy.alive = false;
             // clear tower aiming
@@ -163,6 +168,10 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
                 }
             }
             registry.remove_all_components_of(second);
+        }
+        // delete arrow if the amount of enemies has been reached
+        if (arrow.max_hitcount <= arrow.hit_entities.size()) {
+            registry.remove_all_components_of(first);
         }
     } else if (registry.towers.has(first) && registry.enemies.has(second)) {
         auto& tower = registry.towers.get(first);
