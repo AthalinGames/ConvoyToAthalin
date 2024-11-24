@@ -4,6 +4,8 @@
 
 #include "td_system.hpp"
 
+#include "physics_system.hpp"
+
 TDSystem::TDSystem(const unsigned int seed) : dragging(false) {
     rng = std::default_random_engine(seed);
 }
@@ -199,19 +201,26 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
 }
 
 void TDSystem::handle_aiming() {
-    auto& aimingRegistry = registry.aimingAts;
+    const auto& aimingRegistry = registry.aimingAts;
     for (uint i = 0; i < aimingRegistry.entities.size(); i++) {
         const Entity tower_entity = aimingRegistry.entities[i];
         const Entity enemy_entity = aimingRegistry.components[i].aimed_entity;
         if(registry.enemies.get(enemy_entity).spawned) {
             auto &tower_motion = registry.motions.get(tower_entity);
             auto &enemy_motion = registry.motions.get(enemy_entity);
-            const auto d_p = tower_motion.position - enemy_motion.position;
-            const auto angle = atan2(d_p.y, d_p.x);
+            auto d_p = tower_motion.position - enemy_motion.position;
+            if (registry.archers.has(tower_entity)) {
+                Enemy& enemy = registry.enemies.get(enemy_entity);
+                const Archer& archer = registry.archers.get(tower_entity);
+                const Map& map = registry.maps.get(this->map);
+                const float arrow_fly_time = length(d_p) / archer.arrow_speed; // estimation as the enemy also moves during this time TODO: think about considering enemy speed
+                d_p = tower_motion.position - PhysicsSystem::calculate_enemy_position(enemy, map, arrow_fly_time, false);
+            }
+            const float angle = atan2(d_p.y, d_p.x);
             tower_motion.angle = angle;
 
             if (!registry.shotTimers.has(tower_entity)) {
-                auto &archer = registry.archers.get(tower_entity);
+                const auto &archer = registry.archers.get(tower_entity);
                 registry.shotTimers.emplace(tower_entity);
                 if (registry.archers.has(tower_entity)) {
                     createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
