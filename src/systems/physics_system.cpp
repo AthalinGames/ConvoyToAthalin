@@ -60,34 +60,15 @@ void PhysicsSystem::step(float elapsed_ms)
 	//printf("Active maps: %lu\n", active_maps.size());
 	//printf("Map count: %lu\n", map_container.size());
     if (active_maps.size() == 1) {
-	    Map& active_map = active_maps[0];
+	    const Map& active_map = active_maps[0];
 
     	auto& enemy_container = registry.enemies;
     	for (uint i = 0; i < enemy_container.size(); i++) {
     		Enemy& enemy = enemy_container.components[i];
             if(enemy.spawned) {
                 Motion &motion = registry.motions.get(enemy_container.entities[i]);
-                float step_seconds = elapsed_ms / 1000.f;
-                vec2 previous_checkpoint = active_map.checkpoints[enemy.next_checkpoint - 1];
-                if (enemy.next_checkpoint >= active_map.checkpoints.size()) {
-                    break;
-                }
-                vec2 next_checkpoint = active_map.checkpoints[enemy.next_checkpoint];
-                enemy.enemy_progress += (enemy.speed * step_seconds) / active_map.path_length;
-                float section_length = abs(distance(previous_checkpoint,
-                                                    next_checkpoint)); //TODO maybe already calc this in create_map and save with map
-                enemy.section_progress += (enemy.speed * step_seconds) / section_length;
-                //printf("%f\n", enemy.section_progress);
-                if (enemy.section_progress >= 1) {
-                    enemy.next_checkpoint++;
-                    if (enemy.next_checkpoint >= active_map.checkpoints.size()) {
-                        break;
-                    }
-                    enemy.section_progress -= 1.f;
-                    previous_checkpoint = active_map.checkpoints[enemy.next_checkpoint - 1];
-                    next_checkpoint = active_map.checkpoints[enemy.next_checkpoint];
-                }
-                motion.position = previous_checkpoint + (next_checkpoint - previous_checkpoint) * enemy.section_progress;
+                const float step_seconds = elapsed_ms / 1000.f;
+            	motion.position = calculate_enemy_position(enemy, active_map, step_seconds, true);
                 //printf("%f %f\n", motion.position[0], motion.position[0]);
             }
     	}
@@ -136,4 +117,41 @@ void PhysicsSystem::step(float elapsed_ms)
 	// TODO A2: HANDLE PEBBLE collisions HERE
 	// DON'T WORRY ABOUT THIS UNTIL ASSIGNMENT 2
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+}
+
+vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, const Map& current_map, const float seconds, const bool update_enemy) {
+	vec2 previous_checkpoint = current_map.checkpoints[enemy.next_checkpoint - 1];
+	if (enemy.next_checkpoint >= current_map.checkpoints.size()) {
+		return previous_checkpoint;
+	}
+	vec2 next_checkpoint = current_map.checkpoints[enemy.next_checkpoint];
+	float enemy_progress = enemy.enemy_progress;
+	enemy_progress += (enemy.speed * seconds) / current_map.path_length;
+	if (update_enemy) {
+		enemy.enemy_progress = enemy_progress;
+	}
+	const float section_length = abs(distance(previous_checkpoint,
+										next_checkpoint)); //TODO maybe already calc this in create_map and save with map
+	float section_progress = enemy.section_progress;
+	section_progress += (enemy.speed * seconds) / section_length;
+	if (update_enemy) {
+		enemy.section_progress = section_progress;
+	}
+	if (section_progress >= 1) {
+		uint next_checkpoint_index = enemy.next_checkpoint;
+		next_checkpoint_index++;
+		if (update_enemy) {
+			enemy.next_checkpoint = next_checkpoint_index;
+		}
+		if (next_checkpoint_index >= current_map.checkpoints.size()) {
+			return next_checkpoint;
+		}
+		section_progress -= 1.f;
+		if (update_enemy) {
+			enemy.section_progress = section_progress;
+		}
+		previous_checkpoint = current_map.checkpoints[next_checkpoint_index - 1];
+		next_checkpoint = current_map.checkpoints[next_checkpoint_index];
+	}
+	return previous_checkpoint + (next_checkpoint - previous_checkpoint) * section_progress;
 }
