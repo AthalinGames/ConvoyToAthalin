@@ -217,7 +217,7 @@ void TDSystem::handle_aiming() {
             tower_motion.angle = angle;
             if (registry.archers.has(tower_entity)) {
                 auto &bow_motion = registry.motions.get(registry.archers.get(tower_entity).bow);
-                bow_motion.angle = angle;
+                bow_motion.angle = angle + (2 * M_PI) - (M_PI_2/2);
             }
 
             if (!registry.shotTimers.has(tower_entity)) {
