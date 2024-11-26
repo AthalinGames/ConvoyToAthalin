@@ -11,16 +11,19 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 		return;
 	vec2 position;
     float angle;
+    bool use_direction_sprite;
     vec2 scale;
     if (registry.motions.has(entity)) {
         Motion &motion = registry.motions.get(entity);
         position = motion.position;
         angle = motion.angle;
+        use_direction_sprite = motion.use_direction_sprite;
         scale = motion.scale;
     } else {
         Stationary &map = registry.stationaries.get(entity);
         position = map.position;
         angle = map.angle;
+        use_direction_sprite = map.use_direction_sprite;
         scale = map.scale;
     }
 	// Transformation code, see Rendering and Transformation in the template
@@ -28,11 +31,34 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	// thus ORDER IS IMPORTANT
 	Transform transform;
 	transform.translate(position);
-	transform.rotate(angle);
+    // TODO: if bow_and_arrow rotate, if character sprite choose view direction sprite
+    if (!use_direction_sprite) {
+        transform.rotate(angle);
+    }
 	transform.scale(scale);
 
 	assert(registry.renderRequests.has(entity));
-	const RenderRequest &render_request = registry.renderRequests.get(entity);
+	//const
+    RenderRequest &render_request = registry.renderRequests.get(entity);
+
+    if (use_direction_sprite) { // decide cardinal directions by angle in pi/4
+        if (registry.archers.has(entity)) { // TODO: add bow layering to be behind archer from 0 to pi and in front from pi to 2 pi
+            float angle_by_pi = angle / M_PI;
+            if ((angle_by_pi >= 0. && angle_by_pi < 0.25) || (angle_by_pi >= 1.75 && angle_by_pi < 2.)) {
+                //look right
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_R;
+            } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
+                //look up
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_U;
+            } else if (angle_by_pi >= 0.75 && angle_by_pi < 1.25) {
+                //look left
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_L;
+            } else if (angle_by_pi >= 1.25 && angle_by_pi < 1.75) {
+                //look down
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
+            }
+        }
+    }
 
 	const auto used_effect_enum = static_cast<GLuint>(render_request.used_effect);
 	assert(used_effect_enum != static_cast<GLuint>(EFFECT_ASSET_ID::EFFECT_COUNT));

@@ -69,7 +69,22 @@ bool TDSystem::step(float elapsed_ms) {
 
             if (shot_timer.time < 0) {
                 registry.shotTimers.remove(tower_entity);
+
             }
+            if (registry.archers.has(tower_entity)) {
+                const auto &bow_entity = registry.archers.get(tower_entity).bow;
+                if (shot_timer.time < 0) {
+                    //change bow to empty
+                    registry.renderRequests.get(bow_entity).used_texture = TEXTURE_ASSET_ID::BOW3;
+                } else if (shot_timer.time < 150.) {
+                    //change bow to drawn
+                    registry.renderRequests.get(bow_entity).used_texture = TEXTURE_ASSET_ID::BOW2;
+                } else if (shot_timer.time < 500.) {
+                    //change bow to loaded
+                    registry.renderRequests.get(bow_entity).used_texture = TEXTURE_ASSET_ID::BOW1;
+                }
+            }
+
         }
         if(!td_map.enemies.empty()){
             Enemy& next_enemy = registry.enemies.get(td_map.enemies[0]);
@@ -200,6 +215,10 @@ void TDSystem::handle_aiming() {
             const auto d_p = tower_motion.position - enemy_motion.position;
             const auto angle = atan2(d_p.y, d_p.x);
             tower_motion.angle = angle;
+            if (registry.archers.has(tower_entity)) {
+                auto &bow_motion = registry.motions.get(registry.archers.get(tower_entity).bow);
+                bow_motion.angle = angle;
+            }
 
             if (!registry.shotTimers.has(tower_entity)) {
                 auto &archer = registry.archers.get(tower_entity);
