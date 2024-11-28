@@ -215,7 +215,7 @@ void TDSystem::handle_aiming() {
 }
 
 bool TDSystem::is_over() const {
-    return !running;
+    return !running || (registry.enemies.components.empty() && registry.maps.get(map).enemies.empty());
 }
 
 void TDSystem::on_key(const int key, int, const int action, const int mods) {
@@ -351,6 +351,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
                     }
                     dragged_entity = createArcher(renderer,
                                                   card_pos); // TODO: for some reason the z position does still not work and only 1st placed archer is below card after next archer placed
+                    towers.emplace_back(dragged_entity);
                     //registry.renderRequests.insert(dragged_entity, {
                     //        Z_MIDDLE,
                     //        TEXTURE_ASSET_ID::ARCHER,
