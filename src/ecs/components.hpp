@@ -272,3 +272,38 @@ struct RenderRequest {
 	GEOMETRY_BUFFER_ID used_geometry = GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 };
 
+// Collision Definitions
+// Positions are defined by percentages of texture positions (top left is 0, 0 and bottom right is 1, 1)
+// For proper positions this grid must be shifted, so that 0, 0 is in the center
+// Final Transformations are done when calculating the collision
+constexpr vec2 grid_shift{0.5, 0.5};
+
+const std::vector basic_bounding_box {
+	vec2{0, 0} - grid_shift,
+	vec2{1, 0} - grid_shift,
+	vec2{1, 1} - grid_shift,
+	vec2{0, 1} - grid_shift
+};
+
+const std::vector slime_collision_poly {
+	vec2{0.22, 0} - grid_shift,
+	vec2{0.78, 0} - grid_shift,
+	vec2{0.91, 0.88} - grid_shift,
+	vec2{0.88, 0.59} - grid_shift,
+	vec2{0.75, 0.47} - grid_shift,
+	vec2{0.59, 0.41} - grid_shift,
+	vec2{0.41, 0.41} - grid_shift,
+	vec2{0.25, 0.47} - grid_shift,
+	vec2{0.13, 0.59} - grid_shift,
+	vec2{0.09, 0.88} - grid_shift
+};
+
+inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id) {
+	switch (id) {
+		case TEXTURE_ASSET_ID::SLIME:
+			return slime_collision_poly;
+		default: // This is just the bounding box of the texture
+			return basic_bounding_box;
+	}
+}
+

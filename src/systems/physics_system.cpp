@@ -27,6 +27,52 @@ bool collides(const Motion& motion1, const Motion& motion2)
 	return false;
 }
 
+bool pointInsidePoly(const vec2& point, const std::vector<vec2>& polygon) {
+	for (int i = 0; i < polygon.size(); ++i) {
+		const vec2 p0 = polygon[i];
+		const vec2 p1 = polygon[(i + 1) % polygon.size()];
+		// Calculate if point is on the left of the line
+		if (const auto result = point.x * (p1.y - p0.y) + point.y * (p0.x - p1.x) + p0.x * (p1.y - p0.y) - p0.y * (p1.x - p0.y);
+			result <= 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// This assumes that both polys are convex
+bool collidesPoly(const Motion& motion1, const Motion& motion2, const std::vector<vec2>& poly1, const std::vector<vec2>& poly2) {
+	Transform tf1, tf2;
+	tf1.translate(motion1.position);
+	tf2.translate(motion2.position);
+	tf1.rotate(motion1.angle);
+	tf2.rotate(motion2.angle);
+	tf1.scale(motion1.scale);
+	tf2.scale(motion2.scale);
+	// Transform both polys
+	auto poly1TF = std::vector<vec2>(poly1.size());
+	auto poly2TF = std::vector<vec2>(poly2.size());
+	for (int i = 0; i < poly1.size(); ++i) {
+		poly1TF[i] = tf1 * poly1[i];
+	}
+	for (int i = 0; i < poly2.size(); ++i) {
+		poly2TF[i] = tf2 * poly2[i];
+	}
+	// Check if point of poly2 is inside poly1
+	for (const auto& poly2_pos : poly2TF) {
+		if (pointInsidePoly(poly2_pos, poly1TF)) {
+			return true;
+		}
+	}
+	// Check if point of poly1 is inside poly2
+	for (const auto& poly1_pos : poly1TF) {
+		if (pointInsidePoly(poly1_pos, poly2TF)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool enemyInTowerRange(const Motion& tower_motion, const Tower& tower, const Motion& enemy_motion) {
 	const vec2 d_p = tower_motion.position - enemy_motion.position;
 	const float dist_squared = dot(d_p, d_p);
@@ -104,11 +150,16 @@ void PhysicsSystem::step(float elapsed_ms)
                         registry.collisions.emplace_with_duplicates(entity_j, entity_i);
                     }
                 }
-            }else if (collides(motion_i, motion_j)) {
-				// Create a collisions event
-				// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
-				registry.collisions.emplace_with_duplicates(entity_i, entity_j);
-				registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+            } else if (collides(motion_i, motion_j)) {
+            	// Check if coarse collision is an actual collision
+            	auto& poly_i = getCollisionMeshOfTexture(registry.renderRequests.get(entity_i).used_texture);
+            	auto& poly_j = getCollisionMeshOfTexture(registry.renderRequests.get(entity_j).used_texture);
+            	if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
+            		// Create a collisions event
+            		// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
+            		registry.collisions.emplace_with_duplicates(entity_i, entity_j);
+            		registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+            	}
 			}
 		}
 	}
