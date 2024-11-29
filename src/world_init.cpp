@@ -58,9 +58,9 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = static_cast<float>(atan2(dir.y, dir.x)) + (2 * M_PI) - (M_PI_2/2);
+	motion.angle = static_cast<float>(atan2(dir.y, dir.x)) + (M_PI_2/2) + M_PI;
 	motion.velocity = -velocity * normalize(dir);
-	motion.scale = vec2({-ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
+	motion.scale = vec2({ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
 
     Arrow& arrow = registry.arrows.emplace(entity);
 
