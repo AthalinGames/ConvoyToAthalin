@@ -298,10 +298,19 @@ const std::vector slime_collision_poly {
 	vec2{0.09, 0.88} - grid_shift
 };
 
+const std::vector arrow_collision_poly {
+	vec2{0.09, 0.52} - grid_shift,
+	vec2{0.92, 0.52} - grid_shift,
+	vec2{0.92, 0.40} - grid_shift,
+	vec2{0.09, 0.40} - grid_shift
+};
+
 inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id) {
 	switch (id) {
 		case TEXTURE_ASSET_ID::SLIME:
 			return slime_collision_poly;
+		case TEXTURE_ASSET_ID::ARROW:
+			return arrow_collision_poly;
 		default: // This is just the bounding box of the texture
 			return basic_bounding_box;
 	}
