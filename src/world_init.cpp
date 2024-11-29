@@ -1,7 +1,13 @@
 #include "world_init.hpp"
 #include "ecs/tiny_ecs_registry.hpp"
 
-// TODO: create player base
+Entity createPlayer() {
+	const auto entity = Entity();
+
+	registry.players.emplace(entity);
+
+	return entity;
+}
 
 Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	const auto entity = Entity();

@@ -35,6 +35,8 @@ constexpr float Z_MIDDLE = 0;
 constexpr float Z_FOREGROUND = -1;
 
 // the player
+Entity createPlayer();
+// archer tower
 Entity createArcher(RenderSystem* renderer, vec2 pos);
 // the arrows
 Entity createArrow(RenderSystem* renderer, vec2 pos, float velocity, vec2 dir);

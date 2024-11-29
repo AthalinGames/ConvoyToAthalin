@@ -8,7 +8,10 @@
 
 // Player component
 struct Player {
-
+	int health = 100;
+	int maxHealth = 100;
+	int coins = 0;
+	std::vector<Entity> owned_cards;
 };
 
 // Enemy components
@@ -21,6 +24,7 @@ struct Enemy {
     uint next_checkpoint = 1; // checkpoint 0 is start position
     float section_progress = 0.f;
     bool alive = true;
+	int damage = 5;
 };
 
 struct Slime {

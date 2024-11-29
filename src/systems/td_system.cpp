@@ -82,6 +82,26 @@ bool TDSystem::step(float elapsed_ms) {
             }
         }
     }
+
+    // Check if enemy completed Path
+    for (std::size_t i = 0; i < registry.enemies.size(); ++i) {
+        const auto& enemy = registry.enemies.components[i];
+        const Entity enemy_entity = registry.enemies.entities[i];
+        if (enemy.enemy_progress >= 1.0f && enemy.alive) {
+            for (Player &player : registry.players.components) {
+                player.health -= enemy.damage;
+            }
+            // Delete damaging entity
+            registry.remove_all_components_of(enemy_entity);
+            enemies.erase(enemy_entity);
+        }
+    }
+    // Check if player still has health
+    for (const auto& player : registry.players.components) {
+        if (player.health <= 0) {
+            running = false;
+        }
+    }
     
     return true;
 }
@@ -118,12 +138,12 @@ void TDSystem::restart_td_fight() {
     map.active = true;
 
     const auto debug_enemy = createEnemy(renderer, {0, 100});
-    enemies.push_back(debug_enemy);
+    enemies.emplace(debug_enemy);
     Enemy& enemy = registry.enemies.get(debug_enemy);
     enemy.speed = 100.f;
 
     const auto debug_enemy2 = createEnemy(renderer, {0, 100});
-    enemies.push_back(debug_enemy2);
+    enemies.emplace(debug_enemy2);
     Enemy& enemy2 = registry.enemies.get(debug_enemy2);
     enemy2.speed = 100.f;
     enemy2.spawn_time = 1000;
@@ -132,9 +152,6 @@ void TDSystem::restart_td_fight() {
 
     printf("Created active map\n");
     printf("Mapcount: %lu\n", registry.maps.size());
-
-    const auto debug_archer = createArcher(renderer, {400, 300});
-    towers.push_back(debug_archer);
 
     const Entity debug_card = createCard(renderer);
     cards.push_back(debug_card);

@@ -208,10 +208,16 @@ void WorldSystem::restart_game() {
 	    registry.remove_all_components_of(registry.stationaries.entities.back());
     }
 
+	//Remove player state
+	while (!registry.players.entities.empty()) {
+		registry.remove_all_components_of(registry.players.entities.back());
+	}
+
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
 	td_fight_launched = false;
+	createPlayer();
 
 	current_td_system.reset(new TDSystem());
 	overview_map = createOverviewMap(renderer);
