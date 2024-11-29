@@ -14,7 +14,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	motion.angle = M_PI;
     motion.use_direction_sprite = true;
 	motion.velocity = vec2(0, 0);
-	motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+	motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
 
 	auto& tower = registry.towers.emplace(entity);
 	tower.range = 50;
@@ -38,7 +38,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
     bow_motion.position = pos;
     bow_motion.angle = M_PI/2;
     bow_motion.velocity = vec2(0, 0);
-    bow_motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+    bow_motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
 
     registry.renderRequests.insert(bow, {
             Z_MIDDLE,
@@ -84,7 +84,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 	motion.position = pos;
 	motion.angle = 0.0f;
 	motion.velocity = vec2(0, 0);
-	motion.scale = vec2({-SLIME_WIDTH, SLIME_HEIGHT});
+	motion.scale = vec2({SLIME_WIDTH, SLIME_HEIGHT});
 
     auto& enemy = registry.enemies.emplace(entity);
     auto& slime = registry.slimes.emplace(entity);

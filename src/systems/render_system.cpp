@@ -1,5 +1,5 @@
-#include <cmath>
 // internal
+#include "world_init.hpp"
 #include "render_system.hpp"
 #include <SDL.h>
 
@@ -27,6 +27,11 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
         use_direction_sprite = map.use_direction_sprite;
         scale = map.scale;
     }
+
+    assert(registry.renderRequests.has(entity));
+    //const
+    RenderRequest &render_request = registry.renderRequests.get(entity);
+
 	// Transformation code, see Rendering and Transformation in the template
 	// specification for more info Incrementally updates transformation matrix,
 	// thus ORDER IS IMPORTANT
@@ -36,37 +41,39 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
     if (!use_direction_sprite) {
         transform.rotate(angle);
         if (registry.bows.has(entity)) {
-            // if ()
+            if (angle < 0) {
+                render_request.z_position = Z_BACKGROUND;
+            } else {
+                render_request.z_position = Z_FOREGROUND;
+            }
         }
-    }
-	transform.scale(scale);
-
-	assert(registry.renderRequests.has(entity));
-	//const
-    RenderRequest &render_request = registry.renderRequests.get(entity);
-
-    if (use_direction_sprite) { // decide cardinal directions by angle in pi/4
-        if (registry.archers.has(entity)) { // TODO: add bow layering to be behind archer from 0 to pi and in front from pi to 2 pi
-            float angle_by_pi = angle / M_PI; //TODO: use modf PI_2
-            printf("angle %f\n", angle);
+    } else { // decide cardinal directions by angle in pi/4
+        if (registry.archers.has(entity)) {
+            float angle_by_pi = angle / M_PI;
+            //printf("angle %f\n", angle);
             float temp_whole;
-            angle_by_pi = std::modf(angle_by_pi, &temp_whole);
+            //angle_by_pi = std::modf(angle_by_pi, &temp_whole);
             //printf("angle mod %f\n", angle_by_pi);
             if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
-                //look right
-                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_R;
+                //look left
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_L;
             } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
                 //look up
                 render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_U;
-            } else if (angle_by_pi >= 0.75 && angle_by_pi < -0.75) {
-                //look left
-                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_L;
+            } else if (angle_by_pi >= 0.75 || angle_by_pi < -0.75) {
+                //look right
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_R;
             } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
                 //look down
                 render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
             }
         }
     }
+	transform.scale(scale);
+
+    //if (use_direction_sprite) {
+    //
+    //}
 
 	const auto used_effect_enum = static_cast<GLuint>(render_request.used_effect);
 	assert(used_effect_enum != static_cast<GLuint>(EFFECT_ASSET_ID::EFFECT_COUNT));
