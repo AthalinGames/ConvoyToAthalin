@@ -51,6 +51,12 @@ struct Transform {
 	void scale(vec2 scale);
 	void rotate(float radians);
 	void translate(vec2 offset);
+
+	vec2 operator*(const std::vector<vec2>::value_type & vec) const {
+		const vec3 p = { vec.x, vec.y, 1.0f };
+		vec3 res = mat * p;
+		return { res.x, res.y };
+	};
 };
 
 bool gl_has_errors();
