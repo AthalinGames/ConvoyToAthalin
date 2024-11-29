@@ -1,3 +1,4 @@
+#include <cmath>
 // internal
 #include "render_system.hpp"
 #include <SDL.h>
@@ -34,6 +35,9 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
     // TODO: if bow_and_arrow rotate, if character sprite choose view direction sprite
     if (!use_direction_sprite) {
         transform.rotate(angle);
+        if (registry.bows.has(entity)) {
+            // if ()
+        }
     }
 	transform.scale(scale);
 
@@ -43,17 +47,21 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 
     if (use_direction_sprite) { // decide cardinal directions by angle in pi/4
         if (registry.archers.has(entity)) { // TODO: add bow layering to be behind archer from 0 to pi and in front from pi to 2 pi
-            float angle_by_pi = angle / M_PI;
-            if ((angle_by_pi >= 0. && angle_by_pi < 0.25) || (angle_by_pi >= 1.75 && angle_by_pi < 2.)) {
+            float angle_by_pi = angle / M_PI; //TODO: use modf PI_2
+            printf("angle %f\n", angle);
+            float temp_whole;
+            angle_by_pi = std::modf(angle_by_pi, &temp_whole);
+            //printf("angle mod %f\n", angle_by_pi);
+            if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
                 //look right
                 render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_R;
             } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
                 //look up
                 render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_U;
-            } else if (angle_by_pi >= 0.75 && angle_by_pi < 1.25) {
+            } else if (angle_by_pi >= 0.75 && angle_by_pi < -0.75) {
                 //look left
                 render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_L;
-            } else if (angle_by_pi >= 1.25 && angle_by_pi < 1.75) {
+            } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
                 //look down
                 render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
             }

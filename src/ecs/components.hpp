@@ -65,6 +65,11 @@ struct Arrow {
     int damage = 1;
 };
 
+// denotes Bow entity
+struct Bow {
+
+};
+
 // All data relevant to the shape and motion of entities
 struct Motion {
 	vec2 position = { 0.f, 0.f };

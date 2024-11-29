@@ -11,7 +11,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = M_PI/2 + M_PI;
+	motion.angle = M_PI;
     motion.use_direction_sprite = true;
 	motion.velocity = vec2(0, 0);
 	motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
@@ -28,6 +28,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	});
 
     const auto bow = Entity();
+    registry.bows.emplace(bow);
     registry.archers.get(entity).bow = bow;
 
     Mesh& bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
@@ -35,7 +36,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 
     Motion& bow_motion = registry.motions.emplace(bow);
     bow_motion.position = pos;
-    bow_motion.angle = M_PI/2 + M_PI;
+    bow_motion.angle = M_PI/2;
     bow_motion.velocity = vec2(0, 0);
     bow_motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
 
