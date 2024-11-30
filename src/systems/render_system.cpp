@@ -2,6 +2,8 @@
 #include "render_system.hpp"
 #include <SDL.h>
 
+#include "imgui.h"
+#include "imgui_impl_opengl3.h"
 #include "ecs/tiny_ecs_registry.hpp"
 
 void RenderSystem::drawTexturedMesh(const Entity entity,
@@ -240,6 +242,10 @@ void RenderSystem::draw()
 
 	// Truely render to the screen
 	drawToScreen();
+
+	// Render ImGui Stuff
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	// flicker-free display with a double buffer
 	glfwSwapBuffers(window);

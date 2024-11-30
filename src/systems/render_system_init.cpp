@@ -13,6 +13,10 @@
 #include <iostream>
 #include <sstream>
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 // World initialization
 bool RenderSystem::init(GLFWwindow* window_arg)
 {
@@ -59,6 +63,7 @@ bool RenderSystem::init(GLFWwindow* window_arg)
     initializeGlTextures();
 	initializeGlEffects();
 	initializeGlGeometryBuffers();
+	initializeImGui();
 
 	return true;
 }
@@ -223,6 +228,17 @@ void RenderSystem::initializeGlGeometryBuffers()
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE, screen_vertices, screen_indices);
 }
 
+void RenderSystem::initializeImGui() {
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init();
+}
+
 RenderSystem::~RenderSystem()
 {
 	// Don't need to free gl resources since they last for as long as the program,
@@ -244,6 +260,11 @@ RenderSystem::~RenderSystem()
 	// remove all entities created by the render system
 	while (!registry.renderRequests.entities.empty())
 	    registry.remove_all_components_of(registry.renderRequests.entities.back());
+
+	// Shutdown ImGui
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 }
 
 // Initialize the screen texture from a standard sprite

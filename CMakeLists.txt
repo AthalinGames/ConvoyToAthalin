@@ -28,7 +28,25 @@ endif()
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ext/project_path.hpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/ext/project_path.hpp")
 
 # You can switch to use the file GLOB for simplicity but at your own risk
-file(GLOB SOURCE_FILES src/*.cpp src/*.hpp src/*/*.cpp src/*/*.hpp)
+file(GLOB SOURCE_FILES
+        # Include Project Files
+        src/*.cpp
+        src/*.hpp
+        src/*/*.cpp
+        src/*/*.hpp)
+
+file(GLOB IMGUI_SOURCES
+        ext/imgui/*.h
+        ext/imgui/*.cpp
+
+        ext/imgui/backends/imgui_impl_glfw.h
+        ext/imgui/backends/imgui_impl_glfw.cpp
+        ext/imgui/backends/imgui_impl_opengl3.h
+        ext/imgui/backends/imgui_impl_opengl3.cpp
+        ext/imgui/backends/imgui_impl_opengl3_loader.h
+)
+
+include_directories(ext/imgui ext/imgui/backends)
 
 # external libraries will be installed into /usr/local/include and /usr/local/lib but that folder is not automatically included in the search on MACs
 if (IS_OS_MAC)
@@ -36,7 +54,7 @@ if (IS_OS_MAC)
   link_directories(/usr/local/lib)
 endif()
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${IMGUI_SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC src/)
 
 # Added this so policy CMP0065 doesn't scream
