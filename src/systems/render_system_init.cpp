@@ -64,6 +64,7 @@ bool RenderSystem::init(GLFWwindow* window_arg)
 	initializeGlEffects();
 	initializeGlGeometryBuffers();
 	initializeImGui();
+	initializeFont();
 
 	return true;
 }
@@ -108,16 +109,16 @@ void RenderSystem::initializeGlEffects()
 
 // One could merge the following two functions as a template function...
 template <class T>
-void RenderSystem::bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices, std::vector<uint16_t> indices)
+void RenderSystem::bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices, const std::vector<uint16_t> indices, const GLenum drawType)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffers[static_cast<uint>(gid)]);
 	glBufferData(GL_ARRAY_BUFFER,
-		sizeof(vertices[0]) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
+		sizeof(vertices[0]) * vertices.size(), vertices.data(), drawType);
 	gl_has_errors();
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffers[static_cast<uint>(gid)]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-		sizeof(indices[0]) * indices.size(), indices.data(), GL_STATIC_DRAW);
+		sizeof(indices[0]) * indices.size(), indices.data(), drawType);
 	gl_has_errors();
 }
 
@@ -166,34 +167,6 @@ void RenderSystem::initializeGlGeometryBuffers()
 	const std::vector<uint16_t> textured_indices = { 0, 3, 1, 1, 3, 2 };
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SPRITE, textured_vertices, textured_indices);
 
-	////////////////////////
-	// Initialize pebble
-	/* TODO: Something similar to pebbles needed for us?
-	std::vector<ColoredVertex> pebble_vertices;
-	std::vector<uint16_t> pebble_indices;
-	constexpr float z = -0.1f;
-	constexpr int NUM_TRIANGLES = 62;
-
-	for (int i = 0; i < NUM_TRIANGLES; i++) {
-		const float t = float(i) * M_PI * 2.f / float(NUM_TRIANGLES - 1);
-		pebble_vertices.push_back({});
-		pebble_vertices.back().position = { 0.5 * cos(t), 0.5 * sin(t), z };
-		pebble_vertices.back().color = { 0.8, 0.8, 0.8 };
-	}
-	pebble_vertices.push_back({});
-	pebble_vertices.back().position = { 0, 0, 0 };
-	pebble_vertices.back().color = { 0.8, 0.8, 0.8 };
-	for (int i = 0; i < NUM_TRIANGLES; i++) {
-		pebble_indices.push_back((uint16_t)i);
-		pebble_indices.push_back((uint16_t)((i + 1) % NUM_TRIANGLES));
-		pebble_indices.push_back((uint16_t)NUM_TRIANGLES);
-	}
-	int geom_index = (int)GEOMETRY_BUFFER_ID::PEBBLE;
-	meshes[geom_index].vertices = pebble_vertices;
-	meshes[geom_index].vertex_indices = pebble_indices;
-	bindVBOandIBO(GEOMETRY_BUFFER_ID::PEBBLE, meshes[geom_index].vertices, meshes[geom_index].vertex_indices);
-	*/
-
 	//////////////////////////////////
 	// Initialize debug line
 
@@ -226,6 +199,22 @@ void RenderSystem::initializeGlGeometryBuffers()
 	// Counterclockwise as it's the default opengl front winding direction.
 	const std::vector<uint16_t> screen_indices = { 0, 1, 2 };
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE, screen_vertices, screen_indices);
+
+	///////////////////////////////////////////////////////
+	// Initialize text quads
+	std::vector<TexturedVertex> text_vertices(4);
+	textured_vertices[0].position = { -1.f/2, +1.f/2, 0.f };
+	textured_vertices[1].position = { +1.f/2, +1.f/2, 0.f };
+	textured_vertices[2].position = { +1.f/2, -1.f/2, 0.f };
+	textured_vertices[3].position = { -1.f/2, -1.f/2, 0.f };
+	textured_vertices[0].texcoord = { 0.f, 1.f };
+	textured_vertices[1].texcoord = { 1.f, 1.f };
+	textured_vertices[2].texcoord = { 1.f, 0.f };
+	textured_vertices[3].texcoord = { 0.f, 0.f };
+
+	// Counterclockwise as it's the default opengl front winding direction.
+	const std::vector<uint16_t> text_indices = { 0, 3, 1, 1, 3, 2 };
+	bindVBOandIBO(GEOMETRY_BUFFER_ID::TEXT_QUAD, text_vertices, text_indices, GL_DYNAMIC_DRAW);
 }
 
 void RenderSystem::initializeImGui() {
@@ -238,6 +227,64 @@ void RenderSystem::initializeImGui() {
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init();
 }
+
+void RenderSystem::initializeFont() {
+	// Initialize FreeType
+	FT_Library ft;
+	if (FT_Init_FreeType(&ft)) {
+		printf("Could not initialize FreeType Library\n");
+		assert(false);
+	}
+	FT_Face face;
+	if (FT_New_Face(ft, fonts_path("Elatox.ttf").c_str(), 0, &face)) {
+		printf("Could not load arial font\n");
+		assert(false);
+	}
+	FT_Set_Pixel_Sizes(face, 0, 48);
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
+
+	// Generate Characters
+	for (unsigned char c = 0; c < 128; c++) {
+		// load character glyph
+		if (FT_Load_Char(face, c, FT_LOAD_RENDER)) {
+			printf("Could not load Glyph: %c\n", c);
+			continue;
+		}
+		// generate texture
+		GLuint texture;
+		glGenTextures(1, &texture);
+		glBindTexture(GL_TEXTURE_2D, texture);
+		glTexImage2D(
+			GL_TEXTURE_2D,
+			0,
+			GL_RED,
+			face->glyph->bitmap.width,
+			face->glyph->bitmap.rows,
+			0,
+			GL_RED,
+			GL_UNSIGNED_BYTE,
+			face->glyph->bitmap.buffer
+		);
+		// set texture options
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		// now store character for later use
+		Character character = {
+			texture,
+			{face->glyph->bitmap.width, face->glyph->bitmap.rows},
+			{face->glyph->bitmap_left, face->glyph->bitmap_top},
+			face->glyph->advance.x
+		};
+		Characters.insert(std::pair<char, Character>(c, character));
+	}
+	// clear FreeType resources
+	FT_Done_Face(face);
+	FT_Done_FreeType(ft);
+}
+
 
 RenderSystem::~RenderSystem()
 {

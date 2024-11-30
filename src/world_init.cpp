@@ -47,7 +47,7 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 
 	motion.velocity = -velocity * normalize(dir);
 	motion.scale = vec2({-ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
 
-    Arrow& arrow = registry.arrows.emplace(entity);
+    registry.arrows.emplace(entity);
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
@@ -71,8 +71,8 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 	motion.velocity = vec2(0, 0);
 	motion.scale = vec2({-SLIME_WIDTH, SLIME_HEIGHT});
 
-    auto& enemy = registry.enemies.emplace(entity);
-    auto& slime = registry.slimes.emplace(entity);
+    registry.enemies.emplace(entity);
+    registry.slimes.emplace(entity);
     registry.invisibles.emplace(entity);
 
 	registry.renderRequests.insert(entity, {
@@ -114,7 +114,7 @@ Entity createCard(RenderSystem *renderer) {
     Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
     registry.meshPtrs.emplace(entity, &mesh);
 
-    auto& card = registry.cards.emplace(entity);
+    registry.cards.emplace(entity);
 
     registry.archers.emplace(entity);
 

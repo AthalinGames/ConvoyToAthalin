@@ -3,9 +3,19 @@
 #include <array>
 #include <utility>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #include "common.hpp"
 #include "ecs/components.hpp"
 #include "ecs/tiny_ecs.hpp"
+
+struct Character {
+	GLuint textureID;
+	ivec2 size;
+	ivec2 bearing;
+	FT_Pos advance;
+};
 
 // System responsible for setting up OpenGL and for rendering all the
 // visual entities in the game
@@ -51,12 +61,14 @@ class RenderSystem {
 	std::array<GLuint, geometry_count> index_buffers;
 	std::array<Mesh, geometry_count> meshes;
 
+	std::map<char, Character> Characters;
+
 public:
 	// Initialize the window
 	bool init(GLFWwindow* window);
 
 	template <class T>
-	void bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices, std::vector<uint16_t> indices);
+	void bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices, std::vector<uint16_t> indices, GLenum drawType=GL_STATIC_DRAW);
 
 	void initializeGlTextures();
 
@@ -72,6 +84,8 @@ public:
 	bool initScreenTexture();
 
 	void initializeImGui();
+
+	void initializeFont();
 
 	// Destroy resources associated to one or all entities created by the system
 	~RenderSystem();

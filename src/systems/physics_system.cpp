@@ -28,7 +28,7 @@ bool collides(const Motion& motion1, const Motion& motion2)
 }
 
 bool pointInsidePoly(const vec2& point, const std::vector<vec2>& polygon) {
-	for (int i = 0; i < polygon.size(); ++i) {
+	for (std::size_t i = 0; i < polygon.size(); ++i) {
 		const vec2 p0 = polygon[i];
 		const vec2 p1 = polygon[(i + 1) % polygon.size()];
 		// Calculate if point is on the left of the line
@@ -52,10 +52,10 @@ bool collidesPoly(const Motion& motion1, const Motion& motion2, const std::vecto
 	// Transform both polys
 	auto poly1TF = std::vector<vec2>(poly1.size());
 	auto poly2TF = std::vector<vec2>(poly2.size());
-	for (int i = 0; i < poly1.size(); ++i) {
+	for (std::size_t i = 0; i < poly1.size(); ++i) {
 		poly1TF[i] = tf1 * poly1[i];
 	}
-	for (int i = 0; i < poly2.size(); ++i) {
+	for (std::size_t i = 0; i < poly2.size(); ++i) {
 		poly2TF[i] = tf2 * poly2[i];
 	}
 	// Check if point of poly2 is inside poly1

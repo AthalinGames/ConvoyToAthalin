@@ -66,7 +66,7 @@ struct Archer {
 // Arrow
 struct Arrow {
     int damage = 50;
-	int max_hitcount = 1;
+	std::size_t max_hitcount = 1;
 	std::set<Entity> hit_entities{};
 };
 
@@ -238,6 +238,7 @@ enum class EFFECT_ASSET_ID {
 	SALMON,
 	TEXTURED,
 	WATER, // TODO GROUND,
+	TEXT,
 	EFFECT_COUNT
 };
 
@@ -248,6 +249,7 @@ constexpr const char* EffectAssetIDToString(const EFFECT_ASSET_ID id) {
 		case EFFECT_ASSET_ID::SALMON: return "salmon";
 		case EFFECT_ASSET_ID::TEXTURED: return "textured";
 		case EFFECT_ASSET_ID::WATER: return "water";
+		case EFFECT_ASSET_ID::TEXT: return "text";
 		default: {
 			fprintf(stderr, "Invalid EFFECT_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
@@ -264,6 +266,7 @@ enum class GEOMETRY_BUFFER_ID {
 	PEBBLE,
 	DEBUG_LINE,
 	SCREEN_TRIANGLE,
+	TEXT_QUAD,
 	GEOMETRY_COUNT
 };
 
