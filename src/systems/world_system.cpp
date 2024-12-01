@@ -4,6 +4,7 @@
 
 // stlib
 #include <cassert>
+#include <imgui.h>
 #include <sstream>
 
 #include "physics_system.hpp"
@@ -161,10 +162,27 @@ bool WorldSystem::step(const float elapsed_ms) {
 		}
 	}
 
+	// Render Health display
+	ImGui::Begin("Health");
+	ImGui::SetWindowPos({window_width_px * 0.1, window_height_px * 0.03});
+	ImGui::SetWindowSize({window_width_px * 0.06, window_height_px * 0.06});
+	for (const auto & player : registry.players.components) {
+		ImGui::Text("HP: %d", player.health);
+	}
+	ImGui::End();
+
 	// If td system is running, run also its step
 	if (!current_td_system->is_over()) {
 		current_td_system->step(elapsed_ms);
 	} else if (td_fight_launched) {
+		// Check if Player is dead
+		for (const auto & player : registry.players.components) {
+			if (player.health <= 0) {
+				restart_game();
+				return true;
+			}
+		}
+
 		// TD Fight should be finished
 		current_td_system.reset(new TDSystem());
 		// Setup Overview-Map for next selection
@@ -215,6 +233,9 @@ void WorldSystem::restart_game() {
 
 	// Debugging for memory/component leaks
 	registry.list_all_components();
+
+	ScreenState &screen = registry.screenStates.components[0];
+	screen.screen_darken_factor = 0;
 
 	td_fight_launched = false;
 	createPlayer();

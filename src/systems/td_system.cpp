@@ -42,7 +42,7 @@ bool TDSystem::step(float elapsed_ms) {
     ScreenState &screen = registry.screenStates.components[0];
     Map& td_map = registry.maps.get(map);
 
-    float min_timer_ms = 3000.f;
+    float min_timer_ms = 4000.f;
     for (Entity entity : registry.deathTimers.entities) {
         // progress timer
         DeathTimer& timer = registry.deathTimers.get(entity);
@@ -56,12 +56,12 @@ bool TDSystem::step(float elapsed_ms) {
             registry.deathTimers.remove(entity);
             screen.screen_darken_factor = 0;
             // TODO do actual handling for that
-            restart_td_fight();
+            running = false;
             return true;
         }
     }
     // reduce window brightness if any of the present salmons is dying
-    screen.screen_darken_factor = 1 - min_timer_ms / 3000;
+    screen.screen_darken_factor = 1 - min_timer_ms / 4000;
 
     if(td_map.combat_started) {
         td_map.combat_time += elapsed_ms;
@@ -97,9 +97,12 @@ bool TDSystem::step(float elapsed_ms) {
         }
     }
     // Check if player still has health
-    for (const auto& player : registry.players.components) {
-        if (player.health <= 0) {
-            running = false;
+    for (std::size_t i = 0; i < registry.players.size(); ++i) {
+        const auto& player = registry.players.components[i];
+        const Entity player_entity = registry.players.entities[i];
+        if (player.health <= 0 && !registry.deathTimers.has(player_entity)) {
+            createGameOver(renderer);
+            registry.deathTimers.emplace(player_entity);
         }
     }
     

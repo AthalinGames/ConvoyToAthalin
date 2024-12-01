@@ -166,6 +166,27 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints) {
     return entity;
 }
 
+Entity createGameOver(RenderSystem *renderer) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& gameover_texture = registry.stationaries.emplace(entity);
+	gameover_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
+	gameover_texture.position = vec2({window_width_px/2, window_height_px/2});
+
+	registry.renderRequests.insert(entity, {
+	Z_FOREGROUND,
+		TEXTURE_ASSET_ID::GAME_OVER,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+
 Entity createOverviewMap(RenderSystem *renderer) {
 	const auto entity = Entity();
 
