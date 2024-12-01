@@ -166,6 +166,13 @@ struct Mesh
 	std::vector<uint16_t> vertex_indices;
 };
 
+// Text line that is rendered at a specific position and scale
+struct Text {
+	std::string text;
+	vec2 position;
+	float size;
+};
+
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture
@@ -238,7 +245,6 @@ enum class EFFECT_ASSET_ID {
 	SALMON,
 	TEXTURED,
 	WATER, // TODO GROUND,
-	TEXT,
 	EFFECT_COUNT
 };
 
@@ -249,7 +255,6 @@ constexpr const char* EffectAssetIDToString(const EFFECT_ASSET_ID id) {
 		case EFFECT_ASSET_ID::SALMON: return "salmon";
 		case EFFECT_ASSET_ID::TEXTURED: return "textured";
 		case EFFECT_ASSET_ID::WATER: return "water";
-		case EFFECT_ASSET_ID::TEXT: return "text";
 		default: {
 			fprintf(stderr, "Invalid EFFECT_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
@@ -266,7 +271,6 @@ enum class GEOMETRY_BUFFER_ID {
 	PEBBLE,
 	DEBUG_LINE,
 	SCREEN_TRIANGLE,
-	TEXT_QUAD,
 	GEOMETRY_COUNT
 };
 

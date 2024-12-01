@@ -97,7 +97,13 @@ public:
 
 private:
 	// Internal drawing functions for each entity type
-	void drawTexturedMesh(Entity entity, mat3& projection);
+
+	enum PositioningType {
+		MOTION = 0,
+		STATIONARY,
+	};
+
+	void drawTexturedMesh(Entity entity, mat3& projection, PositioningType positioning) const;
 	void drawToScreen();
 
 	// Window handle

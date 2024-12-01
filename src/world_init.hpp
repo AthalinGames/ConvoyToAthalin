@@ -61,3 +61,5 @@ Entity createGoalIcon(RenderSystem* renderer);
 Entity createStartIcon(RenderSystem* renderer);
 
 Entity createOverviewSelection(RenderSystem* renderer, vec2 pos);
+
+Entity createText(RenderSystem* renderer, vec2 pos, float scale, const std::string &&text);

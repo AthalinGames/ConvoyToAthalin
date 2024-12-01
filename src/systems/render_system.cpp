@@ -7,27 +7,30 @@
 #include "ecs/tiny_ecs_registry.hpp"
 
 void RenderSystem::drawTexturedMesh(const Entity entity,
-                                    mat3 &projection)
-{
-	if (registry.invisibles.has(entity))
-		return;
+                                    mat3 &projection,
+                                    const PositioningType positioning) const {
 	vec2 position;
     float angle;
     vec2 scale;
-    if (registry.motions.has(entity)) {
-        Motion &motion = registry.motions.get(entity);
-        position = motion.position;
-        angle = motion.angle;
-        scale = motion.scale;
-    } else {
-        Stationary &map = registry.stationaries.get(entity);
-        position = map.position;
-        angle = map.angle;
-        scale = map.scale;
-    }
-	// Transformation code, see Rendering and Transformation in the template
-	// specification for more info Incrementally updates transformation matrix,
-	// thus ORDER IS IMPORTANT
+	switch (positioning) {
+		case MOTION: {
+			const Motion &motion = registry.motions.get(entity);
+			position = motion.position;
+			angle = motion.angle;
+			scale = motion.scale;
+			break;
+		}
+		case STATIONARY: {
+			const Stationary &pos = registry.stationaries.get(entity);
+			position = pos.position;
+			angle = pos.angle;
+			scale = pos.scale;
+			break;
+		}
+		default: {
+			assert(false && "Unknown positioning type");
+		}
+	}
 	Transform transform;
 	transform.translate(position);
 	transform.rotate(angle);
@@ -54,66 +57,37 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	gl_has_errors();
 
 	// Input data location as in the vertex buffer
-	if (render_request.used_effect == EFFECT_ASSET_ID::TEXTURED)
-	{
-		const GLint in_position_loc = glGetAttribLocation(program, "in_position");
-		const GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
-		gl_has_errors();
-		assert(in_texcoord_loc >= 0);
-
-		glEnableVertexAttribArray(in_position_loc);
-		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
-							  sizeof(TexturedVertex), static_cast<void *>(nullptr));
-		gl_has_errors();
-
-		glEnableVertexAttribArray(in_texcoord_loc);
-		glVertexAttribPointer(
-			in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
-			reinterpret_cast<void *>(sizeof(vec3))); // note the stride to skip the preceeding vertex position
-
-		// Enabling and binding texture to slot 0
-		glActiveTexture(GL_TEXTURE0);
-		gl_has_errors();
-
-		assert(registry.renderRequests.has(entity));
-		const GLuint texture_id =
-			texture_gl_handles[static_cast<GLuint>(registry.renderRequests.get(entity).used_texture)];
-
-		glBindTexture(GL_TEXTURE_2D, texture_id);
-		gl_has_errors();
-	}
-	/* TODO: Replace with effects for our own stuff
-	else if (render_request.used_effect == EFFECT_ASSET_ID::SALMON || render_request.used_effect == EFFECT_ASSET_ID::PEBBLE)
-	{
-		GLint in_position_loc = glGetAttribLocation(program, "in_position");
-		GLint in_color_loc = glGetAttribLocation(program, "in_color");
-		gl_has_errors();
-
-		glEnableVertexAttribArray(in_position_loc);
-		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
-							  sizeof(ColoredVertex), (void *)0);
-		gl_has_errors();
-
-		glEnableVertexAttribArray(in_color_loc);
-		glVertexAttribPointer(in_color_loc, 3, GL_FLOAT, GL_FALSE,
-							  sizeof(ColoredVertex), (void *)sizeof(vec3));
-		gl_has_errors();
-
-		if (render_request.used_effect == EFFECT_ASSET_ID::SALMON)
-		{
-			// Light up?
-			GLint light_up_uloc = glGetUniformLocation(program, "light_up");
-			assert(light_up_uloc >= 0);
-
-			// !!! TODO A1: set the light_up shader variable using glUniform1i,
-			// similar to the glUniform1f call below. The 1f or 1i specified the type, here a single int.
+	switch (render_request.used_effect) {
+		case EFFECT_ASSET_ID::TEXTURED: {
+			const GLint in_position_loc = glGetAttribLocation(program, "in_position");
+			const GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
 			gl_has_errors();
+			assert(in_texcoord_loc >= 0);
+
+			glEnableVertexAttribArray(in_position_loc);
+			glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
+								  sizeof(TexturedVertex), static_cast<void *>(nullptr));
+			gl_has_errors();
+
+			glEnableVertexAttribArray(in_texcoord_loc);
+			glVertexAttribPointer(
+				in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
+				reinterpret_cast<void *>(sizeof(vec3))); // note the stride to skip the preceeding vertex position
+
+			// Enabling and binding texture to slot 0
+			glActiveTexture(GL_TEXTURE0);
+			gl_has_errors();
+
+			assert(registry.renderRequests.has(entity));
+			const GLuint texture_id =
+				texture_gl_handles[static_cast<GLuint>(registry.renderRequests.get(entity).used_texture)];
+
+			glBindTexture(GL_TEXTURE_2D, texture_id);
+			gl_has_errors();
+			break;
 		}
-	}
-	*/
-	else
-	{
-		assert(false && "Type of render request not supported");
+		default:
+			assert(false && "Type of render request not supported");
 	}
 
 	// Getting uniform locations for glUniform* calls
@@ -144,6 +118,7 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);
 	gl_has_errors();
 }
+
 
 // draw the intermediate texture to the screen, with some distortion to simulate
 // water
@@ -231,13 +206,20 @@ void RenderSystem::draw()
 	gl_has_errors();
 	mat3 projection_2D = createProjectionMatrix();
 	// Draw all textured meshes that have a position and size component
-	for (Entity entity : registry.renderRequests.entities) // TODO: rework this to enable more influence on order of rendering
+	for (const Entity entity : registry.renderRequests.entities) // TODO: rework this to enable more influence on order of rendering
 	{
-		if (!registry.motions.has(entity) && !registry.stationaries.has(entity))
+		if (registry.invisibles.has(entity)) {
 			continue;
+		}
+		if (registry.motions.has(entity)) {
+			drawTexturedMesh(entity, projection_2D, MOTION);
+		} else if (registry.stationaries.has(entity)) {
+			drawTexturedMesh(entity, projection_2D, STATIONARY);
+		} else if (registry.texts.has(entity)) {
+			continue; //TODO think about acutal rendering
+		}
 		// Note, its not very efficient to access elements indirectly via the entity
 		// albeit iterating through all Sprites in sequence. A good point to optimize
-		drawTexturedMesh(entity, projection_2D);
 	}
 
 	// Truely render to the screen

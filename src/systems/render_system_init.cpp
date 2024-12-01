@@ -199,22 +199,6 @@ void RenderSystem::initializeGlGeometryBuffers()
 	// Counterclockwise as it's the default opengl front winding direction.
 	const std::vector<uint16_t> screen_indices = { 0, 1, 2 };
 	bindVBOandIBO(GEOMETRY_BUFFER_ID::SCREEN_TRIANGLE, screen_vertices, screen_indices);
-
-	///////////////////////////////////////////////////////
-	// Initialize text quads
-	std::vector<TexturedVertex> text_vertices(4);
-	textured_vertices[0].position = { -1.f/2, +1.f/2, 0.f };
-	textured_vertices[1].position = { +1.f/2, +1.f/2, 0.f };
-	textured_vertices[2].position = { +1.f/2, -1.f/2, 0.f };
-	textured_vertices[3].position = { -1.f/2, -1.f/2, 0.f };
-	textured_vertices[0].texcoord = { 0.f, 1.f };
-	textured_vertices[1].texcoord = { 1.f, 1.f };
-	textured_vertices[2].texcoord = { 1.f, 0.f };
-	textured_vertices[3].texcoord = { 0.f, 0.f };
-
-	// Counterclockwise as it's the default opengl front winding direction.
-	const std::vector<uint16_t> text_indices = { 0, 3, 1, 1, 3, 2 };
-	bindVBOandIBO(GEOMETRY_BUFFER_ID::TEXT_QUAD, text_vertices, text_indices, GL_DYNAMIC_DRAW);
 }
 
 void RenderSystem::initializeImGui() {

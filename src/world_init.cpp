@@ -299,6 +299,26 @@ Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
 	return entity;
 }
 
+Entity createText(RenderSystem *renderer, const vec2 pos, const float scale, const std::string &&text) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Text& textComponent = registry.texts.emplace(entity);
+	textComponent.position = pos;
+	textComponent.size = scale;
+	textComponent.text = std::move(text);
+
+	registry.renderRequests.insert(entity, {
+		Z_FOREGROUND,
+		TEXTURE_ASSET_ID::TEXTURE_COUNT,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE
+	});
+
+	return entity;
+}
 
 
 /*
