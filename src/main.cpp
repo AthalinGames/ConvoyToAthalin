@@ -8,6 +8,9 @@
 // internal
 #include <memory>
 
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include "systems/physics_system.hpp"
 #include "systems/render_system.hpp"
 #include "systems/world_system.hpp"
@@ -40,6 +43,11 @@ int main()
 	while (!world_system.is_over()) {
 		// Processes system messages, if this wasn't present the window would become unresponsive
 		glfwPollEvents();
+
+		// Start the Dear ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 
 		// Calculating elapsed times in milliseconds from the previous iteration
 		auto now = Clock::now();

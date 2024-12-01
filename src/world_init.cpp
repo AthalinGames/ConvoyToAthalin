@@ -1,7 +1,13 @@
 #include "world_init.hpp"
 #include "ecs/tiny_ecs_registry.hpp"
 
-// TODO: create player base
+Entity createPlayer() {
+	const auto entity = Entity();
+
+	registry.players.emplace(entity);
+
+	return entity;
+}
 
 Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 	const auto entity = Entity();
@@ -41,7 +47,7 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 
 	motion.velocity = -velocity * normalize(dir);
 	motion.scale = vec2({-ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
 
-    Arrow& arrow = registry.arrows.emplace(entity);
+    registry.arrows.emplace(entity);
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
@@ -65,8 +71,8 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 	motion.velocity = vec2(0, 0);
 	motion.scale = vec2({-SLIME_WIDTH, SLIME_HEIGHT});
 
-    auto& enemy = registry.enemies.emplace(entity);
-    auto& slime = registry.slimes.emplace(entity);
+    registry.enemies.emplace(entity);
+    registry.slimes.emplace(entity);
     registry.invisibles.emplace(entity);
 
 	registry.renderRequests.insert(entity, {
@@ -108,7 +114,7 @@ Entity createCard(RenderSystem *renderer) {
     Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
     registry.meshPtrs.emplace(entity, &mesh);
 
-    auto& card = registry.cards.emplace(entity);
+    registry.cards.emplace(entity);
 
     registry.archers.emplace(entity);
 
@@ -159,6 +165,27 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints) {
 
     return entity;
 }
+
+Entity createGameOver(RenderSystem *renderer) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& gameover_texture = registry.stationaries.emplace(entity);
+	gameover_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
+	gameover_texture.position = vec2({window_width_px/2, window_height_px/2});
+
+	registry.renderRequests.insert(entity, {
+	Z_FOREGROUND,
+		TEXTURE_ASSET_ID::GAME_OVER,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
 
 Entity createOverviewMap(RenderSystem *renderer) {
 	const auto entity = Entity();
@@ -293,6 +320,26 @@ Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
 	return entity;
 }
 
+Entity createText(RenderSystem *renderer, const vec2 pos, const float scale, const std::string &&text) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Text& textComponent = registry.texts.emplace(entity);
+	textComponent.position = pos;
+	textComponent.size = scale;
+	textComponent.text = std::move(text);
+
+	registry.renderRequests.insert(entity, {
+		Z_FOREGROUND,
+		TEXTURE_ASSET_ID::TEXTURE_COUNT,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE
+	});
+
+	return entity;
+}
 
 
 /*

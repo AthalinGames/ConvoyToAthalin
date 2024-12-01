@@ -8,7 +8,10 @@
 
 // Player component
 struct Player {
-
+	int health = 100;
+	int maxHealth = 100;
+	int coins = 0;
+	std::vector<Entity> owned_cards;
 };
 
 // Enemy components
@@ -21,6 +24,7 @@ struct Enemy {
     uint next_checkpoint = 1; // checkpoint 0 is start position
     float section_progress = 0.f;
     bool alive = true;
+	int damage = 100;
 };
 
 struct Slime {
@@ -62,7 +66,7 @@ struct Archer {
 // Arrow
 struct Arrow {
     int damage = 50;
-	int max_hitcount = 1;
+	std::size_t max_hitcount = 1;
 	std::set<Entity> hit_entities{};
 };
 
@@ -162,6 +166,13 @@ struct Mesh
 	std::vector<uint16_t> vertex_indices;
 };
 
+// Text line that is rendered at a specific position and scale
+struct Text {
+	std::string text;
+	vec2 position;
+	float size;
+};
+
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture
@@ -200,6 +211,7 @@ enum class TEXTURE_ASSET_ID {
 	START_ICON,
 	GOAL_ICON,
 	MAP_SELECTION,
+	GAME_OVER,
 	TEXTURE_COUNT
 };
 
@@ -218,6 +230,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::START_ICON: return "start_icon.png";
 		case TEXTURE_ASSET_ID::GOAL_ICON: return "goal_icon.png";
 		case TEXTURE_ASSET_ID::MAP_SELECTION: return "map_selection.png";
+		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);

@@ -20,7 +20,7 @@ QUICK NOTES:
 Primarily of interest to game developers and other people who can
 avoid problematic images and only need the trivial interface
 
-JPEG baseline & progressive (12 bpc/arithmetic not supported, same as stock IJG lib)
+JPEG baseline & progressive (12 bpc/arithmetic not supported, same as stock IJG lib64)
 PNG 1/2/4/8/16-bit-per-channel
 
 TGA (not sure what subset, if a subset)

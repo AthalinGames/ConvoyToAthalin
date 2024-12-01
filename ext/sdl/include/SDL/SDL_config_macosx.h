@@ -133,13 +133,13 @@
 #define SDL_VIDEO_DRIVER_COCOA  1
 #define SDL_VIDEO_DRIVER_DUMMY  1
 #undef SDL_VIDEO_DRIVER_X11
-#define SDL_VIDEO_DRIVER_X11_DYNAMIC "/usr/X11R6/lib/libX11.6.dylib"
-#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XEXT "/usr/X11R6/lib/libXext.6.dylib"
-#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XINERAMA "/usr/X11R6/lib/libXinerama.1.dylib"
-#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XINPUT2 "/usr/X11R6/lib/libXi.6.dylib"
-#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XRANDR "/usr/X11R6/lib/libXrandr.2.dylib"
-#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XSS "/usr/X11R6/lib/libXss.1.dylib"
-#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XVIDMODE "/usr/X11R6/lib/libXxf86vm.1.dylib"
+#define SDL_VIDEO_DRIVER_X11_DYNAMIC "/usr/X11R6/lib64/libX11.6.dylib"
+#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XEXT "/usr/X11R6/lib64/libXext.6.dylib"
+#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XINERAMA "/usr/X11R6/lib64/libXinerama.1.dylib"
+#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XINPUT2 "/usr/X11R6/lib64/libXi.6.dylib"
+#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XRANDR "/usr/X11R6/lib64/libXrandr.2.dylib"
+#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XSS "/usr/X11R6/lib64/libXss.1.dylib"
+#define SDL_VIDEO_DRIVER_X11_DYNAMIC_XVIDMODE "/usr/X11R6/lib64/libXxf86vm.1.dylib"
 #define SDL_VIDEO_DRIVER_X11_XDBE 1
 #define SDL_VIDEO_DRIVER_X11_XINERAMA 1
 #define SDL_VIDEO_DRIVER_X11_XRANDR 1

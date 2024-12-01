@@ -42,7 +42,7 @@ bool TDSystem::step(float elapsed_ms) {
     ScreenState &screen = registry.screenStates.components[0];
     Map& td_map = registry.maps.get(map);
 
-    float min_timer_ms = 3000.f;
+    float min_timer_ms = 4000.f;
     for (Entity entity : registry.deathTimers.entities) {
         // progress timer
         DeathTimer& timer = registry.deathTimers.get(entity);
@@ -56,12 +56,12 @@ bool TDSystem::step(float elapsed_ms) {
             registry.deathTimers.remove(entity);
             screen.screen_darken_factor = 0;
             // TODO do actual handling for that
-            restart_td_fight();
+            running = false;
             return true;
         }
     }
     // reduce window brightness if any of the present salmons is dying
-    screen.screen_darken_factor = 1 - min_timer_ms / 3000;
+    screen.screen_darken_factor = 1 - min_timer_ms / 4000;
 
     if(td_map.combat_started) {
         td_map.combat_time += elapsed_ms;
@@ -80,6 +80,29 @@ bool TDSystem::step(float elapsed_ms) {
                 registry.invisibles.remove(td_map.enemies[0]);
                 td_map.enemies.erase(td_map.enemies.begin());
             }
+        }
+    }
+
+    // Check if enemy completed Path
+    for (std::size_t i = 0; i < registry.enemies.size(); ++i) {
+        const auto& enemy = registry.enemies.components[i];
+        const Entity enemy_entity = registry.enemies.entities[i];
+        if (enemy.enemy_progress >= 1.0f && enemy.alive) {
+            for (Player &player : registry.players.components) {
+                player.health -= enemy.damage;
+            }
+            // Delete damaging entity
+            registry.remove_all_components_of(enemy_entity);
+            enemies.erase(enemy_entity);
+        }
+    }
+    // Check if player still has health
+    for (std::size_t i = 0; i < registry.players.size(); ++i) {
+        const auto& player = registry.players.components[i];
+        const Entity player_entity = registry.players.entities[i];
+        if (player.health <= 0 && !registry.deathTimers.has(player_entity)) {
+            createGameOver(renderer);
+            registry.deathTimers.emplace(player_entity);
         }
     }
     
@@ -118,12 +141,12 @@ void TDSystem::restart_td_fight() {
     map.active = true;
 
     const auto debug_enemy = createEnemy(renderer, {0, 100});
-    enemies.push_back(debug_enemy);
+    enemies.emplace(debug_enemy);
     Enemy& enemy = registry.enemies.get(debug_enemy);
     enemy.speed = 100.f;
 
     const auto debug_enemy2 = createEnemy(renderer, {0, 100});
-    enemies.push_back(debug_enemy2);
+    enemies.emplace(debug_enemy2);
     Enemy& enemy2 = registry.enemies.get(debug_enemy2);
     enemy2.speed = 100.f;
     enemy2.spawn_time = 1000;
@@ -132,9 +155,6 @@ void TDSystem::restart_td_fight() {
 
     printf("Created active map\n");
     printf("Mapcount: %lu\n", registry.maps.size());
-
-    const auto debug_archer = createArcher(renderer, {400, 300});
-    towers.push_back(debug_archer);
 
     const Entity debug_card = createCard(renderer);
     cards.push_back(debug_card);
@@ -233,7 +253,7 @@ void TDSystem::handle_aiming() {
 }
 
 bool TDSystem::is_over() const {
-    return !running;
+    return !running || (registry.enemies.components.empty() && registry.maps.get(map).enemies.empty());
 }
 
 void TDSystem::on_key(const int key, int, const int action, const int mods) {
@@ -369,6 +389,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
                     }
                     dragged_entity = createArcher(renderer,
                                                   card_pos); // TODO: for some reason the z position does still not work and only 1st placed archer is below card after next archer placed
+                    towers.emplace_back(dragged_entity);
                     //registry.renderRequests.insert(dragged_entity, {
                     //        Z_MIDDLE,
                     //        TEXTURE_ASSET_ID::ARCHER,

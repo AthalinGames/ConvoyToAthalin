@@ -51,7 +51,7 @@ private:
     Entity dragged_entity;
     std::vector<Entity> towers;
     std::vector<Entity> cards;
-    std::vector<Entity> enemies;
+    std::set<Entity> enemies;
     Entity map;
 
     // C++ random number generator
