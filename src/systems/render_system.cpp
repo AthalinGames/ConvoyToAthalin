@@ -6,6 +6,34 @@
 #include "imgui_impl_opengl3.h"
 #include "ecs/tiny_ecs_registry.hpp"
 
+void RenderSystem::doTexturedRender(const Entity entity, const GLuint program) const {
+	const GLint in_position_loc = glGetAttribLocation(program, "in_position");
+	const GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
+	gl_has_errors();
+	assert(in_texcoord_loc >= 0);
+
+	glEnableVertexAttribArray(in_position_loc);
+	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
+	                      sizeof(TexturedVertex), static_cast<void *>(nullptr));
+	gl_has_errors();
+
+	glEnableVertexAttribArray(in_texcoord_loc);
+	glVertexAttribPointer(
+		in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
+		reinterpret_cast<void *>(sizeof(vec3))); // note the stride to skip the preceeding vertex position
+
+	// Enabling and binding texture to slot 0
+	glActiveTexture(GL_TEXTURE0);
+	gl_has_errors();
+
+	assert(registry.renderRequests.has(entity));
+	const GLuint texture_id =
+			texture_gl_handles[static_cast<GLuint>(registry.renderRequests.get(entity).used_texture)];
+
+	glBindTexture(GL_TEXTURE_2D, texture_id);
+	gl_has_errors();
+}
+
 void RenderSystem::drawTexturedMesh(const Entity entity,
                                     mat3 &projection,
                                     const PositioningType positioning) const {
@@ -59,31 +87,19 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	// Input data location as in the vertex buffer
 	switch (render_request.used_effect) {
 		case EFFECT_ASSET_ID::TEXTURED: {
-			const GLint in_position_loc = glGetAttribLocation(program, "in_position");
-			const GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
+			doTexturedRender(entity, program);
+			break;
+		}
+		case EFFECT_ASSET_ID::TEXTURED_ATLAS: {
+			// Getting uniform location for texture coordinate modification
+			const GLuint tex_pos_uloc = glGetUniformLocation(program, "tex_pos");
+			const GLuint tex_area_uloc = glGetUniformLocation(program, "tex_area");
+			AtlasTexture atlas_texture = atlasLookup.at(render_request.used_texture)[render_request.used_texture_atlas_texture_id];
+			glUniform2fv(tex_pos_uloc, 1, reinterpret_cast<float *> (&atlas_texture.tex_pos));
+			glUniform2fv(tex_area_uloc, 1, reinterpret_cast<float *> (&atlas_texture.tex_size));
 			gl_has_errors();
-			assert(in_texcoord_loc >= 0);
-
-			glEnableVertexAttribArray(in_position_loc);
-			glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
-								  sizeof(TexturedVertex), static_cast<void *>(nullptr));
-			gl_has_errors();
-
-			glEnableVertexAttribArray(in_texcoord_loc);
-			glVertexAttribPointer(
-				in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
-				reinterpret_cast<void *>(sizeof(vec3))); // note the stride to skip the preceeding vertex position
-
-			// Enabling and binding texture to slot 0
-			glActiveTexture(GL_TEXTURE0);
-			gl_has_errors();
-
-			assert(registry.renderRequests.has(entity));
-			const GLuint texture_id =
-				texture_gl_handles[static_cast<GLuint>(registry.renderRequests.get(entity).used_texture)];
-
-			glBindTexture(GL_TEXTURE_2D, texture_id);
-			gl_has_errors();
+			// Render Texture
+			doTexturedRender(entity, program);
 			break;
 		}
 		default:

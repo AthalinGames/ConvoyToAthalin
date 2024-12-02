@@ -27,6 +27,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
+		0,
 		TEXTURE_ASSET_ID::ARCHER,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -51,6 +52,7 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
+		0,
 		TEXTURE_ASSET_ID::ARROW,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -77,6 +79,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
+		0,
 		TEXTURE_ASSET_ID::SLIME,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -125,6 +128,7 @@ Entity createCard(RenderSystem *renderer) {
 
     registry.renderRequests.insert(entity, {
     	Z_FOREGROUND,
+    	0,
         TEXTURE_ASSET_ID::ARCHER_CARD,
     	EFFECT_ASSET_ID::TEXTURED,
     	GEOMETRY_BUFFER_ID::SPRITE,
@@ -158,6 +162,7 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints) {
 
     registry.renderRequests.insert(entity, {
     	Z_BACKGROUND,
+    	0,
     	TEXTURE_ASSET_ID::MAP,
     	EFFECT_ASSET_ID::TEXTURED,
     	GEOMETRY_BUFFER_ID::SPRITE,
@@ -178,6 +183,7 @@ Entity createGameOver(RenderSystem *renderer) {
 
 	registry.renderRequests.insert(entity, {
 	Z_FOREGROUND,
+		0,
 		TEXTURE_ASSET_ID::GAME_OVER,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -199,6 +205,7 @@ Entity createOverviewMap(RenderSystem *renderer) {
 
 	registry.renderRequests.insert(entity, {
 		Z_BACKGROUND,
+		0,
 		TEXTURE_ASSET_ID::OVERVIEW_MAP,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -223,6 +230,7 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
+		0,
 		TEXTURE_ASSET_ID::FIGHT_ICON,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -245,6 +253,7 @@ Entity createStartIcon(RenderSystem *renderer) {
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
+		0,
 		TEXTURE_ASSET_ID::START_ICON,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -267,6 +276,7 @@ Entity createGoalIcon(RenderSystem *renderer) {
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
+		0,
 		TEXTURE_ASSET_ID::GOAL_ICON,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -290,6 +300,7 @@ Entity createOverviewLine(RenderSystem *renderer, const vec2 firstPos, const vec
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
+		0,
 		TEXTURE_ASSET_ID::BLACK_PIXEL,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -312,6 +323,7 @@ Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
+		0,
 		TEXTURE_ASSET_ID::MAP_SELECTION,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -333,6 +345,7 @@ Entity createText(RenderSystem *renderer, const vec2 pos, const float scale, con
 
 	registry.renderRequests.insert(entity, {
 		Z_FOREGROUND,
+		0,
 		TEXTURE_ASSET_ID::TEXTURE_COUNT,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE
@@ -411,6 +424,7 @@ Entity createLine(vec2 position, vec2 scale)
 	registry.renderRequests.insert(
 		entity,{
 			Z_FOREGROUND,
+			0,
 			TEXTURE_ASSET_ID::TEXTURE_COUNT,
 			EFFECT_ASSET_ID::PEBBLE,
 			GEOMETRY_BUFFER_ID::DEBUG_LINE

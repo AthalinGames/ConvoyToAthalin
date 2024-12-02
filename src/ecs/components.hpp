@@ -241,11 +241,30 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 
 constexpr int texture_count = static_cast<int>(TEXTURE_ASSET_ID::TEXTURE_COUNT);
 
+struct AtlasTexture {
+	// position of 0,0 of the texture
+	vec2 tex_pos;
+	// size of texture in x and y direction
+	vec2 tex_size;
+};
+
+const std::set<TEXTURE_ASSET_ID> texture_atlases = {};
+
+inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
+	assert(texture_atlases.count(atlas_id) == 1); // Provided Texture needs to be a texture-atlas
+	// here the texture positions are defined
+	switch (atlas_id) {
+		default:
+			assert(false && "Texture atlas has no textures defined");
+	}
+}
+
 enum class EFFECT_ASSET_ID {
 	COLOURED = 0,
 	PEBBLE,
 	SALMON,
 	TEXTURED,
+	TEXTURED_ATLAS,
 	WATER, // TODO GROUND,
 	EFFECT_COUNT
 };
@@ -256,6 +275,7 @@ constexpr const char* EffectAssetIDToString(const EFFECT_ASSET_ID id) {
 		case EFFECT_ASSET_ID::PEBBLE: return "pebble";
 		case EFFECT_ASSET_ID::SALMON: return "salmon";
 		case EFFECT_ASSET_ID::TEXTURED: return "textured";
+		case EFFECT_ASSET_ID::TEXTURED_ATLAS: return "texturedAtlas";
 		case EFFECT_ASSET_ID::WATER: return "water";
 		default: {
 			fprintf(stderr, "Invalid EFFECT_ASSET_ID: %d", static_cast<int>(id));
@@ -280,6 +300,7 @@ constexpr int geometry_count = static_cast<int>(GEOMETRY_BUFFER_ID::GEOMETRY_COU
 
 struct RenderRequest {
 	float z_position;
+	unsigned int used_texture_atlas_texture_id;
 	TEXTURE_ASSET_ID used_texture = TEXTURE_ASSET_ID::TEXTURE_COUNT;
 	EFFECT_ASSET_ID used_effect = EFFECT_ASSET_ID::EFFECT_COUNT;
 	GEOMETRY_BUFFER_ID used_geometry = GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
@@ -289,6 +310,7 @@ struct RenderRequest {
 // Positions are defined by percentages of texture positions (top left is 0, 0 and bottom right is 1, 1)
 // For proper positions this grid must be shifted, so that 0, 0 is in the center
 // Final Transformations are done when calculating the collision
+// Remember that even if a texture-atlas is used, only the percentages for the single texture should be used
 constexpr vec2 grid_shift{0.5, 0.5};
 
 const std::vector basic_bounding_box {
