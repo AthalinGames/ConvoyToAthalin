@@ -222,7 +222,7 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 
 	Stationary& fight_location_pos = registry.stationaries.emplace(entity);
 	fight_location_pos.position = pos;
-	fight_location_pos.scale = vec2({FIGHT_LOCATION_WIDTH, FIGHT_LOCATION_HEIGHT});
+	fight_location_pos.scale = vec2({0.6 * OVERVIEW_ICON_WIDTH, 0.6 * OVERVIEW_ICON_HEIGHT});
 
 	auto &properties = registry.overviewMapLocations.emplace(entity);
 	properties.active = true;
@@ -230,9 +230,9 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
-		0,
-		TEXTURE_ASSET_ID::FIGHT_ICON,
-		EFFECT_ASSET_ID::TEXTURED,
+		static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::FIGHT),
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
@@ -253,9 +253,9 @@ Entity createStartIcon(RenderSystem *renderer) {
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
-		0,
-		TEXTURE_ASSET_ID::START_ICON,
-		EFFECT_ASSET_ID::TEXTURED,
+		static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::START),
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
@@ -276,9 +276,9 @@ Entity createGoalIcon(RenderSystem *renderer) {
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
-		0,
-		TEXTURE_ASSET_ID::GOAL_ICON,
-		EFFECT_ASSET_ID::TEXTURED,
+		static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::END),
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
@@ -323,9 +323,9 @@ Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
 
 	registry.renderRequests.insert(entity, {
 		Z_MIDDLE,
-		0,
-		TEXTURE_ASSET_ID::MAP_SELECTION,
-		EFFECT_ASSET_ID::TEXTURED,
+		static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::SELECTION),
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 

@@ -207,11 +207,8 @@ enum class TEXTURE_ASSET_ID {
     MAP,
 	OVERVIEW_MAP,
 	BLACK_PIXEL,
-	FIGHT_ICON,
-	START_ICON,
-	GOAL_ICON,
-	MAP_SELECTION,
 	GAME_OVER,
+	OVERVIEW_ICONS_ATLAS,
 	TEXTURE_COUNT
 };
 
@@ -226,11 +223,8 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
         case TEXTURE_ASSET_ID::MAP: return "tdmap.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
-		case TEXTURE_ASSET_ID::FIGHT_ICON: return "fightIcon.png";
-		case TEXTURE_ASSET_ID::START_ICON: return "start_icon.png";
-		case TEXTURE_ASSET_ID::GOAL_ICON: return "goal_icon.png";
-		case TEXTURE_ASSET_ID::MAP_SELECTION: return "map_selection.png";
 		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";
+		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: return "overviewIconsAtlas.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
@@ -248,12 +242,36 @@ struct AtlasTexture {
 	vec2 tex_size;
 };
 
-const std::set<TEXTURE_ASSET_ID> texture_atlases = {};
+const std::set texture_atlases = {
+	TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS
+};
+
+enum class OVERVIEW_ICON_TEXTURES {
+	START = 0,
+	SELECTION,
+	END,
+	FIGHT,
+	COUNT
+};
 
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
-	assert(texture_atlases.count(atlas_id) == 1); // Provided Texture needs to be a texture-atlas
 	// here the texture positions are defined
 	switch (atlas_id) {
+		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: {
+			constexpr unsigned int cols = 3, rows = 3, maxCount = cols * rows;
+			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+			constexpr unsigned int definedCount = static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::COUNT);
+			assert(definedCount <= maxCount); // Atlas cannot have more defined textures than available space
+			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+			for (unsigned int i = 0; i < definedCount; i++) {
+				const float x_start = (i % cols) * tex_width;
+				const float y_start = (i / cols) * tex_height;
+				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+				texDef.tex_pos = vec2(x_start, y_start);
+				texDef.tex_size = vec2(tex_width, tex_height);
+			}
+			break;
+		}
 		default:
 			assert(false && "Texture atlas has no textures defined");
 	}
