@@ -316,12 +316,41 @@ enum class GEOMETRY_BUFFER_ID {
 
 constexpr int geometry_count = static_cast<int>(GEOMETRY_BUFFER_ID::GEOMETRY_COUNT);
 
-struct RenderRequest {
-	float z_position;
-	unsigned int used_texture_atlas_texture_id;
-	TEXTURE_ASSET_ID used_texture = TEXTURE_ASSET_ID::TEXTURE_COUNT;
-	EFFECT_ASSET_ID used_effect = EFFECT_ASSET_ID::EFFECT_COUNT;
-	GEOMETRY_BUFFER_ID used_geometry = GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
+class RenderRequest {
+	struct RenderRequestSingle {
+		float z_position;
+		unsigned int used_texture_atlas_texture_id;
+		TEXTURE_ASSET_ID used_texture = TEXTURE_ASSET_ID::TEXTURE_COUNT;
+		EFFECT_ASSET_ID used_effect = EFFECT_ASSET_ID::EFFECT_COUNT;
+		GEOMETRY_BUFFER_ID used_geometry = GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
+	};
+
+	struct RenderRequestMulti {
+		std::vector<RenderRequestSingle> requests;
+		std::vector<Stationary> offset_positions;
+	};
+
+	union RenderRequestContainer {
+		RenderRequestSingle single;
+		RenderRequestMulti multi;
+	};
+
+	enum class RenderRequestType {
+		SINGLE,
+		MULTI,
+	};
+
+	RenderRequestContainer request;
+	RenderRequestType type;
+public:
+	explicit RenderRequest(RenderRequestSingle &&single): request() {
+		this->request.single = single;
+		this->type = RenderRequestType::SINGLE;
+	}
+	explicit RenderRequest(RenderRequestMulti &&multi): request() {
+		this->request.multi = multi;
+		this->type = RenderRequestType::MULTI;
+	}
 };
 
 // Collision Definitions
