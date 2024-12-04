@@ -47,6 +47,15 @@ class RenderSystem {
 		return textures;
 	} ();
 
+	// Setup TextureAtlas lookup table
+	const std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>> atlasLookup = [] {
+		std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>> lookup{};
+		for (const auto & texture_atlas : texture_atlases) {
+			initTextureAtlasTextures(texture_atlas, lookup);
+		}
+		return lookup;
+	} ();
+
 	std::array<GLuint, effect_count> effects;
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, effect_count> effect_paths = [] {
@@ -93,17 +102,19 @@ public:
 	// Draw all entities
 	void draw();
 
-	mat3 createProjectionMatrix();
+	constexpr static mat3 createProjectionMatrix();
 
 private:
 	// Internal drawing functions for each entity type
 
-	enum PositioningType {
-		MOTION = 0,
-		STATIONARY,
-	};
+	void doTexturedRender(GLuint program, const RenderRequestSingle& render_request) const;
 
-	void drawTexturedMesh(Entity entity, mat3& projection, PositioningType positioning) const;
+	void drawTexturedMesh(
+		Entity entity,
+		mat3& projection,
+		Transform& transform,
+		const RenderRequestSingle& render_request) const;
+
 	void drawToScreen();
 
 	// Window handle

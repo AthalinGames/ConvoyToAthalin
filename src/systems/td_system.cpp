@@ -404,7 +404,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
                     //auto &tower = registry.towers.emplace(dragged_entity);
                     //tower.range = 50;
                     printf("rage: %f, z: %f\n", registry.towers.get(dragged_entity).range,
-                           registry.renderRequests.get(dragged_entity).z_position);
+                           std::get<RenderRequestSingle>(registry.renderRequests.get(dragged_entity)).z_position);
                 }
                 realignCards();
             }
@@ -416,7 +416,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
                         registry.cards.components[i].dragged = true;
                         dragged_entity = registry.cards.entities[i];
                         dragging = true;
-                        printf("z:%f\n", registry.renderRequests.get(dragged_entity).z_position);
+                        printf("z:%f\n", std::get<RenderRequestSingle>(registry.renderRequests.get(dragged_entity)).z_position);
                     }
                 }
             }
