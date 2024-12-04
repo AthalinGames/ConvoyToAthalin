@@ -102,19 +102,19 @@ public:
 	// Draw all entities
 	void draw();
 
-	mat3 createProjectionMatrix();
+	constexpr static mat3 createProjectionMatrix();
 
 private:
 	// Internal drawing functions for each entity type
 
-	enum PositioningType {
-		MOTION = 0,
-		STATIONARY,
-	};
+	void doTexturedRender(GLuint program, const RenderRequestSingle& render_request) const;
 
-	void doTexturedRender(Entity entity, GLuint program) const;
+	void drawTexturedMesh(
+		Entity entity,
+		mat3& projection,
+		Transform& transform,
+		const RenderRequestSingle& render_request) const;
 
-	void drawTexturedMesh(Entity entity, mat3& projection, PositioningType positioning) const;
 	void drawToScreen();
 
 	// Window handle

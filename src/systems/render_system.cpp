@@ -6,7 +6,7 @@
 #include "imgui_impl_opengl3.h"
 #include "ecs/tiny_ecs_registry.hpp"
 
-void RenderSystem::doTexturedRender(const Entity entity, const GLuint program) const {
+void RenderSystem::doTexturedRender(const GLuint program, const RenderRequestSingle& render_request) const {
 	const GLint in_position_loc = glGetAttribLocation(program, "in_position");
 	const GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
 	gl_has_errors();
@@ -26,9 +26,8 @@ void RenderSystem::doTexturedRender(const Entity entity, const GLuint program) c
 	glActiveTexture(GL_TEXTURE0);
 	gl_has_errors();
 
-	assert(registry.renderRequests.has(entity));
 	const GLuint texture_id =
-			texture_gl_handles[static_cast<GLuint>(registry.renderRequests.get(entity).used_texture)];
+			texture_gl_handles[static_cast<GLuint>(render_request.used_texture)];
 
 	glBindTexture(GL_TEXTURE_2D, texture_id);
 	gl_has_errors();
@@ -36,36 +35,8 @@ void RenderSystem::doTexturedRender(const Entity entity, const GLuint program) c
 
 void RenderSystem::drawTexturedMesh(const Entity entity,
                                     mat3 &projection,
-                                    const PositioningType positioning) const {
-	vec2 position;
-    float angle;
-    vec2 scale;
-	switch (positioning) {
-		case MOTION: {
-			const Motion &motion = registry.motions.get(entity);
-			position = motion.position;
-			angle = motion.angle;
-			scale = motion.scale;
-			break;
-		}
-		case STATIONARY: {
-			const Stationary &pos = registry.stationaries.get(entity);
-			position = pos.position;
-			angle = pos.angle;
-			scale = pos.scale;
-			break;
-		}
-		default: {
-			assert(false && "Unknown positioning type");
-		}
-	}
-	Transform transform;
-	transform.translate(position);
-	transform.rotate(angle);
-	transform.scale(scale);
-
-	assert(registry.renderRequests.has(entity));
-	const RenderRequest &render_request = registry.renderRequests.get(entity);
+                                    Transform& transform,
+                                    const RenderRequestSingle& render_request) const {
 
 	const auto used_effect_enum = static_cast<GLuint>(render_request.used_effect);
 	assert(used_effect_enum != static_cast<GLuint>(EFFECT_ASSET_ID::EFFECT_COUNT));
@@ -87,7 +58,7 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	// Input data location as in the vertex buffer
 	switch (render_request.used_effect) {
 		case EFFECT_ASSET_ID::TEXTURED: {
-			doTexturedRender(entity, program);
+			doTexturedRender(program, render_request);
 			break;
 		}
 		case EFFECT_ASSET_ID::TEXTURED_ATLAS: {
@@ -99,7 +70,7 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 			glUniform2fv(tex_area_uloc, 1, reinterpret_cast<float *> (&atlas_texture.tex_size));
 			gl_has_errors();
 			// Render Texture
-			doTexturedRender(entity, program);
+			doTexturedRender(program, render_request);
 			break;
 		}
 		default:
@@ -222,23 +193,45 @@ void RenderSystem::draw()
 	gl_has_errors();
 	mat3 projection_2D = createProjectionMatrix();
 	// Draw all textured meshes that have a position and size component
-	for (const Entity entity : registry.renderRequests.entities) // TODO: rework this to enable more influence on order of rendering
-	{
+	// TODO: rework this to enable more influence on order of rendering
+	for (std::size_t i = 0; i < registry.renderRequests.size(); ++i) {
+		const Entity entity = registry.renderRequests.entities[i];
+		RenderRequest& request = registry.renderRequests.components[i];
 		if (registry.invisibles.has(entity)) {
 			continue;
 		}
+		// calculate base transform;
+		Transform transform;
 		if (registry.motions.has(entity)) {
-			drawTexturedMesh(entity, projection_2D, MOTION);
+			const Motion &motion = registry.motions.get(entity);
+			transform.translate(motion.position);
+			transform.rotate(motion.angle);
+			transform.scale(motion.scale);
 		} else if (registry.stationaries.has(entity)) {
-			drawTexturedMesh(entity, projection_2D, STATIONARY);
+			const Stationary &stationary = registry.stationaries.get(entity);
+			transform.translate(stationary.position);
+			transform.rotate(stationary.angle);
+			transform.scale(stationary.scale);
 		} else if (registry.texts.has(entity)) {
-			continue; //TODO think about acutal rendering
+			return; //TODO think about actual rendering
 		}
-		// Note, its not very efficient to access elements indirectly via the entity
-		// albeit iterating through all Sprites in sequence. A good point to optimize
+		// dispatch render request
+		if (const RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
+			drawTexturedMesh(entity, projection_2D, transform, *single_request);
+		} else if (const RenderRequestMulti *multi_request = std::get_if<RenderRequestMulti>(&request)) {
+			for (const auto & multi_request_elem : multi_request->requests) {
+				Transform offset_transform = transform;
+				const RenderRequestSingle& render_request = multi_request_elem.first;
+				const Stationary& stationary = multi_request_elem.second;
+				offset_transform.translate(stationary.position);
+				offset_transform.rotate(stationary.angle);
+				offset_transform.scale(stationary.scale);
+				drawTexturedMesh(entity, projection_2D, offset_transform, render_request);
+			}
+		}
 	}
 
-	// Truely render to the screen
+	// Truly render to the screen
 	drawToScreen();
 
 	// Render ImGui Stuff
@@ -250,19 +243,17 @@ void RenderSystem::draw()
 	gl_has_errors();
 }
 
-mat3 RenderSystem::createProjectionMatrix()
-{
+constexpr mat3 RenderSystem::createProjectionMatrix() {
 	// Fake projection matrix, scales with respect to window coordinates
-	float left = 0.f;
-	float top = 0.f;
+	constexpr float left = 0.f;
+	constexpr float top = 0.f;
 
-	gl_has_errors();
-	float right = (float) window_width_px;
-	float bottom = (float) window_height_px;
+	constexpr float right = static_cast<float>(window_width_px);
+	constexpr float bottom = static_cast<float>(window_height_px);
 
-	float sx = 2.f / (right - left);
-	float sy = 2.f / (top - bottom);
-	float tx = -(right + left) / (right - left);
-	float ty = -(top + bottom) / (top - bottom);
+	constexpr float sx = 2.f / (right - left);
+	constexpr float sy = 2.f / (top - bottom);
+	constexpr float tx = -(right + left) / (right - left);
+	constexpr float ty = -(top + bottom) / (top - bottom);
 	return {{sx, 0.f, 0.f}, {0.f, sy, 0.f}, {tx, ty, 1.f}};
 }

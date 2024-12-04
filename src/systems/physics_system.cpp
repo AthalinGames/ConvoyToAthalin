@@ -152,8 +152,13 @@ void PhysicsSystem::step(float elapsed_ms)
                 }
             } else if (collides(motion_i, motion_j)) {
             	// Check if coarse collision is an actual collision
-            	auto& poly_i = getCollisionMeshOfTexture(registry.renderRequests.get(entity_i).used_texture);
-            	auto& poly_j = getCollisionMeshOfTexture(registry.renderRequests.get(entity_j).used_texture);
+            	// TODO Think about Entities with multiple render requests
+            	const RenderRequest& request_i = registry.renderRequests.get(entity_i);
+            	const RenderRequest& request_j = registry.renderRequests.get(entity_j);
+            	assert(std::holds_alternative<RenderRequestSingle>(request_i));
+            	assert(std::holds_alternative<RenderRequestSingle>(request_j));
+            	auto& poly_i = getCollisionMeshOfTexture(std::get<RenderRequestSingle>(request_i).used_texture);
+            	auto& poly_j = getCollisionMeshOfTexture(std::get<RenderRequestSingle>(request_j).used_texture);
             	if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
             		// Create a collisions event
             		// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
