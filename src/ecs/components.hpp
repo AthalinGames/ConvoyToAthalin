@@ -192,7 +192,10 @@ enum class TEXTURE_ASSET_ID {
 	ARCHER,
     ARCHER_CARD,
 	ARROW,
-    SLIME,
+    SLIME_R,
+    SLIME_L,
+    SLIME_U,
+    SLIME_D,
     MAP,
 	OVERVIEW_MAP,
 	BLACK_PIXEL,
@@ -210,7 +213,10 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
         case TEXTURE_ASSET_ID::ARCHER_CARD: return "archerCard.png";
 		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
-        case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
+        case TEXTURE_ASSET_ID::SLIME_R: return "Slime2.png";
+        case TEXTURE_ASSET_ID::SLIME_L: return "Slime2.png";
+        case TEXTURE_ASSET_ID::SLIME_U: return "Slime1.png";
+        case TEXTURE_ASSET_ID::SLIME_D: return "Slime2.png";
         case TEXTURE_ASSET_ID::MAP: return "tdmap.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
@@ -307,7 +313,7 @@ const std::vector arrow_collision_poly {
 
 inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id) {
 	switch (id) {
-		case TEXTURE_ASSET_ID::SLIME:
+		case TEXTURE_ASSET_ID::SLIME_R:
 			return slime_collision_poly;
 		case TEXTURE_ASSET_ID::ARROW:
 			return arrow_collision_poly;

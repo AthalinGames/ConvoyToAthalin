@@ -114,8 +114,7 @@ void PhysicsSystem::step(float elapsed_ms)
             if(enemy.spawned) {
                 Motion &motion = registry.motions.get(enemy_container.entities[i]);
                 const float step_seconds = elapsed_ms / 1000.f;
-            	motion.position = calculate_enemy_position(enemy, active_map, step_seconds, true);
-                //printf("%f %f\n", motion.position[0], motion.position[0]);
+            	motion.position = calculate_enemy_position(enemy, enemy_entity, active_map, step_seconds, true);
             }
     	}
     }
@@ -170,7 +169,7 @@ void PhysicsSystem::step(float elapsed_ms)
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 }
 
-vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, const Map& current_map, const float seconds, const bool update_enemy) {
+vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, Entity enemy_entity, const Map& current_map, const float seconds, const bool update_enemy) {
 	vec2 previous_checkpoint = current_map.checkpoints[enemy.next_checkpoint - 1];
 	if (enemy.next_checkpoint >= current_map.checkpoints.size()) {
 		return previous_checkpoint;
@@ -203,6 +202,14 @@ vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, const Map& current_ma
 		}
 		previous_checkpoint = current_map.checkpoints[next_checkpoint_index - 1];
 		next_checkpoint = current_map.checkpoints[next_checkpoint_index];
+
+        //TODO: change slime angle
+        if (update_enemy) {
+            auto path_vector = previous_checkpoint - next_checkpoint;
+            const float angle = atan2(path_vector.y, path_vector.x);
+            Motion& enemy_motion = registry.motions.get(enemy_entity);
+            enemy_motion.angle = angle;
+        }
 	}
 	return previous_checkpoint + (next_checkpoint - previous_checkpoint) * section_progress;
 }
