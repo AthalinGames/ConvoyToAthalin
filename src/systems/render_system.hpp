@@ -3,8 +3,8 @@
 #include <array>
 #include <utility>
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
+//#include <ft2build.h>
+//#include FT_FREETYPE_H
 
 #include "common.hpp"
 #include "ecs/components.hpp"
@@ -14,7 +14,7 @@ struct Character {
 	GLuint textureID;
 	ivec2 size;
 	ivec2 bearing;
-	FT_Pos advance;
+	//FT_Pos advance;
 };
 
 // System responsible for setting up OpenGL and for rendering all the
@@ -94,7 +94,7 @@ public:
 
 	void initializeImGui();
 
-	void initializeFont();
+//	void initializeFont();
 
 	// Destroy resources associated to one or all entities created by the system
 	~RenderSystem();
