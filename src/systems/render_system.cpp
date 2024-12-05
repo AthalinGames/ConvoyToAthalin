@@ -201,32 +201,38 @@ void RenderSystem::draw()
 			continue;
 		}
 		// calculate base transform;
-		Transform transform;
+		vec2 position;
+		vec2 scale;
+		float angle;
 		if (registry.motions.has(entity)) {
 			const Motion &motion = registry.motions.get(entity);
-			transform.translate(motion.position);
-			transform.rotate(motion.angle);
-			transform.scale(motion.scale);
+			position = motion.position;
+			angle = motion.angle;
+			scale = motion.scale;
 		} else if (registry.stationaries.has(entity)) {
 			const Stationary &stationary = registry.stationaries.get(entity);
-			transform.translate(stationary.position);
-			transform.rotate(stationary.angle);
-			transform.scale(stationary.scale);
-		} else if (registry.texts.has(entity)) {
-			return; //TODO think about actual rendering
+			position = stationary.position;
+			angle = stationary.angle;
+			scale = stationary.scale;
+		} else {
+			assert(false && "RenderRequest does not have a position");
 		}
 		// dispatch render request
 		if (const RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
+			Transform transform;
+			transform.translate(position);
+			transform.rotate(angle);
+			transform.scale(scale);
 			drawTexturedMesh(entity, projection_2D, transform, *single_request);
 		} else if (const RenderRequestMulti *multi_request = std::get_if<RenderRequestMulti>(&request)) {
 			for (const auto & multi_request_elem : multi_request->requests) {
-				Transform offset_transform = transform;
+				Transform transform;
 				const RenderRequestSingle& render_request = multi_request_elem.first;
 				const Stationary& stationary = multi_request_elem.second;
-				offset_transform.translate(stationary.position);
-				offset_transform.rotate(stationary.angle);
-				offset_transform.scale(stationary.scale);
-				drawTexturedMesh(entity, projection_2D, offset_transform, render_request);
+				transform.translate(stationary.position + position);
+				transform.rotate(stationary.angle + angle);
+				transform.scale(scale);
+				drawTexturedMesh(entity, projection_2D, transform, render_request);
 			}
 		}
 	}

@@ -321,6 +321,8 @@ void WorldSystem::restart_game() {
 		createOverviewLine(renderer, last_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
 	}
 
+	createText(renderer, {window_width_px/2, window_height_px/2}, {10, 10}, "HALLO WELT\nDAS IST EIN test!");
+
 	// TODO replace with actual td_fight launches
 	//current_td_system = TDSystem(rng());
 	//current_td_system.init(renderer);
