@@ -36,6 +36,7 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 
     const auto bow = Entity();
     registry.bows.emplace(bow);
+    registry.weapons.emplace(bow);
     registry.archers.get(entity).bow = bow;
 
     Mesh& bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);

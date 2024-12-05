@@ -27,6 +27,9 @@ TDSystem::~TDSystem() {
     for (const auto tower : towers) {
         registry.remove_all_components_of(tower);
     }
+    for (const auto weapon : registry.weapons.entities) {
+        registry.remove_all_components_of(weapon);
+    }
     registry.remove_all_components_of(map);
 }
 
@@ -141,6 +144,9 @@ void TDSystem::restart_td_fight() {
     }
     for (const auto tower : towers) {
         registry.remove_all_components_of(tower);
+    }
+    for (const auto weapon : registry.weapons.entities) {
+        registry.remove_all_components_of(weapon);
     }
     registry.remove_all_components_of(map);
 

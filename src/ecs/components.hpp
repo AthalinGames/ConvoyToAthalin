@@ -73,8 +73,13 @@ struct Arrow {
 	std::set<Entity> hit_entities{};
 };
 
-// denotes Bow entity
+// Bow
 struct Bow {
+
+};
+
+// Weapon
+struct Weapon { //TODO: give to bows, swords or any other future weapon types
 
 };
 

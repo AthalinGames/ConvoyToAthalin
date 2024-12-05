@@ -22,6 +22,7 @@ public:
 	ComponentContainer<Arrow> arrows;
     ComponentContainer<Bow> bows;
 	ComponentContainer<Archer> archers;
+    ComponentContainer<Weapon> weapons;
     ComponentContainer<Stationary> stationaries;
     ComponentContainer<Map> maps;
 	ComponentContainer<Enemy> enemies;
@@ -51,6 +52,7 @@ public:
 		registry_list.push_back(&arrows);
         registry_list.push_back(&bows);
 		registry_list.push_back(&archers);
+        registry_list.push_back(&weapons);
         registry_list.push_back(&stationaries);
         registry_list.push_back(&maps);
 		registry_list.push_back(&enemies);
