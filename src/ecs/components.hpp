@@ -278,6 +278,7 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			break;
 		}
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: {
+			// TODO remember that the char offset is 0x20, so to get the correct char you need to subtract 0x20
 			constexpr unsigned int cols = 18, rows = 7, maxCount = cols * rows;
 			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
 			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
