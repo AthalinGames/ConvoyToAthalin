@@ -81,6 +81,11 @@ public:
 
 private:
 	// Internal drawing functions for each entity type
+    static void applyTextureRotation(RenderRequest& render_request,
+                                     Transform& transform,
+                                     Entity entity,
+                                     float angle,
+                                     bool use_direction_sprite);
 	void drawTexturedMesh(Entity entity, mat3& projection);
 	void drawToScreen();
 

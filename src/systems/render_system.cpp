@@ -5,38 +5,12 @@
 
 #include "ecs/tiny_ecs_registry.hpp"
 
-void RenderSystem::drawTexturedMesh(const Entity entity,
-                                    mat3 &projection)
-{
-	if (registry.invisibles.has(entity))
-		return;
-	vec2 position;
-    float angle;
-    bool use_direction_sprite;
-    vec2 scale;
-    if (registry.motions.has(entity)) {
-        Motion &motion = registry.motions.get(entity);
-        position = motion.position;
-        angle = motion.angle;
-        use_direction_sprite = motion.use_direction_sprite;
-        scale = motion.scale;
-    } else {
-        Stationary &map = registry.stationaries.get(entity);
-        position = map.position;
-        angle = map.angle;
-        use_direction_sprite = map.use_direction_sprite;
-        scale = map.scale;
-    }
-
-    assert(registry.renderRequests.has(entity));
-    //const
-    RenderRequest &render_request = registry.renderRequests.get(entity);
-
-	// Transformation code, see Rendering and Transformation in the template
-	// specification for more info Incrementally updates transformation matrix,
-	// thus ORDER IS IMPORTANT
-	Transform transform;
-	transform.translate(position);
+// applies rotation to transform or selects fitting directional sprite depending on use_direction_sprite
+void RenderSystem::applyTextureRotation(RenderRequest& render_request,
+                                        Transform& transform,
+                                        Entity entity,
+                                        float angle,
+                                        bool use_direction_sprite) {
     // TODO: if bow_and_arrow rotate, if character sprite choose view direction sprite
     if (!use_direction_sprite) {
         transform.rotate(angle);
@@ -69,6 +43,41 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
             }
         }
     }
+}
+
+void RenderSystem::drawTexturedMesh(const Entity entity,
+                                    mat3 &projection)
+{
+	if (registry.invisibles.has(entity))
+		return;
+	vec2 position;
+    float angle;
+    bool use_direction_sprite;
+    vec2 scale;
+    if (registry.motions.has(entity)) {
+        Motion &motion = registry.motions.get(entity);
+        position = motion.position;
+        angle = motion.angle;
+        use_direction_sprite = motion.use_direction_sprite;
+        scale = motion.scale;
+    } else {
+        Stationary &map = registry.stationaries.get(entity);
+        position = map.position;
+        angle = map.angle;
+        use_direction_sprite = map.use_direction_sprite;
+        scale = map.scale;
+    }
+
+    assert(registry.renderRequests.has(entity));
+    //const
+    RenderRequest &render_request = registry.renderRequests.get(entity);
+
+	// Transformation code, see Rendering and Transformation in the template
+	// specification for more info Incrementally updates transformation matrix,
+	// thus ORDER IS IMPORTANT
+	Transform transform;
+	transform.translate(position);
+    applyTextureRotation(render_request, transform, entity, angle, use_direction_sprite);
 	transform.scale(scale);
 
     //if (use_direction_sprite) {
