@@ -64,7 +64,7 @@ bool RenderSystem::init(GLFWwindow* window_arg)
 	initializeGlEffects();
 	initializeGlGeometryBuffers();
 	initializeImGui();
-	initializeFont();
+//	initializeFont();
 
 	return true;
 }
@@ -212,6 +212,7 @@ void RenderSystem::initializeImGui() {
 	ImGui_ImplOpenGL3_Init();
 }
 
+/*
 void RenderSystem::initializeFont() {
 	// Initialize FreeType
 	FT_Library ft;
@@ -268,7 +269,7 @@ void RenderSystem::initializeFont() {
 	FT_Done_Face(face);
 	FT_Done_FreeType(ft);
 }
-
+*/
 
 RenderSystem::~RenderSystem()
 {
