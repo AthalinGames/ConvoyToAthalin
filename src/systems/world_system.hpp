@@ -61,6 +61,7 @@ private:
     RenderSystem* renderer;
     float current_speed;
 
+    Entity player;
     Entity overview_map;
     Entity current_map_pos;
     Entity next_map_pos;

@@ -185,6 +185,8 @@ bool WorldSystem::step(const float elapsed_ms) {
 
 		// TD Fight should be finished
 		current_td_system.reset(new TDSystem());
+        Player& current_player = registry.players.get(player);
+        current_player.won_battles++;
 		// Setup Overview-Map for next selection
 		auto &current_map_pos_props = registry.overviewMapLocations.get(current_map_pos);
 		current_map_pos_props.active = false;
@@ -238,7 +240,7 @@ void WorldSystem::restart_game() {
 	screen.screen_darken_factor = 0;
 
 	td_fight_launched = false;
-	createPlayer();
+	player = createPlayer();
 
 	current_td_system.reset(new TDSystem());
 	overview_map = createOverviewMap(renderer);

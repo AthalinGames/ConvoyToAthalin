@@ -39,6 +39,7 @@ public:
     void on_mouse_button(int button, int action, int mods, GLFWwindow* window);
 private:
 
+    std::vector<Entity> generate_combat(int difficulty);
     // restart TD fight
     void restart_td_fight();
 

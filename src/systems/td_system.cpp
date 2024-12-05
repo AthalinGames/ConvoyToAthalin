@@ -109,6 +109,24 @@ bool TDSystem::step(float elapsed_ms) {
     return true;
 }
 
+std::vector<Entity> TDSystem::generate_combat(int difficulty) {
+    if (difficulty == 0) {
+        const auto debug_enemy = createEnemy(renderer, {0, 100});
+        enemies.emplace(debug_enemy);
+        Enemy &enemy = registry.enemies.get(debug_enemy);
+        enemy.speed = 100.f;
+
+        const auto debug_enemy2 = createEnemy(renderer, {0, 100});
+        enemies.emplace(debug_enemy2);
+        Enemy &enemy2 = registry.enemies.get(debug_enemy2);
+        enemy2.speed = 100.f;
+        enemy2.spawn_time = 1000;
+
+        return {debug_enemy, debug_enemy2};
+    }
+    return {};
+}
+
 void TDSystem::restart_td_fight() {
     // Debugging for memory/component leaks
     registry.list_all_components();
@@ -140,18 +158,9 @@ void TDSystem::restart_td_fight() {
     Map& map = registry.maps.get(debug_map);
     map.active = true;
 
-    const auto debug_enemy = createEnemy(renderer, {0, 100});
-    enemies.emplace(debug_enemy);
-    Enemy& enemy = registry.enemies.get(debug_enemy);
-    enemy.speed = 100.f;
 
-    const auto debug_enemy2 = createEnemy(renderer, {0, 100});
-    enemies.emplace(debug_enemy2);
-    Enemy& enemy2 = registry.enemies.get(debug_enemy2);
-    enemy2.speed = 100.f;
-    enemy2.spawn_time = 1000;
 
-    map.enemies = {debug_enemy, debug_enemy2};
+    map.enemies = generate_combat(0);
 
     printf("Created active map\n");
     printf("Mapcount: %lu\n", registry.maps.size());
