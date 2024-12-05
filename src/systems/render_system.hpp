@@ -3,9 +3,19 @@
 #include <array>
 #include <utility>
 
+//#include <ft2build.h>
+//#include FT_FREETYPE_H
+
 #include "common.hpp"
 #include "ecs/components.hpp"
 #include "ecs/tiny_ecs.hpp"
+
+struct Character {
+	GLuint textureID;
+	ivec2 size;
+	ivec2 bearing;
+	//FT_Pos advance;
+};
 
 // System responsible for setting up OpenGL and for rendering all the
 // visual entities in the game
@@ -37,6 +47,15 @@ class RenderSystem {
 		return textures;
 	} ();
 
+	// Setup TextureAtlas lookup table
+	const std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>> atlasLookup = [] {
+		std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>> lookup{};
+		for (const auto & texture_atlas : texture_atlases) {
+			initTextureAtlasTextures(texture_atlas, lookup);
+		}
+		return lookup;
+	} ();
+
 	std::array<GLuint, effect_count> effects;
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, effect_count> effect_paths = [] {
@@ -51,12 +70,14 @@ class RenderSystem {
 	std::array<GLuint, geometry_count> index_buffers;
 	std::array<Mesh, geometry_count> meshes;
 
+	std::map<char, Character> Characters;
+
 public:
 	// Initialize the window
 	bool init(GLFWwindow* window);
 
 	template <class T>
-	void bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices, std::vector<uint16_t> indices);
+	void bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices, std::vector<uint16_t> indices, GLenum drawType=GL_STATIC_DRAW);
 
 	void initializeGlTextures();
 
@@ -71,13 +92,17 @@ public:
 	// shader
 	bool initScreenTexture();
 
+	void initializeImGui();
+
+//	void initializeFont();
+
 	// Destroy resources associated to one or all entities created by the system
 	~RenderSystem();
 
 	// Draw all entities
 	void draw();
 
-	mat3 createProjectionMatrix();
+	constexpr static mat3 createProjectionMatrix();
 
 private:
 	// Internal drawing functions for each entity type
@@ -86,7 +111,15 @@ private:
                                      Entity entity,
                                      float angle,
                                      bool use_direction_sprite);
-	void drawTexturedMesh(Entity entity, mat3& projection);
+
+	void doTexturedRender(GLuint program, const RenderRequestSingle& render_request) const;
+
+	void drawTexturedMesh(
+		Entity entity,
+		mat3& projection,
+		Transform& transform,
+		const RenderRequestSingle& render_request) const;
+
 	void drawToScreen();
 
 	// Window handle

@@ -27,6 +27,52 @@ bool collides(const Motion& motion1, const Motion& motion2)
 	return false;
 }
 
+bool pointInsidePoly(const vec2& point, const std::vector<vec2>& polygon) {
+	for (std::size_t i = 0; i < polygon.size(); ++i) {
+		const vec2 p0 = polygon[i];
+		const vec2 p1 = polygon[(i + 1) % polygon.size()];
+		// Calculate if point is on the left of the line
+		if (const auto result = point.x * (p1.y - p0.y) + point.y * (p0.x - p1.x) + p0.x * (p1.y - p0.y) - p0.y * (p1.x - p0.y);
+			result <= 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// This assumes that both polys are convex
+bool collidesPoly(const Motion& motion1, const Motion& motion2, const std::vector<vec2>& poly1, const std::vector<vec2>& poly2) {
+	Transform tf1, tf2;
+	tf1.translate(motion1.position);
+	tf2.translate(motion2.position);
+	tf1.rotate(motion1.angle);
+	tf2.rotate(motion2.angle);
+	tf1.scale(motion1.scale);
+	tf2.scale(motion2.scale);
+	// Transform both polys
+	auto poly1TF = std::vector<vec2>(poly1.size());
+	auto poly2TF = std::vector<vec2>(poly2.size());
+	for (std::size_t i = 0; i < poly1.size(); ++i) {
+		poly1TF[i] = tf1 * poly1[i];
+	}
+	for (std::size_t i = 0; i < poly2.size(); ++i) {
+		poly2TF[i] = tf2 * poly2[i];
+	}
+	// Check if point of poly2 is inside poly1
+	for (const auto& poly2_pos : poly2TF) {
+		if (pointInsidePoly(poly2_pos, poly1TF)) {
+			return true;
+		}
+	}
+	// Check if point of poly1 is inside poly2
+	for (const auto& poly1_pos : poly1TF) {
+		if (pointInsidePoly(poly1_pos, poly2TF)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool enemyInTowerRange(const Motion& tower_motion, const Tower& tower, const Motion& enemy_motion) {
 	const vec2 d_p = tower_motion.position - enemy_motion.position;
 	const float dist_squared = dot(d_p, d_p);
@@ -60,34 +106,15 @@ void PhysicsSystem::step(float elapsed_ms)
 	//printf("Active maps: %lu\n", active_maps.size());
 	//printf("Map count: %lu\n", map_container.size());
     if (active_maps.size() == 1) {
-	    Map& active_map = active_maps[0];
+	    const Map& active_map = active_maps[0];
 
     	auto& enemy_container = registry.enemies;
     	for (uint i = 0; i < enemy_container.size(); i++) {
     		Enemy& enemy = enemy_container.components[i];
             if(enemy.spawned) {
                 Motion &motion = registry.motions.get(enemy_container.entities[i]);
-                float step_seconds = elapsed_ms / 1000.f;
-                vec2 previous_checkpoint = active_map.checkpoints[enemy.next_checkpoint - 1];
-                if (enemy.next_checkpoint >= active_map.checkpoints.size()) {
-                    break;
-                }
-                vec2 next_checkpoint = active_map.checkpoints[enemy.next_checkpoint];
-                enemy.enemy_progress += (enemy.speed * step_seconds) / active_map.path_length;
-                float section_length = abs(distance(previous_checkpoint,
-                                                    next_checkpoint)); //TODO maybe already calc this in create_map and save with map
-                enemy.section_progress += (enemy.speed * step_seconds) / section_length;
-                //printf("%f\n", enemy.section_progress);
-                if (enemy.section_progress >= 1) {
-                    enemy.next_checkpoint++;
-                    if (enemy.next_checkpoint >= active_map.checkpoints.size()) {
-                        break;
-                    }
-                    enemy.section_progress -= 1.f;
-                    previous_checkpoint = active_map.checkpoints[enemy.next_checkpoint - 1];
-                    next_checkpoint = active_map.checkpoints[enemy.next_checkpoint];
-                }
-                motion.position = previous_checkpoint + (next_checkpoint - previous_checkpoint) * enemy.section_progress;
+                const float step_seconds = elapsed_ms / 1000.f;
+            	motion.position = calculate_enemy_position(enemy, active_map, step_seconds, true);
                 //printf("%f %f\n", motion.position[0], motion.position[0]);
             }
     	}
@@ -123,11 +150,21 @@ void PhysicsSystem::step(float elapsed_ms)
                         registry.collisions.emplace_with_duplicates(entity_j, entity_i);
                     }
                 }
-            }else if (collides(motion_i, motion_j)) {
-				// Create a collisions event
-				// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
-				registry.collisions.emplace_with_duplicates(entity_i, entity_j);
-				registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+            } else if (collides(motion_i, motion_j)) {
+            	// Check if coarse collision is an actual collision
+            	// TODO Think about Entities with multiple render requests
+            	const RenderRequest& request_i = registry.renderRequests.get(entity_i);
+            	const RenderRequest& request_j = registry.renderRequests.get(entity_j);
+            	assert(std::holds_alternative<RenderRequestSingle>(request_i));
+            	assert(std::holds_alternative<RenderRequestSingle>(request_j));
+            	auto& poly_i = getCollisionMeshOfTexture(std::get<RenderRequestSingle>(request_i).used_texture);
+            	auto& poly_j = getCollisionMeshOfTexture(std::get<RenderRequestSingle>(request_j).used_texture);
+            	if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
+            		// Create a collisions event
+            		// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
+            		registry.collisions.emplace_with_duplicates(entity_i, entity_j);
+            		registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+            	}
 			}
 		}
 	}
@@ -136,4 +173,41 @@ void PhysicsSystem::step(float elapsed_ms)
 	// TODO A2: HANDLE PEBBLE collisions HERE
 	// DON'T WORRY ABOUT THIS UNTIL ASSIGNMENT 2
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+}
+
+vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, const Map& current_map, const float seconds, const bool update_enemy) {
+	vec2 previous_checkpoint = current_map.checkpoints[enemy.next_checkpoint - 1];
+	if (enemy.next_checkpoint >= current_map.checkpoints.size()) {
+		return previous_checkpoint;
+	}
+	vec2 next_checkpoint = current_map.checkpoints[enemy.next_checkpoint];
+	float enemy_progress = enemy.enemy_progress;
+	enemy_progress += (enemy.speed * seconds) / current_map.path_length;
+	if (update_enemy) {
+		enemy.enemy_progress = enemy_progress;
+	}
+	const float section_length = abs(distance(previous_checkpoint,
+										next_checkpoint)); //TODO maybe already calc this in create_map and save with map
+	float section_progress = enemy.section_progress;
+	section_progress += (enemy.speed * seconds) / section_length;
+	if (update_enemy) {
+		enemy.section_progress = section_progress;
+	}
+	if (section_progress >= 1) {
+		uint next_checkpoint_index = enemy.next_checkpoint;
+		next_checkpoint_index++;
+		if (update_enemy) {
+			enemy.next_checkpoint = next_checkpoint_index;
+		}
+		if (next_checkpoint_index >= current_map.checkpoints.size()) {
+			return next_checkpoint;
+		}
+		section_progress -= 1.f;
+		if (update_enemy) {
+			enemy.section_progress = section_progress;
+		}
+		previous_checkpoint = current_map.checkpoints[next_checkpoint_index - 1];
+		next_checkpoint = current_map.checkpoints[next_checkpoint_index];
+	}
+	return previous_checkpoint + (next_checkpoint - previous_checkpoint) * section_progress;
 }

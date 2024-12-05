@@ -11,6 +11,8 @@ class PhysicsSystem
 public:
     void step(float elapsed_ms);
 
+    static vec2 calculate_enemy_position(Enemy& enemy, const Map& current_map, float seconds, bool update_enemy);
+
     PhysicsSystem()
     {
     }

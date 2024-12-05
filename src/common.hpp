@@ -29,6 +29,7 @@ inline std::string shader_path(const std::string& name) {return std::string(PROJ
 inline std::string textures_path(const std::string& name) {return data_path() + "/textures/" + std::string(name);};
 inline std::string audio_path(const std::string& name) {return data_path() + "/audio/" + std::string(name);};
 inline std::string mesh_path(const std::string& name) {return data_path() + "/meshes/" + std::string(name);};
+inline std::string fonts_path(const std::string& name) {return data_path() + "/fonts/" + std::string(name);};
 
 constexpr int window_width_px = 1200;
 constexpr int window_height_px = 800;
@@ -51,6 +52,12 @@ struct Transform {
 	void scale(vec2 scale);
 	void rotate(float radians);
 	void translate(vec2 offset);
+
+	vec2 operator*(const std::vector<vec2>::value_type & vec) const {
+		const vec3 p = { vec.x, vec.y, 1.0f };
+		vec3 res = mat * p;
+		return { res.x, res.y };
+	};
 };
 
 bool gl_has_errors();
