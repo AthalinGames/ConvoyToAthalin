@@ -47,8 +47,9 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
     bow_motion.velocity = vec2(0, 0);
     bow_motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
 
-    registry.renderRequests.insert(bow, {
+    registry.renderRequests.insert(bow, RenderRequestSingle{
             Z_MIDDLE,
+            0,
             TEXTURE_ASSET_ID::BOW1,
             EFFECT_ASSET_ID::TEXTURED,
             GEOMETRY_BUFFER_ID::SPRITE,

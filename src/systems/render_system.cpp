@@ -1,5 +1,6 @@
 // internal
 #include "render_system.hpp"
+#include "world_init.hpp"
 #include <SDL.h>
 
 #include "imgui.h"
@@ -7,12 +8,13 @@
 #include "ecs/tiny_ecs_registry.hpp"
 
 // applies rotation to transform or selects fitting directional sprite depending on use_direction_sprite
-void RenderSystem::applyTextureRotation(RenderRequestSingle& render_request,
+void RenderSystem::applyTextureRotation(RenderRequestSingle& render_request, //TODO maybe take just RenderRequest and check which one
                                         Transform& transform,
                                         Entity entity,
                                         float angle,
                                         bool use_direction_sprite) {
-    // TODO: if bow_and_arrow rotate, if character sprite choose view direction sprite
+
+    // if bow_and_arrow rotate, if character sprite choose view direction sprite
     if (!use_direction_sprite) {
         transform.rotate(angle);
         if (registry.bows.has(entity)) {
@@ -44,6 +46,7 @@ void RenderSystem::applyTextureRotation(RenderRequestSingle& render_request,
             }
         }
     }
+
 }
 
 void RenderSystem::doTexturedRender(const GLuint program, const RenderRequestSingle& render_request) const {
@@ -245,12 +248,18 @@ void RenderSystem::draw()
 		if (registry.motions.has(entity)) {
 			const Motion &motion = registry.motions.get(entity);
 			transform.translate(motion.position);
-			applyTextureRotation(request, transform, entity, motion.angle, motion.use_direction_sprite);
-			transform.scale(motion.scale);
+            //TODO: checking for the RequestSingle here is kinda whack and confusing to read, maybe some stuff can be reordered
+            if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
+                applyTextureRotation(*single_request, transform, entity, motion.angle, motion.use_direction_sprite);
+            }
+            transform.scale(motion.scale);
 		} else if (registry.stationaries.has(entity)) {
 			const Stationary &stationary = registry.stationaries.get(entity);
 			transform.translate(stationary.position);
-			applyTextureRotation(request, transform, entity, stationary.angle, stationary.use_direction_sprite);
+            //TODO: checking for the RequestSingle here is kinda whack and confusing to read, maybe some stuff can be reordered
+            if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
+                applyTextureRotation(*single_request, transform, entity, stationary.angle, stationary.use_direction_sprite);
+            }
 			transform.scale(stationary.scale);
 		} else if (registry.texts.has(entity)) {
 			return; //TODO think about actual rendering
@@ -258,13 +267,13 @@ void RenderSystem::draw()
 		// dispatch render request
 		if (const RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
 			drawTexturedMesh(entity, projection_2D, transform, *single_request);
-		} else if (const RenderRequestMulti *multi_request = std::get_if<RenderRequestMulti>(&request)) {
-			for (const auto & multi_request_elem : multi_request->requests) {
+		} else if (RenderRequestMulti *multi_request = std::get_if<RenderRequestMulti>(&request)) {
+			for (auto & multi_request_elem : multi_request->requests) {
 				Transform offset_transform = transform;
-				const RenderRequestSingle& render_request = multi_request_elem.first;
+				RenderRequestSingle& render_request = multi_request_elem.first;
 				const Stationary& stationary = multi_request_elem.second;
 				offset_transform.translate(stationary.position);
-				applyTextureRotation(request, transform, entity, stationary.angle, stationary.use_direction_sprite);
+				applyTextureRotation(render_request, transform, entity, stationary.angle, stationary.use_direction_sprite);
 				offset_transform.scale(stationary.scale);
 				drawTexturedMesh(entity, projection_2D, offset_transform, render_request);
 			}

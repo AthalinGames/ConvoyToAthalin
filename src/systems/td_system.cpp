@@ -75,15 +75,18 @@ bool TDSystem::step(float elapsed_ms) {
             }
             if (registry.archers.has(tower_entity)) {
                 const auto &bow_entity = registry.archers.get(tower_entity).bow;
-                if (shot_timer.time < 0) {
-                    //change bow to empty
-                    registry.renderRequests.get(bow_entity).used_texture = TEXTURE_ASSET_ID::BOW3;
-                } else if (shot_timer.time < 150.) {
-                    //change bow to drawn
-                    registry.renderRequests.get(bow_entity).used_texture = TEXTURE_ASSET_ID::BOW2;
-                } else if (shot_timer.time < 500.) {
-                    //change bow to loaded
-                    registry.renderRequests.get(bow_entity).used_texture = TEXTURE_ASSET_ID::BOW1;
+                RenderRequest& render_request = registry.renderRequests.get(bow_entity);
+                if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&render_request)) {
+                    if (shot_timer.time < 0) {
+                        //change bow to empty
+                        single_request->used_texture = TEXTURE_ASSET_ID::BOW3;
+                    } else if (shot_timer.time < 150.) {
+                        //change bow to drawn
+                        single_request->used_texture = TEXTURE_ASSET_ID::BOW2;
+                    } else if (shot_timer.time < 500.) {
+                        //change bow to loaded
+                        single_request->used_texture = TEXTURE_ASSET_ID::BOW1;
+                    }
                 }
             }
 

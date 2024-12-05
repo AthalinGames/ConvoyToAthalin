@@ -106,7 +106,7 @@ public:
 
 private:
 	// Internal drawing functions for each entity type
-    static void applyTextureRotation(RenderRequest& render_request,
+    static void applyTextureRotation(RenderRequestSingle& render_request,
                                      Transform& transform,
                                      Entity entity,
                                      float angle,
