@@ -5,6 +5,7 @@
 #include "td_system.hpp"
 
 #include "physics_system.hpp"
+#include "world_system.hpp"
 
 TDSystem::TDSystem(const unsigned int seed) : dragging(false) {
     rng = std::default_random_engine(seed);
@@ -30,8 +31,9 @@ TDSystem::~TDSystem() {
     registry.remove_all_components_of(map);
 }
 
-void TDSystem::init(RenderSystem *renderer) {
+void TDSystem::init(RenderSystem *renderer, Entity player) {
     this->renderer = renderer;
+    this->player = player;
 
     // Set all states to default
     restart_td_fight();
@@ -123,6 +125,17 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
         enemy2.spawn_time = 1000;
 
         return {debug_enemy, debug_enemy2};
+    } else {
+        std::vector<Entity> enemy_list = {};
+        for (int i = 0; i < difficulty; ++i) {
+            const Entity new_enemy = createEnemy(renderer, {0, 100});
+            enemies.emplace(new_enemy);
+            Enemy& enemy = registry.enemies.get(new_enemy);
+            enemy.speed = 100.f;
+            enemy.spawn_time = i * 1000.;
+            enemy_list.push_back(new_enemy);
+        }
+        return enemy_list;
     }
     return {};
 }
@@ -159,8 +172,8 @@ void TDSystem::restart_td_fight() {
     map.active = true;
 
 
-
-    map.enemies = generate_combat(0);
+    Player& current_player = registry.players.get(player);
+    map.enemies = generate_combat(current_player.won_battles);
 
     printf("Created active map\n");
     printf("Mapcount: %lu\n", registry.maps.size());

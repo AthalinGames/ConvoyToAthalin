@@ -6,6 +6,7 @@
 #include <set>
 #include <functional>
 #include <typeindex>
+#include <iterator>
 #include <assert.h>
 
 // Unique identifyer for all entities

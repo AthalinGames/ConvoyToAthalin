@@ -16,7 +16,7 @@ public:
     TDSystem();
 
     // starts the TDSystem
-    void init(RenderSystem* renderer);
+    void init(RenderSystem* renderer, Entity player);
 
     // Releases all associated resources
     ~TDSystem();
@@ -47,6 +47,7 @@ private:
 
     // Game state
     RenderSystem* renderer;
+    Entity player;
     float current_speed;
     bool dragging; // shows if mouse is currently dragging something
     Entity dragged_entity;

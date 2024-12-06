@@ -440,7 +440,7 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 			for (const auto entity : clickables.entities) {
 				if (registry.overviewMapLocations.has(entity)) {
 					current_td_system.reset( new TDSystem(rng()));
-					current_td_system->init(renderer);
+					current_td_system->init(renderer, player);
 					td_fight_launched = true;
 					next_map_pos = entity;
 				}
