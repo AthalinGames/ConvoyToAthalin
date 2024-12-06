@@ -27,6 +27,9 @@ TDSystem::~TDSystem() {
     for (const auto tower : towers) {
         registry.remove_all_components_of(tower);
     }
+    for (const auto weapon : registry.weapons.entities) {
+        registry.remove_all_components_of(weapon);
+    }
     registry.remove_all_components_of(map);
 }
 
@@ -71,7 +74,25 @@ bool TDSystem::step(float elapsed_ms) {
 
             if (shot_timer.time < 0) {
                 registry.shotTimers.remove(tower_entity);
+
             }
+            if (registry.archers.has(tower_entity)) {
+                const auto &bow_entity = registry.archers.get(tower_entity).bow;
+                RenderRequest& render_request = registry.renderRequests.get(bow_entity);
+                if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&render_request)) {
+                    if (shot_timer.time < 0) {
+                        //change bow to empty
+                        single_request->used_texture = TEXTURE_ASSET_ID::BOW3;
+                    } else if (shot_timer.time < 150.) {
+                        //change bow to drawn
+                        single_request->used_texture = TEXTURE_ASSET_ID::BOW2;
+                    } else if (shot_timer.time < 500.) {
+                        //change bow to loaded
+                        single_request->used_texture = TEXTURE_ASSET_ID::BOW1;
+                    }
+                }
+            }
+
         }
         if(!td_map.enemies.empty()){
             Enemy& next_enemy = registry.enemies.get(td_map.enemies[0]);
@@ -123,6 +144,9 @@ void TDSystem::restart_td_fight() {
     }
     for (const auto tower : towers) {
         registry.remove_all_components_of(tower);
+    }
+    for (const auto weapon : registry.weapons.entities) {
+        registry.remove_all_components_of(weapon);
     }
     registry.remove_all_components_of(map);
 
@@ -238,6 +262,13 @@ void TDSystem::handle_aiming() {
             }
             const float angle = atan2(d_p.y, d_p.x);
             tower_motion.angle = angle;
+            if (registry.archers.has(tower_entity)) {
+                auto &bow_motion = registry.motions.get(registry.archers.get(tower_entity).bow);
+                bow_motion.angle = angle - M_PI_2 - M_PI_2/2; //+ (2 * M_PI) - (M_PI_2/2);
+                if (bow_motion.angle < M_PI) { //keep angle within [-pi, pi]
+                    bow_motion.angle += 2*M_PI;
+                }
+            }
 
             if (!registry.shotTimers.has(tower_entity)) {
                 const auto &archer = registry.archers.get(tower_entity);
