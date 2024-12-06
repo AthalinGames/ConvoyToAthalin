@@ -17,9 +17,10 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = M_PI/2;
+	motion.angle = M_PI;
+    motion.use_direction_sprite = true;
 	motion.velocity = vec2(0, 0);
-	motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+	motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
 
 	auto& tower = registry.towers.emplace(entity);
 	tower.range = 50;
@@ -33,6 +34,28 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
+    const auto bow = Entity();
+    registry.bows.emplace(bow);
+    registry.weapons.emplace(bow);
+    registry.archers.get(entity).bow = bow;
+
+    Mesh& bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+    registry.meshPtrs.emplace(bow, &bow_mesh);
+
+    Motion& bow_motion = registry.motions.emplace(bow);
+    bow_motion.position = pos;
+    bow_motion.angle = M_PI/2;
+    bow_motion.velocity = vec2(0, 0);
+    bow_motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+
+    registry.renderRequests.insert(bow, RenderRequestSingle{
+            Z_MIDDLE,
+            0,
+            TEXTURE_ASSET_ID::BOW1,
+            EFFECT_ASSET_ID::TEXTURED,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+
 	return entity;
 }
 
@@ -44,9 +67,9 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = static_cast<float>(atan2(dir.y, dir.x));
+	motion.angle = static_cast<float>(atan2(dir.y, dir.x)) + (M_PI_2/2) + M_PI;
 	motion.velocity = -velocity * normalize(dir);
-	motion.scale = vec2({-ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
+	motion.scale = vec2({ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
 
     registry.arrows.emplace(entity);
 
@@ -71,7 +94,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 	motion.position = pos;
 	motion.angle = 0.0f;
 	motion.velocity = vec2(0, 0);
-	motion.scale = vec2({-SLIME_WIDTH, SLIME_HEIGHT});
+	motion.scale = vec2({SLIME_WIDTH, SLIME_HEIGHT});
 
     registry.enemies.emplace(entity);
     registry.slimes.emplace(entity);

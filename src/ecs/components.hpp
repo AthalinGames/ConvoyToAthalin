@@ -63,6 +63,7 @@ struct ShotTimer {
 // Archer
 struct Archer {
 	float arrow_speed = 1000.0f;
+    Entity bow;
 };
 
 // Arrow
@@ -72,10 +73,21 @@ struct Arrow {
 	std::set<Entity> hit_entities{};
 };
 
+// Bow
+struct Bow {
+
+};
+
+// Weapon
+struct Weapon { //TODO: give to bows, swords or any other future weapon types
+
+};
+
 // All data relevant to the shape and motion of entities
 struct Motion {
 	vec2 position = { 0.f, 0.f };
 	float angle = 0.f;
+    bool use_direction_sprite = false; // TODO: maybe param in render request instead?
 	vec2 velocity = { 0.f, 0.f };
 	vec2 scale = { 10.f, 10.f };
 };
@@ -93,6 +105,7 @@ struct Stationary
 {
     vec2 position = { 0.f, 0.f };
     float angle = 0.f;
+    bool use_direction_sprite = false; // TODO: maybe param in render request instead?
     vec2 scale = { 100.f, 100.f };
 };
 
@@ -203,7 +216,14 @@ enum class TEXTURE_ASSET_ID {
 	FISH = 0,
 	TURTLE,
 	ARCHER,
+    ARCHER_L,
+    ARCHER_U,
+    ARCHER_R,
+    ARCHER_D,
     ARCHER_CARD,
+    BOW1,
+    BOW2,
+    BOW3,
 	ARROW,
     SLIME,
     MAP,
@@ -220,7 +240,14 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::FISH: return "fish.png";
 		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
+        case TEXTURE_ASSET_ID::ARCHER_L: return "archer_perspective2.png";
+        case TEXTURE_ASSET_ID::ARCHER_U: return "archer_perspective1.png";
+        case TEXTURE_ASSET_ID::ARCHER_R: return "archer_perspective4.png";
+        case TEXTURE_ASSET_ID::ARCHER_D: return "archer_perspective3.png";
         case TEXTURE_ASSET_ID::ARCHER_CARD: return "archerCard.png";
+        case TEXTURE_ASSET_ID::BOW1: return "bow_and_arrow1.png";
+        case TEXTURE_ASSET_ID::BOW2: return "bow_and_arrow2.png";
+        case TEXTURE_ASSET_ID::BOW3: return "bow_and_arrow3.png";
 		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
         case TEXTURE_ASSET_ID::MAP: return "tdmap.png";
@@ -303,6 +330,7 @@ enum class EFFECT_ASSET_ID {
 	TEXTURED,
 	TEXTURED_ATLAS,
 	WATER, // TODO GROUND,
+    //CHARACTER_SPRITE,
 	EFFECT_COUNT
 };
 
@@ -314,6 +342,7 @@ constexpr const char* EffectAssetIDToString(const EFFECT_ASSET_ID id) {
 		case EFFECT_ASSET_ID::TEXTURED: return "textured";
 		case EFFECT_ASSET_ID::TEXTURED_ATLAS: return "texturedAtlas";
 		case EFFECT_ASSET_ID::WATER: return "water";
+        //case EFFECT_ASSET_ID::CHARACTER_SPRITE: return "character_sprite"; TODO: needed for choosing direction sprite?
 		default: {
 			fprintf(stderr, "Invalid EFFECT_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
