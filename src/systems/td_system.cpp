@@ -184,14 +184,16 @@ Entity TDSystem::generate_map(int difficulty) {
 
     Entity new_map;
     if (difficulty == 0) {
-        new_map = createMap(renderer, {
-            vec2(0, 180), vec2(550, 180), vec2(550, 440), vec2(970, 440)},
-            TEXTURE_ASSET_ID::MAP);
+        std::vector<vec2> path_coords = grid_to_coordinates({
+            vec2(0, 2), vec2(7, 2), vec2(7, 5), vec2(13, 5)
+        });
+        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP);
     }
     else if (difficulty == 1) {
-        new_map = createMap(renderer, {
-            vec2(0, 530), vec2(550, 530), vec2(550, 260), vec2(950, 260), vec2(950, 450)},
-            TEXTURE_ASSET_ID::MAP2);
+        std::vector<vec2> path_coords = grid_to_coordinates({
+            vec2(0, 6), vec2(7, 6), vec2(7, 3), vec2(12, 3), vec2(12, 5)
+        });
+        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP2);
     }
     else if (difficulty == 2) {
         std::vector<vec2> path_coords = grid_to_coordinates({
@@ -199,19 +201,22 @@ Entity TDSystem::generate_map(int difficulty) {
         new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP3);
     }
     else if (difficulty == 3) {
-        new_map = createMap(renderer, {
-                                    vec2(0, 530), vec2(550, 530), vec2(550, 260), vec2(950, 260), vec2(950, 450)},
-                            TEXTURE_ASSET_ID::MAP4);
+        std::vector<vec2> path_coords = grid_to_coordinates({
+            vec2(0, 3), vec2(13, 3), vec2(13, 0), vec2(8, 0), vec2(8, 6)
+        });
+        new_map = createMap(renderer, path_coords,TEXTURE_ASSET_ID::MAP4);
     }
     else if (difficulty == 4) {
-        new_map = createMap(renderer, {
-                                    vec2(0, 530), vec2(550, 530), vec2(550, 260), vec2(950, 260), vec2(950, 450)},
-                            TEXTURE_ASSET_ID::MAP5);
+        std::vector<vec2> path_coords = grid_to_coordinates({
+            vec2(0, 5), vec2(2, 5), vec2(2, 1), vec2(6, 1), vec2(6, 6), vec2(9, 6), vec2(9, 3), vec2(12, 3)
+        });
+        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP5);
     }
     else if (difficulty == 5) {
-        new_map = createMap(renderer, {
-                                    vec2(0, 530), vec2(550, 530), vec2(550, 260), vec2(950, 260), vec2(950, 450)},
-                            TEXTURE_ASSET_ID::MAP6);
+        std::vector<vec2> path_coords = grid_to_coordinates({
+            vec2(15, 6), vec2(11, 6), vec2(11, 4), vec2(8, 4), vec2(8, 2), vec2(5, 2)
+        });
+        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP6);
     }
     else {
         new_map = createMap(renderer,{
@@ -249,7 +254,7 @@ void TDSystem::restart_td_fight() {
     registry.list_all_components();
 
     Player& current_player = registry.players.get(player);
-    int difficulty = 2;//current_player.won_battles; //TODO: actual difficulty calculation here later
+    int difficulty = current_player.won_battles; //TODO: actual difficulty calculation here later
 
     const Entity debug_map = generate_map(difficulty);
     map = debug_map;
