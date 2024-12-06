@@ -10,9 +10,9 @@
 // applies rotation to transform or selects fitting directional sprite depending on use_direction_sprite
 void RenderSystem::applyTextureRotation(RenderRequestSingle& render_request, //TODO maybe take just RenderRequest and check which one
                                         Transform& transform,
-                                        Entity entity,
-                                        float angle,
-                                        bool use_direction_sprite) {
+                                        const Entity entity,
+                                        const float angle,
+                                        const bool use_direction_sprite) {
 
     // if bow_and_arrow rotate, if character sprite choose view direction sprite
     if (!use_direction_sprite) {
@@ -264,17 +264,15 @@ void RenderSystem::draw()
 			assert(false && "RenderRequest does not have a position");
 		}
 		// dispatch render request
-		if (const RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
+		if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
 			Transform transform;
 			transform.translate(position);
 			applyTextureRotation(*single_request, transform, entity, angle, direction_sprite);
 			transform.scale(scale);
 			drawTexturedMesh(entity, projection_2D, transform, *single_request);
-		} else if (const RenderRequestMulti *multi_request = std::get_if<RenderRequestMulti>(&request)) {
-			for (const auto & multi_request_elem : multi_request->requests) {
+		} else if (RenderRequestMulti *multi_request = std::get_if<RenderRequestMulti>(&request)) {
+			for (auto & [render_request, stationary] : multi_request->requests) {
 				Transform transform;
-				const RenderRequestSingle& render_request = multi_request_elem.first;
-				const Stationary& stationary = multi_request_elem.second;
 				transform.translate(stationary.position + position);
 				applyTextureRotation(render_request, transform, entity, stationary.angle + angle, stationary.use_direction_sprite);
 				transform.scale(scale);

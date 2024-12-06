@@ -321,9 +321,7 @@ void WorldSystem::restart_game() {
 		createOverviewLine(renderer, last_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
 	}
 
-	// TODO replace with actual td_fight launches
-	//current_td_system = TDSystem(rng());
-	//current_td_system.init(renderer);
+	createText(renderer, {5, window_height_px - 5}, {10, 10}, "Press 'T' to open tutorial");
 }
 
 // Compute collisions between entities
