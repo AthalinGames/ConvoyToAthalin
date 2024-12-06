@@ -321,7 +321,7 @@ void WorldSystem::restart_game() {
 		createOverviewLine(renderer, last_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
 	}
 
-	createText(renderer, {5, window_height_px - 5}, {10, 10}, "Press 'T' to open tutorial");
+	createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial");
 }
 
 // Compute collisions between entities
@@ -362,33 +362,55 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	// If td fight is running handle the proper key-presses
 	if (!current_td_system->is_over()) {
 		current_td_system->on_key(key, 0, action, mod);
+		return;
 	}
 
-	// Resetting game
-	if (action == GLFW_RELEASE && key == GLFW_KEY_R) {
-		int w, h;
-		glfwGetWindowSize(window, &w, &h);
+	switch (key) {
+		// restart game key
+		case GLFW_KEY_R: {
+			if (action == GLFW_RELEASE) {
+				int w, h;
+				glfwGetWindowSize(window, &w, &h);
 
-        restart_game();
+				restart_game();
+			}
+			break;
+		}
+		case GLFW_KEY_T: {
+			if (action == GLFW_PRESS) {
+				tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data());
+			} else {
+				registry.remove_all_components_of(tutorial_text);
+			}
+			break;
+		}
+		// debugging
+		case GLFW_KEY_D: {
+			if (action == GLFW_RELEASE)
+				debugging.in_debug_mode = false;
+			else
+				debugging.in_debug_mode = true;
+			break;
+		}
+		// Control the current speed with `<` `>`
+		case GLFW_KEY_COMMA: {
+			if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT)) {
+				current_speed -= 0.1f;
+				printf("Current speed = %f\n", current_speed);
+			}
+			break;
+		}
+		case GLFW_KEY_PERIOD: {
+			if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT)) {
+				current_speed += 0.1f;
+				printf("Current speed = %f\n", current_speed);
+			}
+			break;
+		}
+		default: {}
 	}
 
-	// Debugging
-	if (key == GLFW_KEY_D) {
-		if (action == GLFW_RELEASE)
-			debugging.in_debug_mode = false;
-		else
-			debugging.in_debug_mode = true;
-	}
-
-	// Control the current speed with `<` `>`
-	if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT) && key == GLFW_KEY_COMMA) {
-		current_speed -= 0.1f;
-		printf("Current speed = %f\n", current_speed);
-	}
-	if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT) && key == GLFW_KEY_PERIOD) {
-		current_speed += 0.1f;
-		printf("Current speed = %f\n", current_speed);
-	}
+	// Enforce that the speed cannot be less than 0
 	current_speed = fmax(0.f, current_speed);
 }
 

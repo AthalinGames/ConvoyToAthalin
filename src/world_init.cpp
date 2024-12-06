@@ -438,8 +438,6 @@ RenderRequestMulti createTextRenderRequest(const std::string& text, const vec2 s
 				pos.position = current_pos;
 				pos.scale = scale;
 
-				printf("Position of %c: %f, %f\n", character, pos.position.x, pos.position.y);
-
 				current_pos.x += scale.x;
 			}
 		}
