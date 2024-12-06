@@ -10,9 +10,9 @@
 // applies rotation to transform or selects fitting directional sprite depending on use_direction_sprite
 void RenderSystem::applyTextureRotation(RenderRequestSingle& render_request, //TODO maybe take just RenderRequest and check which one
                                         Transform& transform,
-                                        Entity entity,
-                                        float angle,
-                                        bool use_direction_sprite) {
+                                        const Entity entity,
+                                        const float angle,
+                                        const bool use_direction_sprite) {
 
     // if bow_and_arrow rotate, if character sprite choose view direction sprite
     if (!use_direction_sprite) {
@@ -244,38 +244,39 @@ void RenderSystem::draw()
 			continue;
 		}
 		// calculate base transform;
-		Transform transform;
+		vec2 position;
+		vec2 scale;
+		float angle;
+		bool direction_sprite;
 		if (registry.motions.has(entity)) {
 			const Motion &motion = registry.motions.get(entity);
-			transform.translate(motion.position);
-            //TODO: checking for the RequestSingle here is kinda whack and confusing to read, maybe some stuff can be reordered
-            if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
-                applyTextureRotation(*single_request, transform, entity, motion.angle, motion.use_direction_sprite);
-            }
-            transform.scale(motion.scale);
+			position = motion.position;
+			angle = motion.angle;
+			scale = motion.scale;
+			direction_sprite = motion.use_direction_sprite;
 		} else if (registry.stationaries.has(entity)) {
 			const Stationary &stationary = registry.stationaries.get(entity);
-			transform.translate(stationary.position);
-            //TODO: checking for the RequestSingle here is kinda whack and confusing to read, maybe some stuff can be reordered
-            if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
-                applyTextureRotation(*single_request, transform, entity, stationary.angle, stationary.use_direction_sprite);
-            }
-			transform.scale(stationary.scale);
-		} else if (registry.texts.has(entity)) {
-			return; //TODO think about actual rendering
+			position = stationary.position;
+			angle = stationary.angle;
+			scale = stationary.scale;
+			direction_sprite = stationary.use_direction_sprite;
+		} else {
+			assert(false && "RenderRequest does not have a position");
 		}
 		// dispatch render request
-		if (const RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
+		if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
+			Transform transform;
+			transform.translate(position);
+			applyTextureRotation(*single_request, transform, entity, angle, direction_sprite);
+			transform.scale(scale);
 			drawTexturedMesh(entity, projection_2D, transform, *single_request);
 		} else if (RenderRequestMulti *multi_request = std::get_if<RenderRequestMulti>(&request)) {
-			for (auto & multi_request_elem : multi_request->requests) {
-				Transform offset_transform = transform;
-				RenderRequestSingle& render_request = multi_request_elem.first;
-				const Stationary& stationary = multi_request_elem.second;
-				offset_transform.translate(stationary.position);
-				applyTextureRotation(render_request, transform, entity, stationary.angle, stationary.use_direction_sprite);
-				offset_transform.scale(stationary.scale);
-				drawTexturedMesh(entity, projection_2D, offset_transform, render_request);
+			for (auto & [render_request, stationary] : multi_request->requests) {
+				Transform transform;
+				transform.translate(stationary.position + position);
+				applyTextureRotation(render_request, transform, entity, stationary.angle + angle, stationary.use_direction_sprite);
+				transform.scale(scale);
+				drawTexturedMesh(entity, projection_2D, transform, render_request);
 			}
 		}
 	}

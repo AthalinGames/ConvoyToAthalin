@@ -231,6 +231,7 @@ enum class TEXTURE_ASSET_ID {
 	BLACK_PIXEL,
 	GAME_OVER,
 	OVERVIEW_ICONS_ATLAS,
+	ASCII_CHAR_ATLAS,
 	TEXTURE_COUNT
 };
 
@@ -254,6 +255,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
 		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: return "overviewIconsAtlas.png";
+		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: return "charmap-oldschool_preview.png"; // Source: https://opengameart.org/content/ascii-bitmap-font-oldschool
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
@@ -272,7 +274,8 @@ struct AtlasTexture {
 };
 
 const std::set texture_atlases = {
-	TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS
+	TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+	TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS,
 };
 
 enum class OVERVIEW_ICON_TEXTURES {
@@ -293,6 +296,20 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			assert(definedCount <= maxCount); // Atlas cannot have more defined textures than available space
 			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
 			for (unsigned int i = 0; i < definedCount; i++) {
+				const float x_start = (i % cols) * tex_width;
+				const float y_start = (i / cols) * tex_height;
+				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+				texDef.tex_pos = vec2(x_start, y_start);
+				texDef.tex_size = vec2(tex_width, tex_height);
+			}
+			break;
+		}
+		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: {
+			// TODO remember that the char offset is 0x20, so to get the correct char you need to subtract 0x20
+			constexpr unsigned int cols = 18, rows = 7, maxCount = cols * rows;
+			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+			for (unsigned int i = 0; i < maxCount; i++) {
 				const float x_start = (i % cols) * tex_width;
 				const float y_start = (i / cols) * tex_height;
 				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();

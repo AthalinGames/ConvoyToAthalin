@@ -191,6 +191,8 @@ void TDSystem::restart_td_fight() {
         cards.push_back(debug_cards);
     }
 
+    createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial");
+
     registry.list_all_components();
 }
 
@@ -288,22 +290,24 @@ bool TDSystem::is_over() const {
 }
 
 void TDSystem::on_key(const int key, int, const int action, const int mods) {
-    // TODO fight specific key handling
-    if(key == GLFW_KEY_C && !registry.maps.get(map).combat_started) { // press C to start combat
-        realignCards();
-        registry.maps.get(map).combat_started = true;
-        registry.maps.get(map).combat_time = 0.f;
-
-        // spawn enemies TODO: for more enemies this has to happen elsewhere to not block keyboard input
-        //const auto debug_enemy = createEnemy(renderer, {0, 100});
-        //enemies.push_back(debug_enemy);
-        //Enemy& enemy = registry.enemies.get(debug_enemy);
-        //enemy.speed = 100.f;
-
-        //const auto debug_enemy2 = createEnemy(renderer, {0, 100});
-        //enemies.push_back(debug_enemy2);
-        //Enemy& enemy2 = registry.enemies.get(debug_enemy2);
-        //enemy2.speed = 100.f;
+    switch (key) {
+        case GLFW_KEY_C: {
+            Map& map_component = registry.maps.get(map);
+            if (action == GLFW_RELEASE && !map_component.combat_started) {
+                realignCards();
+                map_component.combat_started = true;
+                map_component.combat_time = 0.f;
+            }
+            break;
+        }
+        case GLFW_KEY_T: {
+            if (action == GLFW_PRESS) {
+                tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data());
+            } else {
+                registry.remove_all_components_of(tutorial_text);
+            }
+        }
+        default: {}
     }
 }
 
