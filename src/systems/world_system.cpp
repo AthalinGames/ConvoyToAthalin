@@ -435,14 +435,18 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 				const auto map_pos = registry.stationaries.get(entity);
 				const vec2 dp = map_pos.position - pos;
 				const float dist_squared = dot(dp, dp);
-				const vec2 bounding_box = {abs(map_pos.scale.x), abs(map_pos.scale.y)};
+				vec2 bounding_box = {abs(map_pos.scale.x), abs(map_pos.scale.y)};
+				bounding_box *= 0.3f;
 				const float element_r_squared = dot(bounding_box, bounding_box);
 				// TODO fix selection flickering
-				if (dist_squared < element_r_squared && registry.invisibles.has(loc_props.overview_selection)) {
+				if (dist_squared < element_r_squared) {
+					if (!registry.invisibles.has(loc_props.overview_selection)) {
+						continue;
+					}
 					registry.invisibles.remove(loc_props.overview_selection);
-					registry.clickables.insert(entity, {});
+					registry.clickables.emplace(entity);
 				} else if (!registry.invisibles.has(loc_props.overview_selection)) {
-					registry.invisibles.insert(loc_props.overview_selection, {});
+					registry.invisibles.emplace(loc_props.overview_selection);
 				}
 			}
 		}
