@@ -41,6 +41,7 @@ private:
 
     // restart TD fight
     std::vector<Entity> generate_combat(int difficulty);
+    std::vector<vec2> grid_to_coordinates(std::vector<vec2> grid_coords);
     Entity generate_map(int difficulty);
     void restart_td_fight();
 
