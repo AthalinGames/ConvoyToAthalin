@@ -67,6 +67,16 @@ private:
     Entity next_map_pos;
     bool td_fight_launched = false;
 
+    // Tutorial entity;
+    Entity tutorial_text;
+    static constexpr std::string_view tutorial_string = R"(
+Welcome to Convoy to Athalin!
+In this game you are in charge of defences of an convoy that travels to the capital Athalin.
+This is the overview map where you select the path that the convoy will travel along.
+At each location you will need to protect the convoy from monsters.
+)";
+    static constexpr auto tutorial_pos = vec2(100, 100);
+
     // Overview params
     static constexpr uint8_t grid_width = 5;
     static constexpr uint8_t grid_height = 8;

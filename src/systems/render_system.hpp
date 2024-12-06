@@ -106,6 +106,11 @@ public:
 
 private:
 	// Internal drawing functions for each entity type
+    static void applyTextureRotation(RenderRequestSingle& render_request,
+                                     Transform& transform,
+                                     Entity entity,
+                                     float angle,
+                                     bool use_direction_sprite);
 
 	void doTexturedRender(GLuint program, const RenderRequestSingle& render_request) const;
 

@@ -17,9 +17,10 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = M_PI/2;
+	motion.angle = M_PI;
+    motion.use_direction_sprite = true;
 	motion.velocity = vec2(0, 0);
-	motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+	motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
 
 	auto& tower = registry.towers.emplace(entity);
 	tower.range = 50;
@@ -33,6 +34,28 @@ Entity createArcher(RenderSystem *renderer, const vec2 pos) {
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
+    const auto bow = Entity();
+    registry.bows.emplace(bow);
+    registry.weapons.emplace(bow);
+    registry.archers.get(entity).bow = bow;
+
+    Mesh& bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+    registry.meshPtrs.emplace(bow, &bow_mesh);
+
+    Motion& bow_motion = registry.motions.emplace(bow);
+    bow_motion.position = pos;
+    bow_motion.angle = M_PI/2;
+    bow_motion.velocity = vec2(0, 0);
+    bow_motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+
+    registry.renderRequests.insert(bow, RenderRequestSingle{
+            Z_MIDDLE,
+            0,
+            TEXTURE_ASSET_ID::BOW1,
+            EFFECT_ASSET_ID::TEXTURED,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+
 	return entity;
 }
 
@@ -44,9 +67,9 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = static_cast<float>(atan2(dir.y, dir.x));
+	motion.angle = static_cast<float>(atan2(dir.y, dir.x)) + (M_PI_2/2) + M_PI;
 	motion.velocity = -velocity * normalize(dir);
-	motion.scale = vec2({-ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
+	motion.scale = vec2({ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
 
     registry.arrows.emplace(entity);
 
@@ -71,7 +94,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 	motion.position = pos;
 	motion.angle = 0.0f;
 	motion.velocity = vec2(0, 0);
-	motion.scale = vec2({-SLIME_WIDTH, SLIME_HEIGHT});
+	motion.scale = vec2({SLIME_WIDTH, SLIME_HEIGHT});
 
     registry.enemies.emplace(entity);
     registry.slimes.emplace(entity);
@@ -332,93 +355,8 @@ Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
 	return entity;
 }
 
-Entity createText(RenderSystem *renderer, const vec2 pos, const float scale, const std::string &&text) {
+Entity createLine(const vec2 position, const vec2 size) {
 	const auto entity = Entity();
-
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
-
-	Text& textComponent = registry.texts.emplace(entity);
-	textComponent.position = pos;
-	textComponent.size = scale;
-	textComponent.text = std::move(text);
-
-	registry.renderRequests.insert(entity, RenderRequestSingle{
-		Z_FOREGROUND,
-		0,
-		TEXTURE_ASSET_ID::TEXTURE_COUNT,
-		EFFECT_ASSET_ID::TEXTURED,
-		GEOMETRY_BUFFER_ID::SPRITE
-	});
-
-	return entity;
-}
-
-
-/*
-Entity createFish(RenderSystem* renderer, vec2 position)
-{
-	// Reserve en entity
-	auto entity = Entity();
-
-	// Store a reference to the potentially re-used mesh object
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
-
-	// Initialize the position, scale, and physics components
-	auto& motion = registry.motions.emplace(entity);
-	motion.angle = 0.f;
-	motion.velocity = { -50.f, 0.f };
-	motion.position = position;
-
-	// Setting initial values, scale is negative to make it face the opposite way
-	motion.scale = vec2({ -FISH_BB_WIDTH, FISH_BB_HEIGHT });
-
-	// Create an (empty) Fish component to be able to refer to all fish
-	registry.softShells.emplace(entity);
-	registry.renderRequests.insert(
-		entity,
-		{ TEXTURE_ASSET_ID::FISH,
-			EFFECT_ASSET_ID::TEXTURED,
-			GEOMETRY_BUFFER_ID::SPRITE });
-
-	return entity;
-}
-*/
-
-/* TODO: create enemy
-Entity createTurtle(RenderSystem* renderer, vec2 position)
-{
-	auto entity = Entity();
-
-	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
-
-	// Initialize the motion
-	auto& motion = registry.motions.emplace(entity);
-	motion.angle = 0.f;
-	motion.velocity = { -100.f, 0.f };
-	motion.position = position;
-
-	// Setting initial values, scale is negative to make it face the opposite way
-	motion.scale = vec2({ -TURTLE_BB_WIDTH, TURTLE_BB_HEIGHT });
-
-	// Create and (empty) Turtle component to be able to refer to all turtles
-	registry.hardShells.emplace(entity);
-	registry.renderRequests.insert(
-		entity,
-		{ TEXTURE_ASSET_ID::TURTLE,
-		 EFFECT_ASSET_ID::TEXTURED,
-		 GEOMETRY_BUFFER_ID::SPRITE });
-
-	return entity;
-}
-*/
-
-Entity createLine(vec2 position, vec2 scale)
-{
-	Entity entity = Entity();
 
 	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)
 	registry.renderRequests.insert(
@@ -435,32 +373,74 @@ Entity createLine(vec2 position, vec2 scale)
 	motion.angle = 0.f;
 	motion.velocity = { 0.f, 0.f };
 	motion.position = position;
-	motion.scale = scale;
+	motion.scale = size;
 
 	registry.debugComponents.emplace(entity);
 	return entity;
 }
 
-/*
-Entity createPebble(vec2 pos, vec2 size)
-{
-	auto entity = Entity();
+Entity createText(RenderSystem* renderer, const vec2 pos, const vec2 scale, const std::string &text) {
+	const auto entity = Entity();
 
-	// Setting initial motion values
-	Motion& motion = registry.motions.emplace(entity);
-	motion.position = pos;
-	motion.angle = 0.f;
-	motion.velocity = { 0.f, 0.f };
-	motion.scale = size;
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
 
-	// Create and (empty) Salmon component to be able to refer to all turtles
-	registry.hardShells.emplace(entity);
-	registry.renderRequests.insert(
-		entity,
-		{ TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no txture is needed
-			EFFECT_ASSET_ID::PEBBLE,
-			GEOMETRY_BUFFER_ID::PEBBLE });
+	if (text.length() > 1) {
+		registry.renderRequests.insert(entity, createTextRenderRequest(text, scale));
+	} else {
+		registry.renderRequests.insert(entity, RenderRequestSingle{
+			Z_FOREGROUND,
+			static_cast<unsigned int>(text.at(0)) - 0x20,
+			TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS,
+			EFFECT_ASSET_ID::TEXTURED_ATLAS,
+			GEOMETRY_BUFFER_ID::SPRITE,
+		});
+	}
+
+	// Create stationary
+	Stationary& stationary = registry.stationaries.emplace(entity);
+	stationary.position = pos;
+	stationary.scale = scale;
+
+	registry.texts.emplace(entity);
 
 	return entity;
 }
-*/
+
+RenderRequestMulti createTextRenderRequest(const std::string& text, const vec2 scale) {
+	RenderRequestMulti request{};
+	vec2 current_pos = {};
+	for (const char character : text) {
+		switch (character) {
+			case '\r': {
+				continue;
+			}
+			case '\n': {
+				current_pos.y += scale.y;
+				current_pos.x = 0;
+				continue;
+			}
+			case ' ': {
+				current_pos.x += scale.x;
+				continue;
+			}
+			default: {
+				if (character < 0x20 || character > 0x7e) {
+					printf("The character '%c' will not be rendered\n", character);
+					continue;
+				}
+				auto& [requestSingle, pos] = request.requests.emplace_back();
+				requestSingle.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+				requestSingle.used_geometry = GEOMETRY_BUFFER_ID::SPRITE;
+				requestSingle.used_texture = TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS;
+				requestSingle.used_texture_atlas_texture_id = static_cast<unsigned int>(character) - 0x20; // all chars after 0x20 are rendered
+
+				pos.position = current_pos;
+				pos.scale = scale;
+
+				current_pos.x += scale.x;
+			}
+		}
+	}
+	return request;
+}

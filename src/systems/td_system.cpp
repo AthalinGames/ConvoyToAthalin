@@ -28,6 +28,9 @@ TDSystem::~TDSystem() {
     for (const auto tower : towers) {
         registry.remove_all_components_of(tower);
     }
+    for (const auto weapon : registry.weapons.entities) {
+        registry.remove_all_components_of(weapon);
+    }
     registry.remove_all_components_of(map);
 }
 
@@ -73,7 +76,25 @@ bool TDSystem::step(float elapsed_ms) {
 
             if (shot_timer.time < 0) {
                 registry.shotTimers.remove(tower_entity);
+
             }
+            if (registry.archers.has(tower_entity)) {
+                const auto &bow_entity = registry.archers.get(tower_entity).bow;
+                RenderRequest& render_request = registry.renderRequests.get(bow_entity);
+                if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&render_request)) {
+                    if (shot_timer.time < 0) {
+                        //change bow to empty
+                        single_request->used_texture = TEXTURE_ASSET_ID::BOW3;
+                    } else if (shot_timer.time < 150.) {
+                        //change bow to drawn
+                        single_request->used_texture = TEXTURE_ASSET_ID::BOW2;
+                    } else if (shot_timer.time < 500.) {
+                        //change bow to loaded
+                        single_request->used_texture = TEXTURE_ASSET_ID::BOW1;
+                    }
+                }
+            }
+
         }
         if(!td_map.enemies.empty()){
             Enemy& next_enemy = registry.enemies.get(td_map.enemies[0]);
@@ -156,6 +177,9 @@ void TDSystem::restart_td_fight() {
     for (const auto tower : towers) {
         registry.remove_all_components_of(tower);
     }
+    for (const auto weapon : registry.weapons.entities) {
+        registry.remove_all_components_of(weapon);
+    }
     registry.remove_all_components_of(map);
 
     towers.clear();
@@ -189,6 +213,8 @@ void TDSystem::restart_td_fight() {
         const Entity debug_cards = createCard(renderer);
         cards.push_back(debug_cards);
     }
+
+    createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial");
 
     registry.list_all_components();
 }
@@ -261,6 +287,13 @@ void TDSystem::handle_aiming() {
             }
             const float angle = atan2(d_p.y, d_p.x);
             tower_motion.angle = angle;
+            if (registry.archers.has(tower_entity)) {
+                auto &bow_motion = registry.motions.get(registry.archers.get(tower_entity).bow);
+                bow_motion.angle = angle - M_PI_2 - M_PI_2/2; //+ (2 * M_PI) - (M_PI_2/2);
+                if (bow_motion.angle < M_PI) { //keep angle within [-pi, pi]
+                    bow_motion.angle += 2*M_PI;
+                }
+            }
 
             if (!registry.shotTimers.has(tower_entity)) {
                 const auto &archer = registry.archers.get(tower_entity);
@@ -280,22 +313,24 @@ bool TDSystem::is_over() const {
 }
 
 void TDSystem::on_key(const int key, int, const int action, const int mods) {
-    // TODO fight specific key handling
-    if(key == GLFW_KEY_C && !registry.maps.get(map).combat_started) { // press C to start combat
-        realignCards();
-        registry.maps.get(map).combat_started = true;
-        registry.maps.get(map).combat_time = 0.f;
-
-        // spawn enemies TODO: for more enemies this has to happen elsewhere to not block keyboard input
-        //const auto debug_enemy = createEnemy(renderer, {0, 100});
-        //enemies.push_back(debug_enemy);
-        //Enemy& enemy = registry.enemies.get(debug_enemy);
-        //enemy.speed = 100.f;
-
-        //const auto debug_enemy2 = createEnemy(renderer, {0, 100});
-        //enemies.push_back(debug_enemy2);
-        //Enemy& enemy2 = registry.enemies.get(debug_enemy2);
-        //enemy2.speed = 100.f;
+    switch (key) {
+        case GLFW_KEY_C: {
+            Map& map_component = registry.maps.get(map);
+            if (action == GLFW_RELEASE && !map_component.combat_started) {
+                realignCards();
+                map_component.combat_started = true;
+                map_component.combat_time = 0.f;
+            }
+            break;
+        }
+        case GLFW_KEY_T: {
+            if (action == GLFW_PRESS) {
+                tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data());
+            } else {
+                registry.remove_all_components_of(tutorial_text);
+            }
+        }
+        default: {}
     }
 }
 

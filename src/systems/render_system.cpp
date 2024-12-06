@@ -1,10 +1,53 @@
 // internal
 #include "render_system.hpp"
+#include "world_init.hpp"
 #include <SDL.h>
 
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "ecs/tiny_ecs_registry.hpp"
+
+// applies rotation to transform or selects fitting directional sprite depending on use_direction_sprite
+void RenderSystem::applyTextureRotation(RenderRequestSingle& render_request, //TODO maybe take just RenderRequest and check which one
+                                        Transform& transform,
+                                        const Entity entity,
+                                        const float angle,
+                                        const bool use_direction_sprite) {
+
+    // if bow_and_arrow rotate, if character sprite choose view direction sprite
+    if (!use_direction_sprite) {
+        transform.rotate(angle);
+        if (registry.bows.has(entity)) {
+            if (angle < 0) {
+                render_request.z_position = Z_BACKGROUND;
+            } else {
+                render_request.z_position = Z_FOREGROUND;
+            }
+        }
+    } else { // decide cardinal directions by angle in pi/4
+        if (registry.archers.has(entity)) {
+            float angle_by_pi = angle / M_PI;
+            //printf("angle %f\n", angle);
+            float temp_whole;
+            //angle_by_pi = std::modf(angle_by_pi, &temp_whole);
+            //printf("angle mod %f\n", angle_by_pi);
+            if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
+                //look left
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_L;
+            } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
+                //look up
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_U;
+            } else if (angle_by_pi >= 0.75 || angle_by_pi < -0.75) {
+                //look right
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_R;
+            } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
+                //look down
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
+            }
+        }
+    }
+
+}
 
 void RenderSystem::doTexturedRender(const GLuint program, const RenderRequestSingle& render_request) const {
 	const GLint in_position_loc = glGetAttribLocation(program, "in_position");
@@ -201,32 +244,39 @@ void RenderSystem::draw()
 			continue;
 		}
 		// calculate base transform;
-		Transform transform;
+		vec2 position;
+		vec2 scale;
+		float angle;
+		bool direction_sprite;
 		if (registry.motions.has(entity)) {
 			const Motion &motion = registry.motions.get(entity);
-			transform.translate(motion.position);
-			transform.rotate(motion.angle);
-			transform.scale(motion.scale);
+			position = motion.position;
+			angle = motion.angle;
+			scale = motion.scale;
+			direction_sprite = motion.use_direction_sprite;
 		} else if (registry.stationaries.has(entity)) {
 			const Stationary &stationary = registry.stationaries.get(entity);
-			transform.translate(stationary.position);
-			transform.rotate(stationary.angle);
-			transform.scale(stationary.scale);
-		} else if (registry.texts.has(entity)) {
-			return; //TODO think about actual rendering
+			position = stationary.position;
+			angle = stationary.angle;
+			scale = stationary.scale;
+			direction_sprite = stationary.use_direction_sprite;
+		} else {
+			assert(false && "RenderRequest does not have a position");
 		}
 		// dispatch render request
-		if (const RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
+		if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
+			Transform transform;
+			transform.translate(position);
+			applyTextureRotation(*single_request, transform, entity, angle, direction_sprite);
+			transform.scale(scale);
 			drawTexturedMesh(entity, projection_2D, transform, *single_request);
-		} else if (const RenderRequestMulti *multi_request = std::get_if<RenderRequestMulti>(&request)) {
-			for (const auto & multi_request_elem : multi_request->requests) {
-				Transform offset_transform = transform;
-				const RenderRequestSingle& render_request = multi_request_elem.first;
-				const Stationary& stationary = multi_request_elem.second;
-				offset_transform.translate(stationary.position);
-				offset_transform.rotate(stationary.angle);
-				offset_transform.scale(stationary.scale);
-				drawTexturedMesh(entity, projection_2D, offset_transform, render_request);
+		} else if (RenderRequestMulti *multi_request = std::get_if<RenderRequestMulti>(&request)) {
+			for (auto & [render_request, stationary] : multi_request->requests) {
+				Transform transform;
+				transform.translate(stationary.position + position);
+				applyTextureRotation(render_request, transform, entity, stationary.angle + angle, stationary.use_direction_sprite);
+				transform.scale(scale);
+				drawTexturedMesh(entity, projection_2D, transform, render_request);
 			}
 		}
 	}
