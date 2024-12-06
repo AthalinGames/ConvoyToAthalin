@@ -218,6 +218,16 @@ Entity TDSystem::generate_map(int difficulty) {
         });
         new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP6);
     }
+    else if (difficulty == 6) {
+
+        std::vector<vec2> path_coords = grid_to_coordinates({
+            vec2(15, 4), vec2(10, 4), vec2(10, 5), vec2(7, 5), vec2(7, 4), vec2(6, 4),
+            vec2(6, 2), vec2(5, 2), vec2(5, 1), vec2(1, 1), vec2(1, 5), vec2(5, 5),
+            vec2(5, 4), vec2(6, 4), vec2(6, 2), vec2(7, 2), vec2(7, 1), vec2(10, 1),
+            vec2(10, 2), vec2(12, 2), vec2(12, 6)
+        });
+        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP7);
+    }
     else {
         new_map = createMap(renderer,{
             vec2(0, 180),vec2(550, 180), vec2(550, 440), vec2(970, 440)}, //TODO percentage relative to window size

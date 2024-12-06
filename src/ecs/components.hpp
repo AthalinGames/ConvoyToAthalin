@@ -234,6 +234,7 @@ enum class TEXTURE_ASSET_ID {
     MAP4,
     MAP5,
     MAP6,
+    MAP7,
 	OVERVIEW_MAP,
 	BLACK_PIXEL,
 	GAME_OVER,
@@ -263,6 +264,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
         case TEXTURE_ASSET_ID::MAP4: return "tdmap_tiled4.png";
         case TEXTURE_ASSET_ID::MAP5: return "tdmap_tiled5.png";
         case TEXTURE_ASSET_ID::MAP6: return "tdmap_tiled6.png";
+        case TEXTURE_ASSET_ID::MAP7: return "tdmap_tiled7.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
 		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";
