@@ -159,7 +159,6 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
         }
         return enemy_list;
     }
-    return {};
 }
 
 void TDSystem::restart_td_fight() {
@@ -190,7 +189,7 @@ void TDSystem::restart_td_fight() {
     registry.list_all_components();
 
     const Entity debug_map = createMap(renderer,{
-        vec2(0, 140), vec2(510, 140), vec2(510, 450), vec2(930, 450)
+        vec2(0, 180), vec2(550, 180), vec2(550, 440), vec2(970, 440)
     }); //TODO percentage relative to window size
     map = debug_map;
     Map& map = registry.maps.get(debug_map);
@@ -326,9 +325,10 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
         case GLFW_KEY_T: {
             if (action == GLFW_PRESS) {
                 tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data());
-            } else {
+            } else if (action == GLFW_RELEASE) {
                 registry.remove_all_components_of(tutorial_text);
             }
+            break;
         }
         default: {}
     }

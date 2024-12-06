@@ -381,7 +381,7 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 		case GLFW_KEY_T: {
 			if (action == GLFW_PRESS) {
 				tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data());
-			} else {
+			} else if (action == GLFW_RELEASE) {
 				registry.remove_all_components_of(tutorial_text);
 			}
 			break;

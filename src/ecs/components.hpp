@@ -251,7 +251,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
         case TEXTURE_ASSET_ID::BOW3: return "bow_and_arrow3.png";
 		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
-        case TEXTURE_ASSET_ID::MAP: return "tdmap.png";
+        case TEXTURE_ASSET_ID::MAP: return "tdmap_tiled.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
 		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";
