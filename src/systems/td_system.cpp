@@ -161,6 +161,26 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
     }
 }
 
+Entity TDSystem::generate_map(int difficulty) {
+    Entity new_map;
+    if (difficulty == 0) {
+        new_map = createMap(renderer, {
+            vec2(0, 180), vec2(550, 180), vec2(550, 440), vec2(970, 440)},
+            TEXTURE_ASSET_ID::MAP);
+    }
+    else if (difficulty == 1) {
+        new_map = createMap(renderer, {
+            vec2(0, 530), vec2(550, 530), vec2(550, 260), vec2(950, 260), vec2(950, 450)},
+            TEXTURE_ASSET_ID::MAP2);
+    }
+    else {
+        new_map = createMap(renderer,{
+            vec2(0, 180),vec2(550, 180), vec2(550, 440), vec2(970, 440)}, //TODO percentage relative to window size
+            TEXTURE_ASSET_ID::MAP);
+    }
+    return  new_map;
+}
+
 void TDSystem::restart_td_fight() {
     // Debugging for memory/component leaks
     registry.list_all_components();
@@ -188,16 +208,16 @@ void TDSystem::restart_td_fight() {
     // Debugging for memory/component leaks
     registry.list_all_components();
 
-    const Entity debug_map = createMap(renderer,{
-        vec2(0, 180), vec2(550, 180), vec2(550, 440), vec2(970, 440)
-    }); //TODO percentage relative to window size
-    map = debug_map;
-    Map& map = registry.maps.get(debug_map);
-    map.active = true;
-
-
     Player& current_player = registry.players.get(player);
-    map.enemies = generate_combat(current_player.won_battles);
+
+    const Entity debug_map = generate_map(current_player.won_battles);
+    map = debug_map;
+    Map& current_map = registry.maps.get(debug_map);
+    current_map.active = true;
+
+
+
+    current_map.enemies = generate_combat(current_player.won_battles);
 
     printf("Created active map\n");
     printf("Mapcount: %lu\n", registry.maps.size());

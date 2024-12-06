@@ -46,7 +46,7 @@ Entity createEnemy(RenderSystem* renderer, vec2 pos);
 void realignCards();
 Entity createCard(RenderSystem* renderer);
 // the combat map
-Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints);
+Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints, TEXTURE_ASSET_ID map_sprite);
 // the overview map
 Entity createOverviewMap(RenderSystem* renderer);
 // location on the overview map

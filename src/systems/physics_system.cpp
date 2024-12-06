@@ -116,6 +116,7 @@ void PhysicsSystem::step(float elapsed_ms)
                 const float step_seconds = elapsed_ms / 1000.f;
             	motion.position = calculate_enemy_position(enemy, active_map, step_seconds, true);
                 //printf("%f %f\n", motion.position[0], motion.position[0]);
+                //printf("%f, %f\n", enemy.enemy_progress, enemy.section_progress);
             }
     	}
     }
@@ -178,6 +179,7 @@ void PhysicsSystem::step(float elapsed_ms)
 vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, const Map& current_map, const float seconds, const bool update_enemy) {
 	vec2 previous_checkpoint = current_map.checkpoints[enemy.next_checkpoint - 1];
 	if (enemy.next_checkpoint >= current_map.checkpoints.size()) {
+        enemy.enemy_progress = 1.;
 		return previous_checkpoint;
 	}
 	vec2 next_checkpoint = current_map.checkpoints[enemy.next_checkpoint];
@@ -186,9 +188,14 @@ vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, const Map& current_ma
 	if (update_enemy) {
 		enemy.enemy_progress = enemy_progress;
 	}
-	const float section_length = abs(distance(previous_checkpoint,
-										next_checkpoint)); //TODO maybe already calc this in create_map and save with map
+	const float section_length = current_map.section_lengths[enemy.next_checkpoint-1];//abs(distance(previous_checkpoint, next_checkpoint)); //TODO maybe already calc this in create_map and save with map
 	float section_progress = enemy.section_progress;
+    //float* temp = nullptr;
+    //section_progress = std::modf(enemy_progress*(current_map.checkpoints.size()-1), temp);
+    /* TODO:
+     * make section progress go > 1, then mod f and use first part to select section and decimal part to interpolate
+     * if section progress over checkpoint size (or maybe size-1) set enemy progress 1 to avoid floating point inaccuracies
+     */
 	section_progress += (enemy.speed * seconds) / section_length;
 	if (update_enemy) {
 		enemy.section_progress = section_progress;

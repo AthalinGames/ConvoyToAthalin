@@ -160,7 +160,7 @@ Entity createCard(RenderSystem *renderer) {
     return entity;
 }
 
-Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints) { //is & for checkpoint necessary?
+Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints, TEXTURE_ASSET_ID map_sprite) { //is & for checkpoint necessary?
 	const auto entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
@@ -177,8 +177,11 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints) {
 	float path_length = 0;
 	if (checkpoints.size() > 1) {
 		path_length += abs(distance(checkpoints[0], checkpoints[1]));
+        map_attributes.section_lengths.push_back(path_length);
 		for (uint i = 2; i < checkpoints.size(); ++i) {
-			path_length += abs(distance(checkpoints[i-1], checkpoints[i]));
+            const float section_lenght = abs(distance(checkpoints[i-1], checkpoints[i]));
+            map_attributes.section_lengths.push_back(section_lenght);
+			path_length += section_lenght;
 		}
 	}
 	map_attributes.path_length = path_length;
@@ -186,7 +189,7 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints) {
     registry.renderRequests.insert(entity, RenderRequestSingle{
     	Z_BACKGROUND,
     	0,
-    	TEXTURE_ASSET_ID::MAP,
+    	map_sprite,
     	EFFECT_ASSET_ID::TEXTURED,
     	GEOMETRY_BUFFER_ID::SPRITE,
     });

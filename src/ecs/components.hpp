@@ -114,6 +114,7 @@ struct Map
 {
     std::vector<vec2> checkpoints = {vec2(0.f,0.f)};
     float path_length = 0;
+    std::vector<float> section_lengths = {};
     std::vector<Entity> enemies = {};
     bool combat_started = false;
     float combat_time = 0.f; // time passed since combat started (in ms)
@@ -228,6 +229,7 @@ enum class TEXTURE_ASSET_ID {
 	ARROW,
     SLIME,
     MAP,
+    MAP2,
 	OVERVIEW_MAP,
 	BLACK_PIXEL,
 	GAME_OVER,
@@ -252,6 +254,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
         case TEXTURE_ASSET_ID::MAP: return "tdmap_tiled.png";
+        case TEXTURE_ASSET_ID::MAP2: return "tdmap_tiled2.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
 		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";

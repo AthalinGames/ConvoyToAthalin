@@ -39,8 +39,9 @@ public:
     void on_mouse_button(int button, int action, int mods, GLFWwindow* window);
 private:
 
-    std::vector<Entity> generate_combat(int difficulty);
     // restart TD fight
+    std::vector<Entity> generate_combat(int difficulty);
+    Entity generate_map(int difficulty);
     void restart_td_fight();
 
     bool running = true;
