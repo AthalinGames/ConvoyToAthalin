@@ -54,6 +54,19 @@ private:
     std::set<Entity> enemies;
     Entity map;
 
+    // Tutorial entity;
+    Entity tutorial_text;
+    static constexpr std::string_view tutorial_string = R"(
+This is the tower defence screen, here you do the actual fighting against enemies.
+On the bottom there are some cards that represent your towers, to place a tower
+you can drag and drop a card onto the desired location.
+(Think about the range of the tower, that is currently not displayed)
+To start the round you need to press 'c'.
+WARNING: After the round started you cannot place any towers
+You defend the camping fire and the enemies spawn at the opposite side of the path
+)";
+    static constexpr auto tutorial_pos = vec2(100, 100);
+
     // C++ random number generator
     std::default_random_engine rng;
     std::uniform_real_distribution<float> uniform_dist;
