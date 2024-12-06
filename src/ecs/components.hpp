@@ -27,7 +27,7 @@ struct Enemy {
     uint next_checkpoint = 1; // checkpoint 0 is start position
     float section_progress = 0.f;
     bool alive = true;
-	int damage = 100;
+	int damage = 50;
 };
 
 struct Slime {

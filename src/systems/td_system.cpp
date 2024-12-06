@@ -127,11 +127,12 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
         return {debug_enemy, debug_enemy2};
     } else {
         std::vector<Entity> enemy_list = {};
-        for (int i = 0; i < difficulty; ++i) {
+        for (int i = 0; i < difficulty+1; ++i) {
             const Entity new_enemy = createEnemy(renderer, {0, 100});
             enemies.emplace(new_enemy);
             Enemy& enemy = registry.enemies.get(new_enemy);
-            enemy.speed = 100.f;
+            enemy.health += static_cast<int>(std::floor(difficulty/2) * 50);
+            enemy.speed = 100.f + 5. * difficulty + i * 5;
             enemy.spawn_time = i * 1000.;
             enemy_list.push_back(new_enemy);
         }
@@ -165,7 +166,7 @@ void TDSystem::restart_td_fight() {
     registry.list_all_components();
 
     const Entity debug_map = createMap(renderer,{
-        vec2(0, 140), vec2(510, 140), vec2(510, 450), vec2(930, 450), vec2(1050, 330)
+        vec2(0, 140), vec2(510, 140), vec2(510, 450), vec2(930, 450)
     }); //TODO percentage relative to window size
     map = debug_map;
     Map& map = registry.maps.get(debug_map);
