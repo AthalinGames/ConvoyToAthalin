@@ -16,6 +16,7 @@ public:
 	ComponentContainer<Motion> motions;
 	ComponentContainer<Collision> collisions;
 	ComponentContainer<Player> players;
+	ComponentContainer<Item> items;
 	ComponentContainer<Tower> towers;
     ComponentContainer<Card> cards;
 	ComponentContainer<TowerAimingAt> aimingAts;

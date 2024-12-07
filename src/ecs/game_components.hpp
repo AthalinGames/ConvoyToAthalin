@@ -10,7 +10,6 @@ struct Player {
 	int health = 100;
 	int maxHealth = 100;
 	int coins = 0;
-	std::vector<Entity> owned_cards;
 };
 
 // Enemy components
@@ -32,14 +31,14 @@ struct Slime {
 
 // Items
 enum class TowerType {
-	Archer,
+	ARCHER,
 };
 
 enum class ConsumableType {};
 
-struct Item {
-	std::variant<TowerType, ConsumableType> type;
-};
+using ItemType = std::variant<TowerType, ConsumableType>;
+
+struct Item {};
 
 // Tower components
 enum class EnemyPriority {
@@ -48,13 +47,15 @@ enum class EnemyPriority {
 };
 
 struct Tower {
-	float range = 0.0f;
+	bool placed = false;
+	float range = 50.0f;
 	EnemyPriority priority = EnemyPriority::FIRST;
 	bool is_aiming = false;
 };
 
 // given to card representation of tower while off field
 struct Card{
+	Entity item_entity;
     bool selected = false;
     bool dragged = false; //TODO: follow mouse pointer when true
     // TODO: add int parameter for position from left to right on screen?

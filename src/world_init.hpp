@@ -36,15 +36,19 @@ constexpr float Z_FOREGROUND = -1;
 
 // the player
 Entity createPlayer();
-// archer tower
-Entity createArcher(RenderSystem* renderer, vec2 pos);
+// item
+Entity createItem(ItemType item);
+// tower creation
+void createTowerFromCard(RenderSystem* renderer, Entity card);
+void returnTowerToItem(Entity tower);
 // the arrows
 Entity createArrow(RenderSystem* renderer, vec2 pos, float velocity, vec2 dir);
 // the enemy unit
 Entity createEnemy(RenderSystem* renderer, vec2 pos);
 // the cards
 void realignCards();
-Entity createCard(RenderSystem* renderer);
+void createCardFromItem(RenderSystem* renderer, Entity item);
+void returnCardToItem(Entity card);
 // the combat map
 Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints);
 // the overview map

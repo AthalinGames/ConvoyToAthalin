@@ -232,6 +232,11 @@ void WorldSystem::restart_game() {
 		registry.remove_all_components_of(registry.players.entities.back());
 	}
 
+	//Remove all items
+	while (!registry.items.entities.empty()) {
+		registry.remove_all_components_of(registry.items.entities.back());
+	}
+
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
@@ -240,6 +245,8 @@ void WorldSystem::restart_game() {
 
 	td_fight_launched = false;
 	createPlayer();
+	// Setup initial Player Hand (Start with one archer)
+	createItem(TowerType::ARCHER);
 
 	current_td_system.reset(new TDSystem());
 	overview_map = createOverviewMap(renderer);

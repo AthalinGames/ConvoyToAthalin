@@ -265,14 +265,14 @@ void RenderSystem::draw()
 		}
 		// dispatch render request
 		std::visit(overloaded{
-			[position, entity, angle, direction_sprite, scale, &projection_2D, this](RenderRequestSingle single_request) {
+			[position, entity, angle, direction_sprite, scale, &projection_2D, this](RenderRequestSingle& single_request) {
 				Transform transform;
 				transform.translate(position);
 				applyTextureRotation(single_request, transform, entity, angle, direction_sprite);
 				transform.scale(scale);
 				drawTexturedMesh(entity, projection_2D, transform, single_request);
 			},
-			[position, entity, angle, scale, &projection_2D, this](RenderRequestMulti multi_request) {
+			[position, entity, angle, scale, &projection_2D, this](RenderRequestMulti& multi_request) {
 				for (auto & [render_request, stationary] : multi_request.requests) {
 					Transform transform;
 					transform.translate(stationary.position + position);

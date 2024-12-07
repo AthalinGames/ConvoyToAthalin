@@ -24,6 +24,8 @@ public:
     // Steps the td fight ahead by ms milliseconds
     bool step(float elapsed_ms);
 
+    void cleanup_ecs();
+
     // Check for collisions
     void handle_collision(Entity first, Entity second);
 
@@ -53,6 +55,9 @@ private:
     std::vector<Entity> cards;
     std::set<Entity> enemies;
     Entity map;
+
+    // Entities that should get deleted when TD-Fight ends
+    std::vector<Entity> cleanup_entities;
 
     // Tutorial entity;
     Entity tutorial_text;
