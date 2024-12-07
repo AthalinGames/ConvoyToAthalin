@@ -264,21 +264,24 @@ void RenderSystem::draw()
 			assert(false && "RenderRequest does not have a position");
 		}
 		// dispatch render request
-		if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&request)) {
-			Transform transform;
-			transform.translate(position);
-			applyTextureRotation(*single_request, transform, entity, angle, direction_sprite);
-			transform.scale(scale);
-			drawTexturedMesh(entity, projection_2D, transform, *single_request);
-		} else if (RenderRequestMulti *multi_request = std::get_if<RenderRequestMulti>(&request)) {
-			for (auto & [render_request, stationary] : multi_request->requests) {
+		std::visit(overloaded{
+			[position, entity, angle, direction_sprite, scale, &projection_2D, this](RenderRequestSingle single_request) {
 				Transform transform;
-				transform.translate(stationary.position + position);
-				applyTextureRotation(render_request, transform, entity, stationary.angle + angle, stationary.use_direction_sprite);
+				transform.translate(position);
+				applyTextureRotation(single_request, transform, entity, angle, direction_sprite);
 				transform.scale(scale);
-				drawTexturedMesh(entity, projection_2D, transform, render_request);
-			}
-		}
+				drawTexturedMesh(entity, projection_2D, transform, single_request);
+			},
+			[position, entity, angle, scale, &projection_2D, this](RenderRequestMulti multi_request) {
+				for (auto & [render_request, stationary] : multi_request.requests) {
+					Transform transform;
+					transform.translate(stationary.position + position);
+					applyTextureRotation(render_request, transform, entity, stationary.angle + angle, stationary.use_direction_sprite);
+					transform.scale(scale);
+					drawTexturedMesh(entity, projection_2D, transform, render_request);
+				}
+			},
+		}, request);
 	}
 
 	// Truly render to the screen

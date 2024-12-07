@@ -1,5 +1,7 @@
 #pragma once
 
+#include <variant>
+
 #include "common.hpp"
 #include <vector>
 
@@ -28,15 +30,26 @@ struct Slime {
 
 };
 
+// Items
+enum class TowerType {
+	Archer,
+};
+
+enum class ConsumableType {};
+
+struct Item {
+	std::variant<TowerType, ConsumableType> type;
+};
+
 // Tower components
-enum EnemyPriority {
+enum class EnemyPriority {
 	LAST,
 	FIRST
 };
 
 struct Tower {
 	float range = 0.0f;
-	EnemyPriority priority = FIRST;
+	EnemyPriority priority = EnemyPriority::FIRST;
 	bool is_aiming = false;
 };
 

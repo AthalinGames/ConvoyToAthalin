@@ -228,12 +228,12 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
             auto& aimedEnemy = registry.enemies.get(aiming.aimed_entity);
             auto& otherEnemy = registry.enemies.get(second);
             switch (tower.priority) {
-                case FIRST:
+                case EnemyPriority::FIRST:
                     if (aimedEnemy.enemy_progress < otherEnemy.enemy_progress) {
                         aiming.aimed_entity = second;
                     }
                 break;
-                case LAST:
+                case EnemyPriority::LAST:
                     if (aimedEnemy.enemy_progress > otherEnemy.enemy_progress) {
                         aiming.aimed_entity = second;
                     }
