@@ -2,7 +2,8 @@
 #include <vector>
 
 #include "tiny_ecs.hpp"
-#include "components.hpp"
+#include "game_components.hpp"
+#include "render_components.hpp"
 
 class ECSRegistry
 {

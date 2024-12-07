@@ -8,6 +8,7 @@
 #include <sstream>
 
 #include "physics_system.hpp"
+#include "ecs/game_components.hpp"
 
 // Game configuration
 /* TODO: Replace with our game config
@@ -440,10 +441,9 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 				const float element_r_squared = dot(bounding_box, bounding_box);
 				// TODO fix selection flickering
 				if (dist_squared < element_r_squared) {
-					if (!registry.invisibles.has(loc_props.overview_selection)) {
-						continue;
+					if (registry.invisibles.has(loc_props.overview_selection)) {
+						registry.invisibles.remove(loc_props.overview_selection);
 					}
-					registry.invisibles.remove(loc_props.overview_selection);
 					registry.clickables.emplace(entity);
 				} else if (!registry.invisibles.has(loc_props.overview_selection)) {
 					registry.invisibles.emplace(loc_props.overview_selection);
