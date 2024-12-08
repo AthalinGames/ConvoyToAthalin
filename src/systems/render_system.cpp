@@ -122,7 +122,7 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 
 	// Getting uniform locations for glUniform* calls
 	const GLint color_uloc = glGetUniformLocation(program, "fcolor");
-	vec3 color = registry.colors.has(entity) ? registry.colors.get(entity) : vec3(1);
+	vec4 color = registry.colors.has(entity) ? registry.colors.get(entity) : vec4(1);
 	glUniform3fv(color_uloc, 1, reinterpret_cast<float *>(&color));
 	gl_has_errors();
 

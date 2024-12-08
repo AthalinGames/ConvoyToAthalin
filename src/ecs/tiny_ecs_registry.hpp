@@ -34,7 +34,7 @@ public:
 	ComponentContainer<RenderRequest> renderRequests;
 	ComponentContainer<ScreenState> screenStates;
 	ComponentContainer<DebugComponent> debugComponents;
-	ComponentContainer<vec3> colors;
+	ComponentContainer<vec4> colors;
 	ComponentContainer<Invisible> invisibles;
 	ComponentContainer<Clickable> clickables;
 	ComponentContainer<Text> texts;
