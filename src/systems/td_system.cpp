@@ -133,6 +133,21 @@ bool TDSystem::step(float elapsed_ms) {
 }
 
 std::vector<Entity> TDSystem::generate_combat(int difficulty) {
+    //TODO: create pools of enemy spawn times/amounts that can be concatenated depending on (map and) difficulty
+
+    //{enemy_type, amount, interval, speed}
+    std::vector<vec4> combat_pool = {vec4(1, 1, 1000., 100.),
+                                     vec4(1, 2, 1000., 100.),
+                                     vec4(1, 3, 1000., 100.),
+                                     vec4(1, 4, 1000., 100.),
+                                     vec4(1, 1, 500., 100.),
+                                     vec4(1, 2, 500., 100.),
+                                     vec4(1, 3, 500., 100.),
+                                     vec4(1, 4, 500., 100.)};
+    std::vector<Entity> enemy_list = {};
+    uint wave_amount = 1 + int(std::floor(difficulty/2)); //TODO: better curve maybe some kind of sigmoid
+    std::uniform_int_distribution<int> uniform_int_dist(0, combat_pool.size()-1);
+
     if (difficulty == 0) {
         const auto debug_enemy = createEnemy(renderer, {0, 100});
         enemies.emplace(debug_enemy);
@@ -146,8 +161,24 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
         enemy2.spawn_time = 1000;
 
         return {debug_enemy, debug_enemy2};
+    } else if (difficulty >= 1) {
+        float spawn_time = 0;
+        for (int i = 0; i <= wave_amount; ++i) {
+            vec4 wave = combat_pool[uniform_int_dist(rng)];
+            spawn_time += wave[2];
+            for (int j = 0; j < wave[1]; ++j) {
+                const Entity new_enemy = createEnemy(renderer, {0, 100});
+                enemies.emplace(new_enemy);
+                Enemy& enemy = registry.enemies.get(new_enemy);
+                enemy.health += static_cast<int>(std::floor(difficulty/2) * 50);
+                enemy.speed = wave[3] + wave[3] * (difficulty / 10);
+                enemy.spawn_time = spawn_time;
+                enemy_list.push_back(new_enemy);
+
+                spawn_time += wave[2];
+            }
+        }
     } else {
-        std::vector<Entity> enemy_list = {};
         for (int i = 0; i < difficulty+1; ++i) {
             const Entity new_enemy = createEnemy(renderer, {0, 100});
             enemies.emplace(new_enemy);
@@ -157,8 +188,9 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
             enemy.spawn_time = i * 1000.;
             enemy_list.push_back(new_enemy);
         }
-        return enemy_list;
+        //return enemy_list;
     }
+    return enemy_list;
 }
 
 std::vector<vec2> TDSystem::grid_to_coordinates(std::vector<vec2> grid_coords) {
