@@ -24,6 +24,8 @@ public:
     // Steps the td fight ahead by ms milliseconds
     bool step(float elapsed_ms);
 
+    void cleanup_ecs();
+
     // Check for collisions
     void handle_collision(Entity first, Entity second);
 
@@ -42,7 +44,14 @@ private:
     // restart TD fight
     void restart_td_fight();
 
-    bool running = true;
+    enum class GamePhase {
+        SETUP,
+        RUNNING,
+        FIGHT_DONE,
+        CHOOSE_REWARD,
+        ENDED
+    };
+    GamePhase current_phase = GamePhase::SETUP;
 
     // Game state
     RenderSystem* renderer;
@@ -53,6 +62,11 @@ private:
     std::vector<Entity> cards;
     std::set<Entity> enemies;
     Entity map;
+    // Post game state
+    std::vector<Entity> new_cards;
+
+    // Entities that should get deleted when TD-Fight ends
+    std::vector<Entity> cleanup_entities;
 
     // Tutorial entity;
     Entity tutorial_text;

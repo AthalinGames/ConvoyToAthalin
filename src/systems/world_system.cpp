@@ -8,6 +8,7 @@
 #include <sstream>
 
 #include "physics_system.hpp"
+#include "ecs/game_components.hpp"
 
 // Game configuration
 /* TODO: Replace with our game config
@@ -36,6 +37,9 @@ WorldSystem::~WorldSystem() {
 		Mix_FreeChunk(salmon_eat_sound);
 	Mix_CloseAudio();
 	//*/
+
+	// cleanup entities before registry is cleared
+	current_td_system.reset();
 
 	// Destroy all created components
 	registry.clear_all_components();
@@ -139,6 +143,28 @@ void WorldSystem::init(RenderSystem* renderer) {
 
 // Update our game world
 bool WorldSystem::step(const float elapsed_ms) {
+	assert(registry.screenStates.components.size() <= 1);
+	ScreenState &screen = registry.screenStates.components[0];
+
+	float min_timer_ms = 4000.f;
+	for (const Entity entity: registry.deathTimers.entities) {
+		// progress timer
+		DeathTimer &timer = registry.deathTimers.get(entity);
+		timer.timer_ms -= elapsed_ms;
+		if (timer.timer_ms < min_timer_ms) {
+			min_timer_ms = timer.timer_ms;
+		}
+
+		// restart the game once the death timer expired
+		if (timer.timer_ms < 0) {
+			registry.deathTimers.remove(entity);
+			screen.screen_darken_factor = 0;
+			restart_game();
+			return true;
+		}
+	}
+	// reduce window brightness if any of the present salmons is dying
+	screen.screen_darken_factor = 1 - min_timer_ms / 4000;
 	// Updating window title with points
 	std::stringstream title_ss;
 	title_ss << "Points: " << points;
@@ -175,16 +201,22 @@ bool WorldSystem::step(const float elapsed_ms) {
 	if (!current_td_system->is_over()) {
 		current_td_system->step(elapsed_ms);
 	} else if (td_fight_launched) {
-		// Check if Player is dead
-		for (const auto & player : registry.players.components) {
-			if (player.health <= 0) {
-				restart_game();
-				return true;
-			}
+		// Check if Player is already dead
+		if (registry.deathTimers.size() > 0) {
+			return true;
 		}
 
 		// TD Fight should be finished
 		current_td_system.reset(new TDSystem());
+		// check if Player is dead
+		for (const auto & player : registry.players.components) {
+			if (player.health <= 0) {
+				const Entity gameOver = createGameOver(renderer);
+				registry.deathTimers.emplace(gameOver);
+				return true;
+			}
+		}
+
 		// Setup Overview-Map for next selection
 		auto &current_map_pos_props = registry.overviewMapLocations.get(current_map_pos);
 		current_map_pos_props.active = false;
@@ -231,6 +263,12 @@ void WorldSystem::restart_game() {
 		registry.remove_all_components_of(registry.players.entities.back());
 	}
 
+	//Remove all items
+	while (!registry.items.entities.empty()) {
+		printf("registry.items.entities.size(): %lu\n", registry.items.entities.size());
+		registry.remove_all_components_of(registry.items.entities.back());
+	}
+
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
@@ -239,6 +277,8 @@ void WorldSystem::restart_game() {
 
 	td_fight_launched = false;
 	createPlayer();
+	// Setup initial Player Hand (Start with one archer)
+	createItem(TowerType::ARCHER);
 
 	current_td_system.reset(new TDSystem());
 	overview_map = createOverviewMap(renderer);
@@ -440,10 +480,9 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 				const float element_r_squared = dot(bounding_box, bounding_box);
 				// TODO fix selection flickering
 				if (dist_squared < element_r_squared) {
-					if (!registry.invisibles.has(loc_props.overview_selection)) {
-						continue;
+					if (registry.invisibles.has(loc_props.overview_selection)) {
+						registry.invisibles.remove(loc_props.overview_selection);
 					}
-					registry.invisibles.remove(loc_props.overview_selection);
 					registry.clickables.emplace(entity);
 				} else if (!registry.invisibles.has(loc_props.overview_selection)) {
 					registry.invisibles.emplace(loc_props.overview_selection);

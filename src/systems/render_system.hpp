@@ -7,7 +7,7 @@
 //#include FT_FREETYPE_H
 
 #include "common.hpp"
-#include "ecs/components.hpp"
+#include "ecs/render_components.hpp"
 #include "ecs/tiny_ecs.hpp"
 
 struct Character {
@@ -27,8 +27,8 @@ class RenderSystem {
 	 * Whenever possible, add to these lists instead of creating dynamic state
 	 * it is easier to debug and faster to execute for the computer.
 	 */
-	std::array<GLuint, texture_count> texture_gl_handles;
-	std::array<ivec2, texture_count> texture_dimensions;
+	std::array<GLuint, texture_count> texture_gl_handles{};
+	std::array<ivec2, texture_count> texture_dimensions{};
 
 	// Make sure these paths remain in sync with the associated enumerators.
 	// Associated id with .obj path
@@ -56,7 +56,7 @@ class RenderSystem {
 		return lookup;
 	} ();
 
-	std::array<GLuint, effect_count> effects;
+	std::array<GLuint, effect_count> effects{};
 	// Make sure these paths remain in sync with the associated enumerators.
 	const std::array<std::string, effect_count> effect_paths = [] {
 		std::array<std::string, effect_count> effects{};
@@ -66,8 +66,8 @@ class RenderSystem {
 		return effects;
 	} ();
 
-	std::array<GLuint, geometry_count> vertex_buffers;
-	std::array<GLuint, geometry_count> index_buffers;
+	std::array<GLuint, geometry_count> vertex_buffers{};
+	std::array<GLuint, geometry_count> index_buffers{};
 	std::array<Mesh, geometry_count> meshes;
 
 	std::map<char, Character> Characters;
