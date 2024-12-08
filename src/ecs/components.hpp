@@ -419,7 +419,7 @@ const std::vector slime_collision_poly {
 	vec2{0.09, 0.47} - grid_shift
 };
 
-const std::vector arrow_collision_poly {
+const std::vector arrow_collision_poly { //TODO: check if hitbox still rotates correctly with texture
 	vec2{0.09, 0.52} - grid_shift,
 	vec2{0.92, 0.52} - grid_shift,
 	vec2{0.92, 0.40} - grid_shift,
