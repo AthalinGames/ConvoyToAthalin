@@ -17,6 +17,8 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+#include "ecs/physics_components.hpp"
+
 // World initialization
 bool RenderSystem::init(GLFWwindow* window_arg)
 {

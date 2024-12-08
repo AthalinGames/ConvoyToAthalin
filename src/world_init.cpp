@@ -9,57 +9,125 @@ Entity createPlayer() {
 	return entity;
 }
 
-Entity createArcher(RenderSystem *renderer, const vec2 pos) {
+Entity createItem(const ItemType item) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
+	registry.items.emplace(entity);
 
-	Motion& motion = registry.motions.emplace(entity);
-	motion.position = pos;
-	motion.angle = M_PI;
-    motion.use_direction_sprite = true;
-	motion.velocity = vec2(0, 0);
-	motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
-
-	auto& tower = registry.towers.emplace(entity);
-	tower.range = 50;
-	registry.archers.emplace(entity);
-
-	registry.renderRequests.insert(entity, RenderRequestSingle{
-		Z_MIDDLE,
-		0,
-		TEXTURE_ASSET_ID::ARCHER,
-		EFFECT_ASSET_ID::TEXTURED,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
-
-    const auto bow = Entity();
-    registry.bows.emplace(bow);
-    registry.weapons.emplace(bow);
-    registry.archers.get(entity).bow = bow;
-
-    Mesh& bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-    registry.meshPtrs.emplace(bow, &bow_mesh);
-
-    Motion& bow_motion = registry.motions.emplace(bow);
-    bow_motion.position = pos;
-    bow_motion.angle = M_PI/2;
-    bow_motion.velocity = vec2(0, 0);
-    bow_motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
-
-    registry.renderRequests.insert(bow, RenderRequestSingle{
-            Z_MIDDLE,
-            0,
-            TEXTURE_ASSET_ID::BOW1,
-            EFFECT_ASSET_ID::TEXTURED,
-            GEOMETRY_BUFFER_ID::SPRITE,
-    });
+	std::visit(overloaded{
+		[entity] (const TowerType tower) {
+			registry.towers.emplace(entity);
+			switch (tower) {
+				case TowerType::ARCHER: {
+					registry.archers.emplace(entity);
+					break;
+				}
+				case TowerType::TOWER_TYPE_COUNT: {
+					assert(false && "Invalid Tower type");
+				}
+			}
+		},
+		[] (const ConsumableType consumable) {
+			switch (consumable) {
+				//TODO
+				case ConsumableType::CONSUMABLE_TYPE_COUNT: {
+					assert(false && "Invalid Consumable type");
+				}
+			}
+		}
+	}, item);
 
 	return entity;
 }
 
-Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 dir) {
+Entity createRandomItem(std::default_random_engine& rng) {
+	std::uniform_int_distribution<unsigned int> distribution(0, item_type_count - 1);
+	const unsigned int item_id = distribution(rng);
+	if (item_id < tower_type_count) {
+		return createItem(static_cast<TowerType>(item_id));
+	} else if (item_id < consumable_type_count + tower_type_count) {
+		return createItem(static_cast<ConsumableType>(item_id - tower_type_count));
+	} else {
+		assert(false && "Invalid item type");
+        return Entity();
+	}
+}
+
+
+void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
+	const auto bow = Entity();
+
+	motion.angle = M_PI;
+	motion.use_direction_sprite = true;
+	motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+    vec2 motion_pos = motion.position;
+
+	RenderRequest& request = registry.renderRequests.get(card);
+	assert(std::holds_alternative<RenderRequestSingle>(request));
+	RenderRequestSingle& single = std::get<RenderRequestSingle>(request);
+	single.z_position = Z_MIDDLE;
+	single.used_texture = TEXTURE_ASSET_ID::ARCHER;
+
+	registry.bows.emplace(bow);
+	registry.weapons.emplace(bow);
+	registry.archers.get(card).bow = bow;
+
+	Mesh& bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(bow, &bow_mesh);
+
+	Motion& bow_motion = registry.motions.emplace(bow);
+	bow_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
+	bow_motion.angle = M_PI/2;
+	bow_motion.velocity = vec2(0, 0);
+	bow_motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+    printf("%f|%f\n", motion.position.x, motion.position.y);
+	registry.renderRequests.insert(bow, RenderRequestSingle{
+			Z_MIDDLE,
+			0,
+			TEXTURE_ASSET_ID::BOW1,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+	});
+}
+
+void createTowerFromCard(RenderSystem* renderer, const Entity card) {
+	assert(registry.cards.has(card));
+	registry.cards.remove(card);
+	const Stationary& card_pos = registry.stationaries.get(card);
+	Motion& tower_motion = registry.motions.emplace(card);
+	tower_motion.position = card_pos.position;
+	tower_motion.velocity = vec2(0, 0);
+    registry.stationaries.remove(card);
+
+	if (registry.archers.has(card)) {
+        printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
+		createArcherFromCard(renderer, card, tower_motion);
+        printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
+	} else {
+		assert(false && "Invalid Tower type for tower creation");
+	}
+}
+
+void returnArcherToItem(const Entity tower) {
+	const Entity bow = registry.archers.get(tower).bow;
+	registry.remove_all_components_of(bow);
+}
+
+void returnTowerToItem(const Entity tower) {
+	assert(registry.items.has(tower));
+	registry.motions.remove(tower);
+	registry.meshPtrs.remove(tower);
+	registry.renderRequests.remove(tower);
+
+	if (registry.items.has(tower)) {
+		returnArcherToItem(tower);
+	} else {
+		assert(false && "Invalid Tower type for returning to Item");
+	}
+}
+
+
+Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity, const vec2 dir) {
 	const auto entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
@@ -108,8 +176,6 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
-
-
 	return entity;
 }
 
@@ -134,31 +200,36 @@ void realignCards(){
 
 }
 
-Entity createCard(RenderSystem *renderer) {
-    const auto entity = Entity();
+void createCardFromItem(RenderSystem *renderer, const Entity item) {
 
     Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-    registry.meshPtrs.emplace(entity, &mesh);
+    registry.meshPtrs.emplace(item, &mesh);
 
-    registry.cards.emplace(entity);
+    registry.cards.emplace(item);
 
-    registry.archers.emplace(entity);
-
-    Stationary& card_texture = registry.stationaries.emplace(entity);
+    Stationary& card_texture = registry.stationaries.emplace(item);
     card_texture.scale = vec2({CARD_WIDTH, CARD_HEIGHT});
 
     realignCards();
 
-    registry.renderRequests.insert(entity, RenderRequestSingle{
+    registry.renderRequests.insert(item, RenderRequestSingle{
     	Z_FOREGROUND,
     	0,
         TEXTURE_ASSET_ID::ARCHER_CARD,
     	EFFECT_ASSET_ID::TEXTURED,
     	GEOMETRY_BUFFER_ID::SPRITE,
     });
-
-    return entity;
 }
+
+void returnCardToItem(const Entity card) {
+	assert(registry.cards.has(card));
+
+	registry.meshPtrs.remove(card);
+	registry.cards.remove(card);
+	registry.stationaries.remove(card);
+	registry.renderRequests.remove(card);
+}
+
 
 Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints, TEXTURE_ASSET_ID map_sprite) { //is & for checkpoint necessary?
 	const auto entity = Entity();
@@ -409,6 +480,34 @@ Entity createText(RenderSystem* renderer, const vec2 pos, const vec2 scale, cons
 
 	return entity;
 }
+
+Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size, const float alpha) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& position = registry.stationaries.emplace(entity);
+	position.position = pos;
+	position.scale = size;
+
+	vec4& color = registry.colors.emplace(entity);
+	color.r = 1.f;
+	color.g = 1.f;
+	color.b = 1.f;
+	color.a = alpha;
+
+	registry.renderRequests.insert(entity, RenderRequestSingle{
+		Z_FOREGROUND,
+		0,
+		TEXTURE_ASSET_ID::BLACK_PIXEL,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
 
 RenderRequestMulti createTextRenderRequest(const std::string& text, const vec2 scale) {
 	RenderRequestMulti request{};

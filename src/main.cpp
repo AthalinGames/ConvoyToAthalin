@@ -21,9 +21,9 @@ using Clock = std::chrono::high_resolution_clock;
 int main()
 {
 	// Global systems
-	WorldSystem world_system;
 	RenderSystem render_system;
 	PhysicsSystem physics_system;
+	WorldSystem world_system;
 
 	// Initializing window
 	GLFWwindow* window = world_system.create_window();

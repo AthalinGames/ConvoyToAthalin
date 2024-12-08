@@ -42,7 +42,9 @@ constexpr int window_height_px = 800;
 #define M_PI_2 M_PI/2
 #endif
 
-
+// helper type for std::visit
+template<class... Ts>
+struct overloaded : Ts... { using Ts::operator()...; };
 
 // The 'Transform' component handles transformations passed to the Vertex shader
 // (similar to the gl Immediate mode equivalent, e.g., glTranslate()...)
