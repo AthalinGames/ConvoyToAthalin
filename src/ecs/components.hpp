@@ -407,16 +407,16 @@ const std::vector basic_bounding_box {
 };
 
 const std::vector slime_collision_poly {
-	vec2{0.22, 0} - grid_shift,
-	vec2{0.78, 0} - grid_shift,
-	vec2{0.91, 0.88} - grid_shift,
-	vec2{0.88, 0.59} - grid_shift,
-	vec2{0.75, 0.47} - grid_shift,
-	vec2{0.59, 0.41} - grid_shift,
-	vec2{0.41, 0.41} - grid_shift,
-	vec2{0.25, 0.47} - grid_shift,
-	vec2{0.13, 0.59} - grid_shift,
-	vec2{0.09, 0.88} - grid_shift
+	vec2{0.22, 0.59} - grid_shift,
+	vec2{0.78, 0.59} - grid_shift,
+	vec2{0.91, 0.47} - grid_shift,
+	vec2{0.88, 0.18} - grid_shift,
+	vec2{0.75, 0.06} - grid_shift,
+	vec2{0.59, 0.} - grid_shift,
+	vec2{0.41, 0.} - grid_shift,
+	vec2{0.25, 0.06} - grid_shift,
+	vec2{0.13, 0.18} - grid_shift,
+	vec2{0.09, 0.47} - grid_shift
 };
 
 const std::vector arrow_collision_poly {
