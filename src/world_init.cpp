@@ -455,6 +455,34 @@ Entity createText(RenderSystem* renderer, const vec2 pos, const vec2 scale, cons
 	return entity;
 }
 
+Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size, const float alpha) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& position = registry.stationaries.emplace(entity);
+	position.position = pos;
+	position.scale = size;
+
+	vec4& color = registry.colors.emplace(entity);
+	color.r = 1.f;
+	color.g = 1.f;
+	color.b = 1.f;
+	color.a = alpha;
+
+	registry.renderRequests.insert(entity, RenderRequestSingle{
+		Z_FOREGROUND,
+		0,
+		TEXTURE_ASSET_ID::BLACK_PIXEL,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+
 RenderRequestMulti createTextRenderRequest(const std::string& text, const vec2 scale) {
 	RenderRequestMulti request{};
 	vec2 current_pos = {};

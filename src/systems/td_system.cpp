@@ -11,21 +11,21 @@ TDSystem::TDSystem(const unsigned int seed) : dragging(false) {
 }
 
 TDSystem::TDSystem() {
-    running = false;
+    current_phase = GamePhase::ENDED;
 }
 
 void TDSystem::cleanup_ecs() {
     // Remove all components related to a td fight
-    for (const auto card : cards) {
+    for (const auto card: cards) {
         returnCardToItem(card);
     }
-    for (const auto enemy : enemies) {
+    for (const auto enemy: enemies) {
         registry.remove_all_components_of(enemy);
     }
-    for (const auto tower : towers) {
+    for (const auto tower: towers) {
         returnTowerToItem(tower);
     }
-    for (const auto entity : cleanup_entities) {
+    for (const auto entity: cleanup_entities) {
         registry.remove_all_components_of(entity);
     }
 
@@ -45,93 +45,85 @@ void TDSystem::init(RenderSystem *renderer) {
     restart_td_fight();
 }
 
-bool TDSystem::step(float elapsed_ms) {
-    assert(registry.screenStates.components.size() <= 1);
-    ScreenState &screen = registry.screenStates.components[0];
-    Map& td_map = registry.maps.get(map);
+bool TDSystem::step(const float elapsed_ms) {
+    Map &td_map = registry.maps.get(map);
 
-    float min_timer_ms = 4000.f;
-    for (Entity entity : registry.deathTimers.entities) {
-        // progress timer
-        DeathTimer& timer = registry.deathTimers.get(entity);
-        timer.timer_ms -= elapsed_ms;
-        if(timer.timer_ms < min_timer_ms){
-            min_timer_ms = timer.timer_ms;
+    switch (current_phase) {
+        case GamePhase::SETUP: {
+            break;
         }
+        case GamePhase::RUNNING: {
+            td_map.combat_time += elapsed_ms;
+            for (const auto tower_entity: registry.shotTimers.entities) {
+                auto &shot_timer = registry.shotTimers.get(tower_entity);
+                shot_timer.time -= elapsed_ms;
 
-        // restart the game once the death timer expired
-        if (timer.timer_ms < 0) {
-            registry.deathTimers.remove(entity);
-            screen.screen_darken_factor = 0;
-            // TODO do actual handling for that
-            running = false;
-            return true;
-        }
-    }
-    // reduce window brightness if any of the present salmons is dying
-    screen.screen_darken_factor = 1 - min_timer_ms / 4000;
-
-    if(td_map.combat_started) {
-        td_map.combat_time += elapsed_ms;
-        for (const auto tower_entity: registry.shotTimers.entities) {
-            auto &shot_timer = registry.shotTimers.get(tower_entity);
-            shot_timer.time -= elapsed_ms;
-
-            if (shot_timer.time < 0) {
-                registry.shotTimers.remove(tower_entity);
-
-            }
-            if (registry.archers.has(tower_entity)) {
-                const auto &bow_entity = registry.archers.get(tower_entity).bow;
-                RenderRequest& render_request = registry.renderRequests.get(bow_entity);
-                if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&render_request)) {
-                    if (shot_timer.time < 0) {
-                        //change bow to empty
-                        single_request->used_texture = TEXTURE_ASSET_ID::BOW3;
-                    } else if (shot_timer.time < 150.) {
-                        //change bow to drawn
-                        single_request->used_texture = TEXTURE_ASSET_ID::BOW2;
-                    } else if (shot_timer.time < 500.) {
-                        //change bow to loaded
-                        single_request->used_texture = TEXTURE_ASSET_ID::BOW1;
+                if (shot_timer.time < 0) {
+                    registry.shotTimers.remove(tower_entity);
+                }
+                if (registry.archers.has(tower_entity)) {
+                    const auto &bow_entity = registry.archers.get(tower_entity).bow;
+                    RenderRequest &render_request = registry.renderRequests.get(bow_entity);
+                    if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&render_request)) {
+                        if (shot_timer.time < 0) {
+                            //change bow to empty
+                            single_request->used_texture = TEXTURE_ASSET_ID::BOW3;
+                        } else if (shot_timer.time < 150.) {
+                            //change bow to drawn
+                            single_request->used_texture = TEXTURE_ASSET_ID::BOW2;
+                        } else if (shot_timer.time < 500.) {
+                            //change bow to loaded
+                            single_request->used_texture = TEXTURE_ASSET_ID::BOW1;
+                        }
                     }
                 }
             }
-
-        }
-        if(!td_map.enemies.empty()){
-            Enemy& next_enemy = registry.enemies.get(td_map.enemies[0]);
-            if(td_map.combat_time > next_enemy.spawn_time) {
-                next_enemy.spawned = true;
-                registry.invisibles.remove(td_map.enemies[0]);
-                td_map.enemies.erase(td_map.enemies.begin());
+            if (!td_map.enemies.empty()) {
+                Enemy &next_enemy = registry.enemies.get(td_map.enemies[0]);
+                if (td_map.combat_time > next_enemy.spawn_time) {
+                    next_enemy.spawned = true;
+                    registry.invisibles.remove(td_map.enemies[0]);
+                    td_map.enemies.erase(td_map.enemies.begin());
+                }
             }
-        }
-    }
-
-    // Check if enemy completed Path
-    for (std::size_t i = 0; i < registry.enemies.size(); ++i) {
-        const auto& enemy = registry.enemies.components[i];
-        const Entity enemy_entity = registry.enemies.entities[i];
-        if (enemy.enemy_progress >= 1.0f && enemy.alive) {
-            for (Player &player : registry.players.components) {
-                player.health -= enemy.damage;
+            // Check if enemy completed Path
+            for (std::size_t i = 0; i < registry.enemies.size(); ++i) {
+                const auto &enemy = registry.enemies.components[i];
+                const Entity enemy_entity = registry.enemies.entities[i];
+                if (enemy.enemy_progress >= 1.0f && enemy.alive) {
+                    for (Player &player: registry.players.components) {
+                        player.health -= enemy.damage;
+                    }
+                    // Delete damaging entity
+                    registry.remove_all_components_of(enemy_entity);
+                    enemies.erase(enemy_entity);
+                }
             }
-            // Delete damaging entity
-            registry.remove_all_components_of(enemy_entity);
-            enemies.erase(enemy_entity);
+            // Check if player still has health
+            for (std::size_t i = 0; i < registry.players.size(); ++i) {
+                const auto &player = registry.players.components[i];
+                const Entity player_entity = registry.players.entities[i];
+                if (player.health <= 0 && !registry.deathTimers.has(player_entity)) {
+                    current_phase = GamePhase::ENDED;
+                }
+            }
+
+            // Check if round is won
+            if (registry.enemies.components.empty() && registry.maps.get(map).enemies.empty()) {
+                current_phase = GamePhase::FIGHT_DONE;
+            }
+            break;
+        }
+        case GamePhase::FIGHT_DONE: {
+            const Entity square = createBlackSquare(renderer, {window_width_px / 2, window_height_px / 2},
+                                                        {window_width_px, window_height_px}, 0.01f);
+            cleanup_entities.push_back(square);
+            break;
+        }
+        case GamePhase::ENDED: {
+            break;
         }
     }
-    // Check if player still has health
-    for (std::size_t i = 0; i < registry.players.size(); ++i) {
-        const auto& player = registry.players.components[i];
-        const Entity player_entity = registry.players.entities[i];
-        if (player.health <= 0 && !registry.deathTimers.has(player_entity)) {
-            createGameOver(renderer);
-            registry.deathTimers.emplace(player_entity);
-        }
-    }
-    
     return true;
 }
 
@@ -139,28 +131,30 @@ void TDSystem::restart_td_fight() {
     // Debugging for memory/component leaks
     registry.list_all_components();
     printf("Restarting TD fight\n");
-    
+
     cleanup_ecs();
 
     // Debugging for memory/component leaks
     registry.list_all_components();
 
-    const Entity debug_map = createMap(renderer,{
-        vec2(0, 140), vec2(510, 140), vec2(510, 450), vec2(930, 450), vec2(1050, 330)
-    }); //TODO percentage relative to window size
+    current_phase = GamePhase::SETUP;
+
+    const Entity debug_map = createMap(renderer, {
+                                           vec2(0, 140), vec2(510, 140), vec2(510, 450), vec2(930, 450), vec2(1050, 330)
+                                       }); //TODO percentage relative to window size
     map = debug_map;
     cleanup_entities.push_back(map);
-    Map& map = registry.maps.get(debug_map);
+    Map &map = registry.maps.get(debug_map);
     map.active = true;
 
     const auto debug_enemy = createEnemy(renderer, {0, 100});
     enemies.emplace(debug_enemy);
-    Enemy& enemy = registry.enemies.get(debug_enemy);
+    Enemy &enemy = registry.enemies.get(debug_enemy);
     enemy.speed = 100.f;
 
     const auto debug_enemy2 = createEnemy(renderer, {0, 100});
     enemies.emplace(debug_enemy2);
-    Enemy& enemy2 = registry.enemies.get(debug_enemy2);
+    Enemy &enemy2 = registry.enemies.get(debug_enemy2);
     enemy2.speed = 100.f;
     enemy2.spawn_time = 1000;
 
@@ -181,9 +175,9 @@ void TDSystem::restart_td_fight() {
 }
 
 void TDSystem::handle_collision(const Entity first, const Entity second) {
-    if(registry.enemies.has(second) && registry.arrows.has(first)){
-        auto& enemy = registry.enemies.get(second);
-        auto& arrow = registry.arrows.get(first);
+    if (registry.enemies.has(second) && registry.arrows.has(first)) {
+        auto &enemy = registry.enemies.get(second);
+        auto &arrow = registry.arrows.get(first);
         enemy.health -= arrow.damage;
         if (arrow.hit_entities.count(second)) {
             // Arrow has already hit that enemy
@@ -193,8 +187,8 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         if (enemy.health <= 0) {
             enemy.alive = false;
             // clear tower aiming
-            auto& aimingRegistry = registry.aimingAts;
-            for(const Entity& aiming : aimingRegistry.entities) {
+            auto &aimingRegistry = registry.aimingAts;
+            for (const Entity &aiming: aimingRegistry.entities) {
                 if (aimingRegistry.get(aiming).aimed_entity == second) {
                     aimingRegistry.remove(aiming);
                 }
@@ -206,53 +200,58 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
             registry.remove_all_components_of(first);
         }
     } else if (registry.towers.has(first) && registry.enemies.has(second)) {
-        auto& tower = registry.towers.get(first);
+        auto &tower = registry.towers.get(first);
         if (registry.aimingAts.has(first)) {
-            auto& aiming = registry.aimingAts.get(first);
-            auto& aimedEnemy = registry.enemies.get(aiming.aimed_entity);
-            auto& otherEnemy = registry.enemies.get(second);
+            auto &aiming = registry.aimingAts.get(first);
+            auto &aimedEnemy = registry.enemies.get(aiming.aimed_entity);
+            auto &otherEnemy = registry.enemies.get(second);
             switch (tower.priority) {
                 case EnemyPriority::FIRST:
                     if (aimedEnemy.enemy_progress < otherEnemy.enemy_progress) {
                         aiming.aimed_entity = second;
                     }
-                break;
+                    break;
                 case EnemyPriority::LAST:
                     if (aimedEnemy.enemy_progress > otherEnemy.enemy_progress) {
                         aiming.aimed_entity = second;
                     }
-                break;
+                    break;
             }
         } else {
-            auto& aimingAt = registry.aimingAts.emplace(first);
+            auto &aimingAt = registry.aimingAts.emplace(first);
             aimingAt.aimed_entity = second;
         }
     }
 }
 
 void TDSystem::handle_aiming() {
-    const auto& aimingRegistry = registry.aimingAts;
+    if (current_phase != GamePhase::RUNNING)
+        return;
+    const auto &aimingRegistry = registry.aimingAts;
     for (uint i = 0; i < aimingRegistry.entities.size(); i++) {
         const Entity tower_entity = aimingRegistry.entities[i];
         const Entity enemy_entity = aimingRegistry.components[i].aimed_entity;
-        if(registry.enemies.get(enemy_entity).spawned) {
+        if (registry.enemies.get(enemy_entity).spawned) {
             auto &tower_motion = registry.motions.get(tower_entity);
             auto &enemy_motion = registry.motions.get(enemy_entity);
             auto d_p = tower_motion.position - enemy_motion.position;
             if (registry.archers.has(tower_entity)) {
-                Enemy& enemy = registry.enemies.get(enemy_entity);
-                const Archer& archer = registry.archers.get(tower_entity);
-                const Map& map = registry.maps.get(this->map);
-                const float arrow_fly_time = length(d_p) / archer.arrow_speed; // estimation as the enemy also moves during this time TODO: think about considering enemy speed
-                d_p = tower_motion.position - PhysicsSystem::calculate_enemy_position(enemy, map, arrow_fly_time, false);
+                Enemy &enemy = registry.enemies.get(enemy_entity);
+                const Archer &archer = registry.archers.get(tower_entity);
+                const Map &map = registry.maps.get(this->map);
+                const float arrow_fly_time = length(d_p) / archer.arrow_speed;
+                // estimation as the enemy also moves during this time TODO: think about considering enemy speed
+                d_p = tower_motion.position -
+                      PhysicsSystem::calculate_enemy_position(enemy, map, arrow_fly_time, false);
             }
             const float angle = atan2(d_p.y, d_p.x);
             tower_motion.angle = angle;
             if (registry.archers.has(tower_entity)) {
                 auto &bow_motion = registry.motions.get(registry.archers.get(tower_entity).bow);
-                bow_motion.angle = angle - M_PI_2 - M_PI_2/2; //+ (2 * M_PI) - (M_PI_2/2);
-                if (bow_motion.angle < M_PI) { //keep angle within [-pi, pi]
-                    bow_motion.angle += 2*M_PI;
+                bow_motion.angle = angle - M_PI_2 - M_PI_2 / 2; //+ (2 * M_PI) - (M_PI_2/2);
+                if (bow_motion.angle < M_PI) {
+                    //keep angle within [-pi, pi]
+                    bow_motion.angle += 2 * M_PI;
                 }
             }
 
@@ -270,16 +269,16 @@ void TDSystem::handle_aiming() {
 }
 
 bool TDSystem::is_over() const {
-    return !running || (registry.enemies.components.empty() && registry.maps.get(map).enemies.empty());
+    return current_phase == GamePhase::ENDED;
 }
 
 void TDSystem::on_key(const int key, int, const int action, const int mods) {
     switch (key) {
         case GLFW_KEY_C: {
-            Map& map_component = registry.maps.get(map);
-            if (action == GLFW_RELEASE && !map_component.combat_started) {
+            Map &map_component = registry.maps.get(map);
+            if (action == GLFW_RELEASE && current_phase == GamePhase::SETUP) {
                 realignCards();
-                map_component.combat_started = true;
+                current_phase = GamePhase::RUNNING;
                 map_component.combat_time = 0.f;
             }
             break;
@@ -293,20 +292,20 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
                 std::erase(cleanup_entities, tutorial_text);
             }
         }
-        default: {}
+        default: {
+        }
     }
 }
 
-void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow* window) {
+void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
     // TODO fight specific mouse handling
 
-    if (!registry.maps.get(map).combat_started) {
+    if (current_phase == GamePhase::SETUP) {
         if (dragging) {
             if (registry.cards.has(dragged_entity)) {
                 registry.stationaries.get(dragged_entity).position = pos;
                 registry.stationaries.get(dragged_entity).scale = vec2(0.5 * CARD_WIDTH, 0.5 * CARD_HEIGHT);
             }
-
         } else if (pos[1] > (CARD_AXIS_HEIGHT - CARD_HEIGHT / 2) && pos[1] < (CARD_AXIS_HEIGHT + CARD_HEIGHT / 2) &&
                    pos[0] < CARD_AXIS_WIDTH) {
             auto &cardRegistry = registry.cards;
@@ -331,9 +330,9 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow* window) {
     }
 }
 
-void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* window) {
+void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *window) {
     printf("mouse button\n");
-    if (!registry.maps.get(map).combat_started) {
+    if (current_phase == GamePhase::SETUP) {
         if (dragging) {
             //double mouse_x;
             //double mouse_y;
@@ -343,7 +342,6 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
                 dragging = false;
                 registry.cards.get(dragged_entity).dragged = false;
                 realignCards();
-
             }
             //if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) { //TODO move this to on_mouse_move
             //    if (registry.cards.has(dragged_entity)) {
@@ -360,7 +358,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
 
                 // block placement on other towers
                 bool place_occupied = false;
-                constexpr float tower_blocked_radius = ARCHER_BB_HEIGHT;//abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
+                constexpr float tower_blocked_radius = ARCHER_BB_HEIGHT;
+                //abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
                 for (std::size_t tower_index = 0; tower_index < registry.towers.size(); ++tower_index) {
                     if (!registry.towers.components[tower_index].placed) {
                         continue;
@@ -386,7 +385,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
                     vec2 vec_prev = prev_checkpoint - card_pos;
                     vec2 vec_curr = curr_checkpoint - card_pos;
                     vec2 vec_prod = vec_prev * vec_curr;
-                    if (!(vec_prod[0] > 0 && vec_prod[1] > 0)) { // cursor between prev and curr checkpoint
+                    if (!(vec_prod[0] > 0 && vec_prod[1] > 0)) {
+                        // cursor between prev and curr checkpoint
                         float d = abs((curr_checkpoint[1] - prev_checkpoint[1]) * card_pos[0]
                                       - (curr_checkpoint[0] - prev_checkpoint[0]) * card_pos[1]
                                       + curr_checkpoint[0] * prev_checkpoint[1]
@@ -403,7 +403,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
                                        card_pos[1] < (CARD_AXIS_HEIGHT + CARD_HEIGHT / 2) &&
                                        card_pos[0] < CARD_AXIS_WIDTH)) {
                     registry.cards.get(dragged_entity).dragged = false;
-                } else { // successfully place card as tower
+                } else {
+                    // successfully place card as tower
                     std::erase(cards, dragged_entity); // C++20 is nice
                     createTowerFromCard(renderer, dragged_entity);
                     towers.emplace_back(dragged_entity);
@@ -421,11 +422,11 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow* win
                         registry.cards.components[i].dragged = true;
                         dragged_entity = registry.cards.entities[i];
                         dragging = true;
-                        printf("z:%f\n", std::get<RenderRequestSingle>(registry.renderRequests.get(dragged_entity)).z_position);
+                        printf("z:%f\n",
+                               std::get<RenderRequestSingle>(registry.renderRequests.get(dragged_entity)).z_position);
                     }
                 }
             }
         }
     }
 }
-

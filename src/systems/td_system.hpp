@@ -44,7 +44,13 @@ private:
     // restart TD fight
     void restart_td_fight();
 
-    bool running = true;
+    enum class GamePhase {
+        SETUP,
+        RUNNING,
+        FIGHT_DONE,
+        ENDED
+    };
+    GamePhase current_phase = GamePhase::SETUP;
 
     // Game state
     RenderSystem* renderer;

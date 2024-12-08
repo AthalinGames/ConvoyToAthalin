@@ -123,7 +123,6 @@ struct Map
     std::vector<vec2> checkpoints = {vec2(0.f,0.f)};
     float path_length = 0;
     std::vector<Entity> enemies = {};
-    bool combat_started = false;
     float combat_time = 0.f; // time passed since combat started (in ms)
     bool active = false;
 };

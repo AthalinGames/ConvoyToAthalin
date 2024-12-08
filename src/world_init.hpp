@@ -70,5 +70,7 @@ Entity createText(RenderSystem* renderer, vec2 pos, vec2 scale, const std::strin
 
 Entity createGameOver(RenderSystem* renderer);
 
+Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alpha);
+
 /// scale defines the scale of each character
 RenderRequestMulti createTextRenderRequest(const std::string& text, vec2 scale);

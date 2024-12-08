@@ -30,6 +30,7 @@ public:
 	ComponentContainer<Enemy> enemies;
     ComponentContainer<Slime> slimes;
 	ComponentContainer<OverviewMapLocation> overviewMapLocations;
+	// TODO Think about deleting this or replace this for the collision polygons
 	ComponentContainer<Mesh*> meshPtrs;
 	ComponentContainer<RenderRequest> renderRequests;
 	ComponentContainer<ScreenState> screenStates;
@@ -47,6 +48,7 @@ public:
 		registry_list.push_back(&motions);
 		registry_list.push_back(&collisions);
 		registry_list.push_back(&players);
+		registry_list.push_back(&items);
 		registry_list.push_back(&towers);
         registry_list.push_back(&cards);
 		registry_list.push_back(&aimingAts);
