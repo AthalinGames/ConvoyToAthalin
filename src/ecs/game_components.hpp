@@ -31,10 +31,17 @@ struct Slime {
 
 // Items
 enum class TowerType {
-	ARCHER,
+	ARCHER = 0,
+	TOWER_TYPE_COUNT
 };
 
-enum class ConsumableType {};
+enum class ConsumableType {
+	CONSUMABLE_TYPE_COUNT
+};
+
+constexpr unsigned int consumable_type_count = static_cast<unsigned int>(ConsumableType::CONSUMABLE_TYPE_COUNT);
+constexpr unsigned int tower_type_count = static_cast<unsigned int>(TowerType::TOWER_TYPE_COUNT);
+constexpr unsigned int item_type_count = consumable_type_count + tower_type_count;
 
 using ItemType = std::variant<TowerType, ConsumableType>;
 

@@ -25,6 +25,9 @@ void TDSystem::cleanup_ecs() {
     for (const auto tower: towers) {
         returnTowerToItem(tower);
     }
+    for (const auto card: new_cards) {
+        registry.remove_all_components_of(card);
+    }
     for (const auto entity: cleanup_entities) {
         registry.remove_all_components_of(entity);
     }
@@ -32,6 +35,7 @@ void TDSystem::cleanup_ecs() {
     towers.clear();
     enemies.clear();
     cards.clear();
+    new_cards.clear();
 }
 
 TDSystem::~TDSystem() {
@@ -102,8 +106,7 @@ bool TDSystem::step(const float elapsed_ms) {
             // Check if player still has health
             for (std::size_t i = 0; i < registry.players.size(); ++i) {
                 const auto &player = registry.players.components[i];
-                const Entity player_entity = registry.players.entities[i];
-                if (player.health <= 0 && !registry.deathTimers.has(player_entity)) {
+                if (player.health < 1) {
                     current_phase = GamePhase::ENDED;
                 }
             }
@@ -115,9 +118,34 @@ bool TDSystem::step(const float elapsed_ms) {
             break;
         }
         case GamePhase::FIGHT_DONE: {
+            current_phase = GamePhase::CHOOSE_REWARD;
+            // Setup next screen
             const Entity square = createBlackSquare(renderer, {window_width_px / 2, window_height_px / 2},
-                                                        {window_width_px, window_height_px}, 0.01f);
+                                                        {window_width_px, window_height_px}, 0.5f);
             cleanup_entities.push_back(square);
+            const Entity text = createText(renderer, {window_width_px * 0.35, window_height_px * 0.2}, {20, 20},  "Choose a new Card:");
+            cleanup_entities.push_back(text);
+            // Create random Items
+            // TODO think about amount of items
+            const Entity random_item0 = createRandomItem(rng);
+            createCardFromItem(renderer, random_item0);
+            new_cards.push_back(random_item0);
+            const Entity random_item1 = createRandomItem(rng);
+            createCardFromItem(renderer, random_item1);
+            new_cards.push_back(random_item1);
+            const Entity random_item2 = createRandomItem(rng);
+            createCardFromItem(renderer, random_item2);
+
+            Stationary& stationary0 = registry.stationaries.get(random_item0);
+            stationary0.position = { 1 * (window_width_px / 3), window_height_px / 2};
+            Stationary& stationary1 = registry.stationaries.get(random_item1);
+            stationary1.position = {1 * (window_width_px / 2), window_height_px / 2};
+            Stationary& stationary2 = registry.stationaries.get(random_item2);
+            stationary2.position = {2 * (window_width_px / 3), window_height_px / 2};
+            new_cards.push_back(random_item2);
+            break;
+        }
+        case GamePhase::CHOOSE_REWARD: {
             break;
         }
         case GamePhase::ENDED: {
@@ -179,7 +207,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         auto &enemy = registry.enemies.get(second);
         auto &arrow = registry.arrows.get(first);
         enemy.health -= arrow.damage;
-        if (arrow.hit_entities.count(second)) {
+        if (arrow.hit_entities.contains(second)) {
             // Arrow has already hit that enemy
             return;
         }
@@ -291,6 +319,13 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
                 registry.remove_all_components_of(tutorial_text);
                 std::erase(cleanup_entities, tutorial_text);
             }
+            break;
+        }
+        case GLFW_KEY_R: {
+            if (action == GLFW_PRESS) {
+                current_phase = GamePhase::ENDED;
+            }
+            break;
         }
         default: {
         }
@@ -325,6 +360,23 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
                     registry.stationaries.get(card_entity).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
                     cardRegistry.components[i].selected = false;
                 }
+            }
+        }
+    } else if (current_phase == GamePhase::CHOOSE_REWARD) {
+        registry.clickables.clear();
+
+        for (const Entity card : new_cards) {
+            auto& card_pos = registry.stationaries.get(card);
+            const vec2 dp = card_pos.position - pos;
+            const float dist_squared = dot(dp, dp);
+            vec2 bounding_box = {abs(card_pos.scale.x), abs(card_pos.scale.y)};
+            bounding_box *= 0.3f;
+            const float card_squared = dot(bounding_box, bounding_box);
+            if (dist_squared < card_squared) {
+                card_pos.scale = vec2(1.3 * CARD_WIDTH, 1.3 * CARD_HEIGHT);
+                registry.clickables.emplace(card);
+            } else {
+                card_pos.scale = vec2(CARD_WIDTH, CARD_HEIGHT);
             }
         }
     }
@@ -427,6 +479,12 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     }
                 }
             }
+        }
+    } else if (current_phase == GamePhase::CHOOSE_REWARD) {
+        for (const Entity entity : registry.clickables.entities) {
+            cards.push_back(entity);
+            std::erase(new_cards, entity);
+            current_phase = GamePhase::ENDED;
         }
     }
 }

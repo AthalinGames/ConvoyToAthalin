@@ -1,5 +1,7 @@
 #pragma once
 
+#include <random>
+
 #include "common.hpp"
 #include "ecs/tiny_ecs.hpp"
 #include "systems/render_system.hpp"
@@ -38,6 +40,7 @@ constexpr float Z_FOREGROUND = -1;
 Entity createPlayer();
 // item
 Entity createItem(ItemType item);
+Entity createRandomItem(std::default_random_engine& rng);
 // tower creation
 void createTowerFromCard(RenderSystem* renderer, Entity card);
 void returnTowerToItem(Entity tower);

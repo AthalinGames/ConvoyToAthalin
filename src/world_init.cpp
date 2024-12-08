@@ -22,17 +22,36 @@ Entity createItem(const ItemType item) {
 					registry.archers.emplace(entity);
 					break;
 				}
+				case TowerType::TOWER_TYPE_COUNT: {
+					assert(false && "Invalid Tower type");
+				}
 			}
 		},
 		[] (const ConsumableType consumable) {
 			switch (consumable) {
 				//TODO
+				case ConsumableType::CONSUMABLE_TYPE_COUNT: {
+					assert(false && "Invalid Consumable type");
+				}
 			}
 		}
 	}, item);
 
 	return entity;
 }
+
+Entity createRandomItem(std::default_random_engine& rng) {
+	std::uniform_int_distribution<unsigned int> distribution(0, item_type_count - 1);
+	const unsigned int item_id = distribution(rng);
+	if (item_id < tower_type_count) {
+		return createItem(static_cast<TowerType>(item_id));
+	} else if (item_id < consumable_type_count + tower_type_count) {
+		return createItem(static_cast<ConsumableType>(item_id - tower_type_count));
+	} else {
+		assert(false && "Invalid item type");
+	}
+}
+
 
 void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
 	const auto bow = Entity();

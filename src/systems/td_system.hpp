@@ -48,6 +48,7 @@ private:
         SETUP,
         RUNNING,
         FIGHT_DONE,
+        CHOOSE_REWARD,
         ENDED
     };
     GamePhase current_phase = GamePhase::SETUP;
@@ -61,6 +62,8 @@ private:
     std::vector<Entity> cards;
     std::set<Entity> enemies;
     Entity map;
+    // Post game state
+    std::vector<Entity> new_cards;
 
     // Entities that should get deleted when TD-Fight ends
     std::vector<Entity> cleanup_entities;
