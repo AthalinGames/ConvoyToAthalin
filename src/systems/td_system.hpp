@@ -74,6 +74,7 @@ private:
 
     // Tutorial entity;
     Entity tutorial_text;
+    Entity tutorial_background;
     static constexpr std::string_view tutorial_string = R"(
 This is the tower defence screen, here you do the actual fighting against enemies.
 On the bottom there are some cards that represent your towers, to place a tower
