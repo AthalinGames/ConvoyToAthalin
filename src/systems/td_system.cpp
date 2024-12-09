@@ -37,6 +37,8 @@ void TDSystem::cleanup_ecs() {
     enemies.clear();
     cards.clear();
     new_cards.clear();
+
+    registry.shotTimers.clear();
 }
 
 TDSystem::~TDSystem() {
