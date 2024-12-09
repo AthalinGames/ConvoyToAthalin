@@ -16,13 +16,15 @@ public:
     TDSystem();
 
     // starts the TDSystem
-    void init(RenderSystem* renderer);
+    void init(RenderSystem* renderer, Entity player);
 
     // Releases all associated resources
     ~TDSystem();
 
     // Steps the td fight ahead by ms milliseconds
     bool step(float elapsed_ms);
+
+    void cleanup_ecs();
 
     // Check for collisions
     void handle_collision(Entity first, Entity second);
@@ -40,19 +42,49 @@ public:
 private:
 
     // restart TD fight
+    std::vector<Entity> generate_combat(int difficulty);
+    std::vector<vec2> grid_to_coordinates(std::vector<vec2> grid_coords);
+    Entity generate_map(int difficulty);
     void restart_td_fight();
 
-    bool running = true;
+    enum class GamePhase {
+        SETUP,
+        RUNNING,
+        FIGHT_DONE,
+        CHOOSE_REWARD,
+        ENDED
+    };
+    GamePhase current_phase = GamePhase::SETUP;
 
     // Game state
     RenderSystem* renderer;
+    Entity player;
     float current_speed;
     bool dragging; // shows if mouse is currently dragging something
     Entity dragged_entity;
     std::vector<Entity> towers;
     std::vector<Entity> cards;
-    std::vector<Entity> enemies;
+    std::set<Entity> enemies;
     Entity map;
+    // Post game state
+    std::vector<Entity> new_cards;
+
+    // Entities that should get deleted when TD-Fight ends
+    std::vector<Entity> cleanup_entities;
+
+    // Tutorial entity;
+    Entity tutorial_text;
+    Entity tutorial_background;
+    static constexpr std::string_view tutorial_string = R"(
+This is the tower defence screen, here you do the actual fighting against enemies.
+On the bottom there are some cards that represent your towers, to place a tower
+you can drag and drop a card onto the desired location.
+(Think about the range of the tower, that is currently not displayed)
+To start the round you need to press 'c'.
+WARNING: After the round started you cannot place any towers
+You defend the camping fire and the enemies spawn at the opposite side of the path
+)";
+    static constexpr auto tutorial_pos = vec2(100, 100);
 
     // C++ random number generator
     std::default_random_engine rng;

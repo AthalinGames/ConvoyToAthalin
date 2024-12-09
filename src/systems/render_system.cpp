@@ -1,38 +1,85 @@
 // internal
 #include "render_system.hpp"
+#include "world_init.hpp"
 #include <SDL.h>
 
+#include "imgui.h"
+#include "imgui_impl_opengl3.h"
 #include "ecs/tiny_ecs_registry.hpp"
 
-void RenderSystem::drawTexturedMesh(const Entity entity,
-                                    mat3 &projection)
-{
-	if (registry.invisibles.has(entity))
-		return;
-	vec2 position;
-    float angle;
-    vec2 scale;
-    if (registry.motions.has(entity)) {
-        Motion &motion = registry.motions.get(entity);
-        position = motion.position;
-        angle = motion.angle;
-        scale = motion.scale;
-    } else {
-        Stationary &map = registry.stationaries.get(entity);
-        position = map.position;
-        angle = map.angle;
-        scale = map.scale;
-    }
-	// Transformation code, see Rendering and Transformation in the template
-	// specification for more info Incrementally updates transformation matrix,
-	// thus ORDER IS IMPORTANT
-	Transform transform;
-	transform.translate(position);
-	transform.rotate(angle);
-	transform.scale(scale);
+// applies rotation to transform or selects fitting directional sprite depending on use_direction_sprite
+void RenderSystem::applyTextureRotation(RenderRequestSingle& render_request, //TODO maybe take just RenderRequest and check which one
+                                        Transform& transform,
+                                        const Entity entity,
+                                        const float angle,
+                                        const bool use_direction_sprite) {
 
-	assert(registry.renderRequests.has(entity));
-	const RenderRequest &render_request = registry.renderRequests.get(entity);
+    // if bow_and_arrow rotate, if character sprite choose view direction sprite
+    if (!use_direction_sprite) {
+        transform.rotate(angle);
+        if (registry.bows.has(entity)) {
+            if (angle < 0) {
+                render_request.z_position = Z_BACKGROUND;
+            } else {
+                render_request.z_position = Z_FOREGROUND;
+            }
+        }
+    } else { // decide cardinal directions by angle in pi/4
+        if (registry.archers.has(entity)) {
+            float angle_by_pi = angle / M_PI;
+            //printf("angle %f\n", angle);
+            float temp_whole;
+            //angle_by_pi = std::modf(angle_by_pi, &temp_whole);
+            //printf("angle mod %f\n", angle_by_pi);
+            if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
+                //look left
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_L;
+            } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
+                //look up
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_U;
+            } else if (angle_by_pi >= 0.75 || angle_by_pi < -0.75) {
+                //look right
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_R;
+            } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
+                //look down
+                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
+            }
+        }
+    }
+
+}
+
+void RenderSystem::doTexturedRender(const GLuint program, const RenderRequestSingle& render_request) const {
+	const GLint in_position_loc = glGetAttribLocation(program, "in_position");
+	const GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
+	gl_has_errors();
+	assert(in_texcoord_loc >= 0);
+
+	glEnableVertexAttribArray(in_position_loc);
+	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
+	                      sizeof(TexturedVertex), static_cast<void *>(nullptr));
+	gl_has_errors();
+
+	glEnableVertexAttribArray(in_texcoord_loc);
+	glVertexAttribPointer(
+		in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
+		reinterpret_cast<void *>(sizeof(vec3))); // note the stride to skip the preceeding vertex position
+
+	// Enabling and binding texture to slot 0
+	glActiveTexture(GL_TEXTURE0);
+	gl_has_errors();
+
+	const GLuint texture_id =
+			texture_gl_handles[static_cast<GLuint>(render_request.used_texture)];
+
+	glBindTexture(GL_TEXTURE_2D, texture_id);
+	gl_has_errors();
+}
+
+void RenderSystem::drawTexturedMesh(const Entity entity,
+                                    mat3 &projection,
+                                    Transform& transform,
+                                    const RenderRequestSingle& render_request) const {
 
 	const auto used_effect_enum = static_cast<GLuint>(render_request.used_effect);
 	assert(used_effect_enum != static_cast<GLuint>(EFFECT_ASSET_ID::EFFECT_COUNT));
@@ -52,72 +99,31 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	gl_has_errors();
 
 	// Input data location as in the vertex buffer
-	if (render_request.used_effect == EFFECT_ASSET_ID::TEXTURED)
-	{
-		const GLint in_position_loc = glGetAttribLocation(program, "in_position");
-		const GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
-		gl_has_errors();
-		assert(in_texcoord_loc >= 0);
-
-		glEnableVertexAttribArray(in_position_loc);
-		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
-							  sizeof(TexturedVertex), static_cast<void *>(nullptr));
-		gl_has_errors();
-
-		glEnableVertexAttribArray(in_texcoord_loc);
-		glVertexAttribPointer(
-			in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
-			reinterpret_cast<void *>(sizeof(vec3))); // note the stride to skip the preceeding vertex position
-
-		// Enabling and binding texture to slot 0
-		glActiveTexture(GL_TEXTURE0);
-		gl_has_errors();
-
-		assert(registry.renderRequests.has(entity));
-		const GLuint texture_id =
-			texture_gl_handles[static_cast<GLuint>(registry.renderRequests.get(entity).used_texture)];
-
-		glBindTexture(GL_TEXTURE_2D, texture_id);
-		gl_has_errors();
-	}
-	/* TODO: Replace with effects for our own stuff
-	else if (render_request.used_effect == EFFECT_ASSET_ID::SALMON || render_request.used_effect == EFFECT_ASSET_ID::PEBBLE)
-	{
-		GLint in_position_loc = glGetAttribLocation(program, "in_position");
-		GLint in_color_loc = glGetAttribLocation(program, "in_color");
-		gl_has_errors();
-
-		glEnableVertexAttribArray(in_position_loc);
-		glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
-							  sizeof(ColoredVertex), (void *)0);
-		gl_has_errors();
-
-		glEnableVertexAttribArray(in_color_loc);
-		glVertexAttribPointer(in_color_loc, 3, GL_FLOAT, GL_FALSE,
-							  sizeof(ColoredVertex), (void *)sizeof(vec3));
-		gl_has_errors();
-
-		if (render_request.used_effect == EFFECT_ASSET_ID::SALMON)
-		{
-			// Light up?
-			GLint light_up_uloc = glGetUniformLocation(program, "light_up");
-			assert(light_up_uloc >= 0);
-
-			// !!! TODO A1: set the light_up shader variable using glUniform1i,
-			// similar to the glUniform1f call below. The 1f or 1i specified the type, here a single int.
-			gl_has_errors();
+	switch (render_request.used_effect) {
+		case EFFECT_ASSET_ID::TEXTURED: {
+			doTexturedRender(program, render_request);
+			break;
 		}
-	}
-	*/
-	else
-	{
-		assert(false && "Type of render request not supported");
+		case EFFECT_ASSET_ID::TEXTURED_ATLAS: {
+			// Getting uniform location for texture coordinate modification
+			const GLuint tex_pos_uloc = glGetUniformLocation(program, "tex_pos");
+			const GLuint tex_area_uloc = glGetUniformLocation(program, "tex_area");
+			AtlasTexture atlas_texture = atlasLookup.at(render_request.used_texture)[render_request.used_texture_atlas_texture_id];
+			glUniform2fv(tex_pos_uloc, 1, reinterpret_cast<float *> (&atlas_texture.tex_pos));
+			glUniform2fv(tex_area_uloc, 1, reinterpret_cast<float *> (&atlas_texture.tex_size));
+			gl_has_errors();
+			// Render Texture
+			doTexturedRender(program, render_request);
+			break;
+		}
+		default:
+			assert(false && "Type of render request not supported");
 	}
 
 	// Getting uniform locations for glUniform* calls
 	const GLint color_uloc = glGetUniformLocation(program, "fcolor");
-	vec3 color = registry.colors.has(entity) ? registry.colors.get(entity) : vec3(1);
-	glUniform3fv(color_uloc, 1, reinterpret_cast<float *>(&color));
+	vec4 color = registry.colors.has(entity) ? registry.colors.get(entity) : vec4(1);
+	glUniform4fv(color_uloc, 1, reinterpret_cast<float *>(&color));
 	gl_has_errors();
 
 	// Get number of indices from index buffer, which has elements uint16_t
@@ -142,6 +148,7 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);
 	gl_has_errors();
 }
+
 
 // draw the intermediate texture to the screen, with some distortion to simulate
 // water
@@ -229,36 +236,77 @@ void RenderSystem::draw()
 	gl_has_errors();
 	mat3 projection_2D = createProjectionMatrix();
 	// Draw all textured meshes that have a position and size component
-	for (Entity entity : registry.renderRequests.entities) // TODO: rework this to enable more influence on order of rendering
-	{
-		if (!registry.motions.has(entity) && !registry.stationaries.has(entity))
+	// TODO: rework this to enable more influence on order of rendering
+	for (std::size_t i = 0; i < registry.renderRequests.size(); ++i) {
+		const Entity entity = registry.renderRequests.entities[i];
+		RenderRequest& request = registry.renderRequests.components[i];
+		if (registry.invisibles.has(entity)) {
 			continue;
-		// Note, its not very efficient to access elements indirectly via the entity
-		// albeit iterating through all Sprites in sequence. A good point to optimize
-		drawTexturedMesh(entity, projection_2D);
+		}
+		// calculate base transform;
+		vec2 position;
+		vec2 scale;
+		float angle;
+		bool direction_sprite;
+		if (registry.motions.has(entity)) {
+			const Motion &motion = registry.motions.get(entity);
+			position = motion.position;
+			angle = motion.angle;
+			scale = motion.scale;
+			direction_sprite = motion.use_direction_sprite;
+		} else if (registry.stationaries.has(entity)) {
+			const Stationary &stationary = registry.stationaries.get(entity);
+			position = stationary.position;
+			angle = stationary.angle;
+			scale = stationary.scale;
+			direction_sprite = stationary.use_direction_sprite;
+		} else {
+			assert(false && "RenderRequest does not have a position");
+		}
+		// dispatch render request
+		std::visit(overloaded{
+			[position, entity, angle, direction_sprite, scale, &projection_2D, this](RenderRequestSingle& single_request) {
+				Transform transform;
+				transform.translate(position);
+				applyTextureRotation(single_request, transform, entity, angle, direction_sprite);
+				transform.scale(scale);
+				drawTexturedMesh(entity, projection_2D, transform, single_request);
+			},
+			[position, entity, angle, scale, &projection_2D, this](RenderRequestMulti& multi_request) {
+				for (auto & [render_request, stationary] : multi_request.requests) {
+					Transform transform;
+					transform.translate(stationary.position + position);
+					applyTextureRotation(render_request, transform, entity, stationary.angle + angle, stationary.use_direction_sprite);
+					transform.scale(scale);
+					drawTexturedMesh(entity, projection_2D, transform, render_request);
+				}
+			},
+		}, request);
 	}
 
-	// Truely render to the screen
+	// Truly render to the screen
 	drawToScreen();
+
+	// Render ImGui Stuff
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	// flicker-free display with a double buffer
 	glfwSwapBuffers(window);
 	gl_has_errors();
 }
 
-mat3 RenderSystem::createProjectionMatrix()
-{
+constexpr mat3 RenderSystem::createProjectionMatrix() {
 	// Fake projection matrix, scales with respect to window coordinates
-	float left = 0.f;
-	float top = 0.f;
+	constexpr float left = 0.f;
+	constexpr float top = 0.f;
 
-	gl_has_errors();
-	float right = (float) window_width_px;
-	float bottom = (float) window_height_px;
+	constexpr float right = static_cast<float>(window_width_px);
+	constexpr float bottom = static_cast<float>(window_height_px);
 
-	float sx = 2.f / (right - left);
-	float sy = 2.f / (top - bottom);
-	float tx = -(right + left) / (right - left);
-	float ty = -(top + bottom) / (top - bottom);
+	constexpr float sx = 2.f / (right - left);
+	constexpr float sy = 2.f / (top - bottom);
+	constexpr float tx = -(right + left) / (right - left);
+	constexpr float ty = -(top + bottom) / (top - bottom);
 	return {{sx, 0.f, 0.f}, {0.f, sy, 0.f}, {tx, ty, 1.f}};
 }

@@ -1,6 +1,7 @@
 // internal
 #include "physics_system.hpp"
 #include "world_init.hpp"
+#include "ecs/physics_components.hpp"
 
 // Returns the local bounding coordinates scaled by the current size of the entity
 vec2 get_bounding_box(const Motion& motion)
@@ -28,7 +29,7 @@ bool collides(const Motion& motion1, const Motion& motion2)
 }
 
 bool pointInsidePoly(const vec2& point, const std::vector<vec2>& polygon) {
-	for (int i = 0; i < polygon.size(); ++i) {
+	for (std::size_t i = 0; i < polygon.size(); ++i) {
 		const vec2 p0 = polygon[i];
 		const vec2 p1 = polygon[(i + 1) % polygon.size()];
 		// Calculate if point is on the left of the line
@@ -52,10 +53,10 @@ bool collidesPoly(const Motion& motion1, const Motion& motion2, const std::vecto
 	// Transform both polys
 	auto poly1TF = std::vector<vec2>(poly1.size());
 	auto poly2TF = std::vector<vec2>(poly2.size());
-	for (int i = 0; i < poly1.size(); ++i) {
+	for (std::size_t i = 0; i < poly1.size(); ++i) {
 		poly1TF[i] = tf1 * poly1[i];
 	}
-	for (int i = 0; i < poly2.size(); ++i) {
+	for (std::size_t i = 0; i < poly2.size(); ++i) {
 		poly2TF[i] = tf2 * poly2[i];
 	}
 	// Check if point of poly2 is inside poly1
@@ -114,7 +115,9 @@ void PhysicsSystem::step(float elapsed_ms)
             if(enemy.spawned) {
                 Motion &motion = registry.motions.get(enemy_container.entities[i]);
                 const float step_seconds = elapsed_ms / 1000.f;
-            	motion.position = calculate_enemy_position(enemy, enemy_entity, active_map, step_seconds, true);
+            	motion.position = calculate_enemy_position(enemy, active_map, step_seconds, true);
+                //printf("%f %f\n", motion.position[0], motion.position[0]);
+                //printf("%f, %f\n", enemy.enemy_progress, enemy.section_progress);
             }
     	}
     }
@@ -151,8 +154,13 @@ void PhysicsSystem::step(float elapsed_ms)
                 }
             } else if (collides(motion_i, motion_j)) {
             	// Check if coarse collision is an actual collision
-            	auto& poly_i = getCollisionMeshOfTexture(registry.renderRequests.get(entity_i).used_texture);
-            	auto& poly_j = getCollisionMeshOfTexture(registry.renderRequests.get(entity_j).used_texture);
+            	// TODO Think about Entities with multiple render requests
+            	const RenderRequest& request_i = registry.renderRequests.get(entity_i);
+            	const RenderRequest& request_j = registry.renderRequests.get(entity_j);
+            	assert(std::holds_alternative<RenderRequestSingle>(request_i));
+            	assert(std::holds_alternative<RenderRequestSingle>(request_j));
+            	auto& poly_i = getCollisionMeshOfTexture(std::get<RenderRequestSingle>(request_i).used_texture);
+            	auto& poly_j = getCollisionMeshOfTexture(std::get<RenderRequestSingle>(request_j).used_texture);
             	if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
             		// Create a collisions event
             		// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
@@ -172,6 +180,7 @@ void PhysicsSystem::step(float elapsed_ms)
 vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, Entity enemy_entity, const Map& current_map, const float seconds, const bool update_enemy) {
 	vec2 previous_checkpoint = current_map.checkpoints[enemy.next_checkpoint - 1];
 	if (enemy.next_checkpoint >= current_map.checkpoints.size()) {
+        enemy.enemy_progress = 1.;
 		return previous_checkpoint;
 	}
 	vec2 next_checkpoint = current_map.checkpoints[enemy.next_checkpoint];
@@ -180,9 +189,14 @@ vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, Entity enemy_entity, 
 	if (update_enemy) {
 		enemy.enemy_progress = enemy_progress;
 	}
-	const float section_length = abs(distance(previous_checkpoint,
-										next_checkpoint)); //TODO maybe already calc this in create_map and save with map
+	const float section_length = current_map.section_lengths[enemy.next_checkpoint-1];//abs(distance(previous_checkpoint, next_checkpoint)); //TODO maybe already calc this in create_map and save with map
 	float section_progress = enemy.section_progress;
+    //float* temp = nullptr;
+    //section_progress = std::modf(enemy_progress*(current_map.checkpoints.size()-1), temp);
+    /* TODO:
+     * make section progress go > 1, then mod f and use first part to select section and decimal part to interpolate
+     * if section progress over checkpoint size (or maybe size-1) set enemy progress 1 to avoid floating point inaccuracies
+     */
 	section_progress += (enemy.speed * seconds) / section_length;
 	if (update_enemy) {
 		enemy.section_progress = section_progress;

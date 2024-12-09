@@ -4,9 +4,11 @@
 
 // stlib
 #include <cassert>
+#include <imgui.h>
 #include <sstream>
 
 #include "physics_system.hpp"
+#include "ecs/game_components.hpp"
 
 // Game configuration
 /* TODO: Replace with our game config
@@ -35,6 +37,9 @@ WorldSystem::~WorldSystem() {
 		Mix_FreeChunk(salmon_eat_sound);
 	Mix_CloseAudio();
 	//*/
+
+	// cleanup entities before registry is cleared
+	current_td_system.reset();
 
 	// Destroy all created components
 	registry.clear_all_components();
@@ -138,6 +143,28 @@ void WorldSystem::init(RenderSystem* renderer) {
 
 // Update our game world
 bool WorldSystem::step(const float elapsed_ms) {
+	assert(registry.screenStates.components.size() <= 1);
+	ScreenState &screen = registry.screenStates.components[0];
+
+	float min_timer_ms = 4000.f;
+	for (const Entity entity: registry.deathTimers.entities) {
+		// progress timer
+		DeathTimer &timer = registry.deathTimers.get(entity);
+		timer.timer_ms -= elapsed_ms;
+		if (timer.timer_ms < min_timer_ms) {
+			min_timer_ms = timer.timer_ms;
+		}
+
+		// restart the game once the death timer expired
+		if (timer.timer_ms < 0) {
+			registry.deathTimers.remove(entity);
+			screen.screen_darken_factor = 0;
+			restart_game();
+			return true;
+		}
+	}
+	// reduce window brightness if any of the present salmons is dying
+	screen.screen_darken_factor = 1 - min_timer_ms / 4000;
 	// Updating window title with points
 	std::stringstream title_ss;
 	title_ss << "Points: " << points;
@@ -161,12 +188,37 @@ bool WorldSystem::step(const float elapsed_ms) {
 		}
 	}
 
+	// Render Health display
+	ImGui::Begin("Health");
+	ImGui::SetWindowPos({window_width_px * 0.1, window_height_px * 0.03});
+	ImGui::SetWindowSize({window_width_px * 0.06, window_height_px * 0.06});
+	for (const auto & player : registry.players.components) {
+		ImGui::Text("HP: %d", player.health);
+	}
+	ImGui::End();
+
 	// If td system is running, run also its step
 	if (!current_td_system->is_over()) {
 		current_td_system->step(elapsed_ms);
 	} else if (td_fight_launched) {
+		// Check if Player is already dead
+		if (registry.deathTimers.size() > 0) {
+			return true;
+		}
+
 		// TD Fight should be finished
 		current_td_system.reset(new TDSystem());
+		// check if Player is dead
+		for (const auto & player : registry.players.components) {
+			if (player.health <= 0) {
+				const Entity gameOver = createGameOver(renderer);
+				registry.deathTimers.emplace(gameOver);
+				return true;
+			}
+		}
+
+        Player& current_player = registry.players.get(player);
+        current_player.won_battles++;
 		// Setup Overview-Map for next selection
 		auto &current_map_pos_props = registry.overviewMapLocations.get(current_map_pos);
 		current_map_pos_props.active = false;
@@ -208,10 +260,28 @@ void WorldSystem::restart_game() {
 	    registry.remove_all_components_of(registry.stationaries.entities.back());
     }
 
+	//Remove player state
+	while (!registry.players.entities.empty()) {
+		registry.remove_all_components_of(registry.players.entities.back());
+	}
+
+	//Remove all items
+	while (!registry.items.entities.empty()) {
+		printf("registry.items.entities.size(): %lu\n", registry.items.entities.size());
+		registry.remove_all_components_of(registry.items.entities.back());
+	}
+
 	// Debugging for memory/component leaks
 	registry.list_all_components();
 
+	ScreenState &screen = registry.screenStates.components[0];
+	screen.screen_darken_factor = 0;
+
 	td_fight_launched = false;
+	// Setup initial Player Hand (Start with one archer)
+    player = createPlayer();
+	createItem(TowerType::ARCHER);
+
 
 	current_td_system.reset(new TDSystem());
 	overview_map = createOverviewMap(renderer);
@@ -294,9 +364,7 @@ void WorldSystem::restart_game() {
 		createOverviewLine(renderer, last_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
 	}
 
-	// TODO replace with actual td_fight launches
-	//current_td_system = TDSystem(rng());
-	//current_td_system.init(renderer);
+	createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial");
 }
 
 // Compute collisions between entities
@@ -337,33 +405,55 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	// If td fight is running handle the proper key-presses
 	if (!current_td_system->is_over()) {
 		current_td_system->on_key(key, 0, action, mod);
+		return;
 	}
 
-	// Resetting game
-	if (action == GLFW_RELEASE && key == GLFW_KEY_R) {
-		int w, h;
-		glfwGetWindowSize(window, &w, &h);
+	switch (key) {
+		// restart game key
+		case GLFW_KEY_R: {
+			if (action == GLFW_RELEASE) {
+				int w, h;
+				glfwGetWindowSize(window, &w, &h);
 
-        restart_game();
+				restart_game();
+			}
+			break;
+		}
+		case GLFW_KEY_T: {
+			if (action == GLFW_PRESS) {
+				tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data());
+			} else if (action == GLFW_RELEASE) {
+				registry.remove_all_components_of(tutorial_text);
+			}
+			break;
+		}
+		// debugging
+		case GLFW_KEY_D: {
+			if (action == GLFW_RELEASE)
+				debugging.in_debug_mode = false;
+			else
+				debugging.in_debug_mode = true;
+			break;
+		}
+		// Control the current speed with `<` `>`
+		case GLFW_KEY_COMMA: {
+			if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT)) {
+				current_speed -= 0.1f;
+				printf("Current speed = %f\n", current_speed);
+			}
+			break;
+		}
+		case GLFW_KEY_PERIOD: {
+			if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT)) {
+				current_speed += 0.1f;
+				printf("Current speed = %f\n", current_speed);
+			}
+			break;
+		}
+		default: {}
 	}
 
-	// Debugging
-	if (key == GLFW_KEY_D) {
-		if (action == GLFW_RELEASE)
-			debugging.in_debug_mode = false;
-		else
-			debugging.in_debug_mode = true;
-	}
-
-	// Control the current speed with `<` `>`
-	if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT) && key == GLFW_KEY_COMMA) {
-		current_speed -= 0.1f;
-		printf("Current speed = %f\n", current_speed);
-	}
-	if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT) && key == GLFW_KEY_PERIOD) {
-		current_speed += 0.1f;
-		printf("Current speed = %f\n", current_speed);
-	}
+	// Enforce that the speed cannot be less than 0
 	current_speed = fmax(0.f, current_speed);
 }
 
@@ -388,14 +478,17 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 				const auto map_pos = registry.stationaries.get(entity);
 				const vec2 dp = map_pos.position - pos;
 				const float dist_squared = dot(dp, dp);
-				const vec2 bounding_box = {abs(map_pos.scale.x), abs(map_pos.scale.y)};
+				vec2 bounding_box = {abs(map_pos.scale.x), abs(map_pos.scale.y)};
+				bounding_box *= 0.3f;
 				const float element_r_squared = dot(bounding_box, bounding_box);
 				// TODO fix selection flickering
-				if (dist_squared < element_r_squared && registry.invisibles.has(loc_props.overview_selection)) {
-					registry.invisibles.remove(loc_props.overview_selection);
-					registry.clickables.insert(entity, {});
+				if (dist_squared < element_r_squared) {
+					if (registry.invisibles.has(loc_props.overview_selection)) {
+						registry.invisibles.remove(loc_props.overview_selection);
+					}
+					registry.clickables.emplace(entity);
 				} else if (!registry.invisibles.has(loc_props.overview_selection)) {
-					registry.invisibles.insert(loc_props.overview_selection, {});
+					registry.invisibles.emplace(loc_props.overview_selection);
 				}
 			}
 		}
@@ -411,7 +504,7 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 			for (const auto entity : clickables.entities) {
 				if (registry.overviewMapLocations.has(entity)) {
 					current_td_system.reset( new TDSystem(rng()));
-					current_td_system->init(renderer);
+					current_td_system->init(renderer, player);
 					td_fight_launched = true;
 					next_map_pos = entity;
 				}

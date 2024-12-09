@@ -6,7 +6,7 @@ project(convoyToAthalin)
 if (POLICY CMP0025)
   cmake_policy(SET CMP0025 NEW)
 endif ()
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 20)
 
 # nice hierarchichal structure in MSVC
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -28,15 +28,33 @@ endif()
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/ext/project_path.hpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/ext/project_path.hpp")
 
 # You can switch to use the file GLOB for simplicity but at your own risk
-file(GLOB SOURCE_FILES src/*.cpp src/*.hpp src/*/*.cpp src/*/*.hpp)
+file(GLOB SOURCE_FILES
+        # Include Project Files
+        src/*.cpp
+        src/*.hpp
+        src/*/*.cpp
+        src/*/*.hpp)
 
-# external libraries will be installed into /usr/local/include and /usr/local/lib but that folder is not automatically included in the search on MACs
+file(GLOB IMGUI_SOURCES
+        ext/imgui/*.h
+        ext/imgui/*.cpp
+
+        ext/imgui/backends/imgui_impl_glfw.h
+        ext/imgui/backends/imgui_impl_glfw.cpp
+        ext/imgui/backends/imgui_impl_opengl3.h
+        ext/imgui/backends/imgui_impl_opengl3.cpp
+        ext/imgui/backends/imgui_impl_opengl3_loader.h
+)
+
+include_directories(ext/imgui ext/imgui/backends)
+
+# external libraries will be installed into /usr/local/include and /usr/local/lib64 but that folder is not automatically included in the search on MACs
 if (IS_OS_MAC)
   include_directories(/usr/local/include)
   link_directories(/usr/local/lib)
 endif()
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${IMGUI_SOURCES})
 target_include_directories(${PROJECT_NAME} PUBLIC src/)
 
 # Added this so policy CMP0065 doesn't scream
@@ -58,7 +76,7 @@ endif()
 set(glm_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ext/glm/cmake/glm) # if necessary
 find_package(glm REQUIRED)
 
-# glfw, sdl could be precompiled (on windows) or installed by a package manager (on OSX and Linux)
+# glfw, sdl and freetype should be precompiled (on windows) or installed by a package manager (on OSX and Linux)
 if (IS_OS_LINUX OR IS_OS_MAC)
     # Try to find packages rather than to use the precompiled ones
     # Since we're on OSX or Linux, we can just use pkgconfig.
@@ -68,6 +86,7 @@ if (IS_OS_LINUX OR IS_OS_MAC)
 
     pkg_search_module(SDL2 REQUIRED sdl2)
     pkg_search_module(SDL2MIXER REQUIRED SDL2_mixer)
+
 
     # Link Frameworks on OSX
     if (IS_OS_MAC)
@@ -89,19 +108,19 @@ elseif (IS_OS_WINDOWS)
     if (${CMAKE_SIZEOF_VOID_P} MATCHES "8")
         set(GLFW_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3dll-x64.lib")
         set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x64.lib")
-	set(SDL2MIXER_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x64.lib")
+	    set(SDL2MIXER_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x64.lib")
 
-	set(GLFW_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3-x64.dll")
-	set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x64.dll")
-	set(SDLMIXER_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x64.dll")
+	    set(GLFW_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3-x64.dll")
+	    set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x64.dll")
+	    set(SDLMIXER_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x64.dll")
     else()
         set(GLFW_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3dll-x86.lib")
         set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x86.lib")
-	set(SDL2MIXER_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x86.lib")
+	    set(SDL2MIXER_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x86.lib")
 
-	set(GLFW_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3-x86.dll")
-	set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x86.dll")
-	set(SDLMIXER_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x86.dll")
+	    set(GLFW_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/glfw/lib/glfw3-x86.dll")
+	    set(SDL_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2-x86.dll")
+	    set(SDLMIXER_DLL "${CMAKE_CURRENT_SOURCE_DIR}/ext/sdl/lib/SDL2_mixer-x86.dll")
     endif()
 
     # Copy and rename dlls
@@ -136,11 +155,11 @@ elseif (IS_OS_WINDOWS)
     )
 endif()
 
-# Can't find the include and lib. Quit.
+# Can't find the include and lib64. Quit.
 if (NOT GLFW_FOUND OR NOT SDL2_FOUND)
    if (NOT GLFW_FOUND)
       message(FATAL_ERROR "Can't find GLFW." )
-   else ()
+   elseif (NOT SDL2_FOUND)
       message(FATAL_ERROR "Can't find SDL." )
    endif()
 endif()
@@ -154,3 +173,9 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${GLFW_LIBRARIES} ${SDL2_LIBRARIES}
 if(IS_OS_LINUX)
   target_link_libraries(${PROJECT_NAME} PUBLIC glfw ${CMAKE_DL_LIBS})
 endif()
+
+#if(MSVC)
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi")
+#else()
+#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+#endif ()

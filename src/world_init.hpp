@@ -1,5 +1,7 @@
 #pragma once
 
+#include <random>
+
 #include "common.hpp"
 #include "ecs/tiny_ecs.hpp"
 #include "systems/render_system.hpp"
@@ -13,8 +15,8 @@ constexpr float CARD_HEIGHT = 0.2f * window_height_px;
 constexpr float CARD_WIDTH = 0.2f * window_height_px;
 constexpr float BACKGROUND_WIDTH = window_width_px;
 constexpr float BACKGROUND_HEIGHT = window_height_px;
-constexpr float SLIME_WIDTH = 0.15f * window_height_px;
-constexpr float SLIME_HEIGHT = 0.15f * window_height_px;
+constexpr float SLIME_WIDTH = 0.12f * window_height_px;
+constexpr float SLIME_HEIGHT = 0.12f * window_height_px;
 constexpr float LINE_WIDTH = 0.005f * window_height_px;
 constexpr float FIGHT_LOCATION_WIDTH = 0.05f * window_height_px;
 constexpr float FIGHT_LOCATION_HEIGHT = 0.05f * window_height_px;
@@ -35,16 +37,23 @@ constexpr float Z_MIDDLE = 0;
 constexpr float Z_FOREGROUND = -1;
 
 // the player
-Entity createArcher(RenderSystem* renderer, vec2 pos);
+Entity createPlayer();
+// item
+Entity createItem(ItemType item);
+Entity createRandomItem(std::default_random_engine& rng);
+// tower creation
+void createTowerFromCard(RenderSystem* renderer, Entity card);
+void returnTowerToItem(Entity tower);
 // the arrows
 Entity createArrow(RenderSystem* renderer, vec2 pos, float velocity, vec2 dir);
 // the enemy unit
 Entity createEnemy(RenderSystem* renderer, vec2 pos);
 // the cards
 void realignCards();
-Entity createCard(RenderSystem* renderer);
+void createCardFromItem(RenderSystem* renderer, Entity item);
+void returnCardToItem(Entity card);
 // the combat map
-Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints);
+Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints, TEXTURE_ASSET_ID map_sprite);
 // the overview map
 Entity createOverviewMap(RenderSystem* renderer);
 // location on the overview map
@@ -59,3 +68,12 @@ Entity createGoalIcon(RenderSystem* renderer);
 Entity createStartIcon(RenderSystem* renderer);
 
 Entity createOverviewSelection(RenderSystem* renderer, vec2 pos);
+
+Entity createText(RenderSystem* renderer, vec2 pos, vec2 scale, const std::string &text);
+
+Entity createGameOver(RenderSystem* renderer);
+
+Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alpha);
+
+/// scale defines the scale of each character
+RenderRequestMulti createTextRenderRequest(const std::string& text, vec2 scale);

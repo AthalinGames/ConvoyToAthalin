@@ -1,35 +1,133 @@
 #include "world_init.hpp"
 #include "ecs/tiny_ecs_registry.hpp"
 
-// TODO: create player base
-
-Entity createArcher(RenderSystem *renderer, const vec2 pos) {
+Entity createPlayer() {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
-
-	Motion& motion = registry.motions.emplace(entity);
-	motion.position = pos;
-	motion.angle = M_PI/2;
-	motion.velocity = vec2(0, 0);
-	motion.scale = vec2({-ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
-
-	auto& tower = registry.towers.emplace(entity);
-	tower.range = 50;
-	registry.archers.emplace(entity);
-
-	registry.renderRequests.insert(entity, {
-		Z_MIDDLE,
-		TEXTURE_ASSET_ID::ARCHER,
-		EFFECT_ASSET_ID::TEXTURED,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+	registry.players.emplace(entity);
 
 	return entity;
 }
 
-Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 dir) {
+Entity createItem(const ItemType item) {
+	const auto entity = Entity();
+
+	registry.items.emplace(entity);
+
+	std::visit(overloaded{
+		[entity] (const TowerType tower) {
+			registry.towers.emplace(entity);
+			switch (tower) {
+				case TowerType::ARCHER: {
+					registry.archers.emplace(entity);
+					break;
+				}
+				case TowerType::TOWER_TYPE_COUNT: {
+					assert(false && "Invalid Tower type");
+				}
+			}
+		},
+		[] (const ConsumableType consumable) {
+			switch (consumable) {
+				//TODO
+				case ConsumableType::CONSUMABLE_TYPE_COUNT: {
+					assert(false && "Invalid Consumable type");
+				}
+			}
+		}
+	}, item);
+
+	return entity;
+}
+
+Entity createRandomItem(std::default_random_engine& rng) {
+	std::uniform_int_distribution<unsigned int> distribution(0, item_type_count - 1);
+	const unsigned int item_id = distribution(rng);
+	if (item_id < tower_type_count) {
+		return createItem(static_cast<TowerType>(item_id));
+	} else if (item_id < consumable_type_count + tower_type_count) {
+		return createItem(static_cast<ConsumableType>(item_id - tower_type_count));
+	} else {
+		assert(false && "Invalid item type");
+        return Entity();
+	}
+}
+
+
+void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
+	const auto bow = Entity();
+
+	motion.angle = M_PI;
+	motion.use_direction_sprite = true;
+	motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+    vec2 motion_pos = motion.position;
+
+	RenderRequest& request = registry.renderRequests.get(card);
+	assert(std::holds_alternative<RenderRequestSingle>(request));
+	RenderRequestSingle& single = std::get<RenderRequestSingle>(request);
+	single.z_position = Z_MIDDLE;
+	single.used_texture = TEXTURE_ASSET_ID::ARCHER;
+
+	registry.bows.emplace(bow);
+	registry.weapons.emplace(bow);
+	registry.archers.get(card).bow = bow;
+
+	Mesh& bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(bow, &bow_mesh);
+
+	Motion& bow_motion = registry.motions.emplace(bow);
+	bow_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
+	bow_motion.angle = M_PI/2;
+	bow_motion.velocity = vec2(0, 0);
+	bow_motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+    printf("%f|%f\n", motion.position.x, motion.position.y);
+	registry.renderRequests.insert(bow, RenderRequestSingle{
+			Z_MIDDLE,
+			0,
+			TEXTURE_ASSET_ID::BOW1,
+			EFFECT_ASSET_ID::TEXTURED,
+			GEOMETRY_BUFFER_ID::SPRITE,
+	});
+}
+
+void createTowerFromCard(RenderSystem* renderer, const Entity card) {
+	assert(registry.cards.has(card));
+	registry.cards.remove(card);
+	const Stationary& card_pos = registry.stationaries.get(card);
+	Motion& tower_motion = registry.motions.emplace(card);
+	tower_motion.position = card_pos.position;
+	tower_motion.velocity = vec2(0, 0);
+    registry.stationaries.remove(card);
+
+	if (registry.archers.has(card)) {
+        printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
+		createArcherFromCard(renderer, card, tower_motion);
+        printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
+	} else {
+		assert(false && "Invalid Tower type for tower creation");
+	}
+}
+
+void returnArcherToItem(const Entity tower) {
+	const Entity bow = registry.archers.get(tower).bow;
+	registry.remove_all_components_of(bow);
+}
+
+void returnTowerToItem(const Entity tower) {
+	assert(registry.items.has(tower));
+	registry.motions.remove(tower);
+	registry.meshPtrs.remove(tower);
+	registry.renderRequests.remove(tower);
+
+	if (registry.items.has(tower)) {
+		returnArcherToItem(tower);
+	} else {
+		assert(false && "Invalid Tower type for returning to Item");
+	}
+}
+
+
+Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity, const vec2 dir) {
 	const auto entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
@@ -37,14 +135,15 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, float velocity, vec2 
 
 	Motion& motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = static_cast<float>(atan2(dir.y, dir.x));
+	motion.angle = static_cast<float>(atan2(dir.y, dir.x)) + (M_PI_2/2) + M_PI;
 	motion.velocity = -velocity * normalize(dir);
-	motion.scale = vec2({-ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
+	motion.scale = vec2({ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
 
-    Arrow& arrow = registry.arrows.emplace(entity);
+    registry.arrows.emplace(entity);
 
-	registry.renderRequests.insert(entity, {
+	registry.renderRequests.insert(entity, RenderRequestSingle{
 		Z_MIDDLE,
+		0,
 		TEXTURE_ASSET_ID::ARROW,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -65,18 +164,17 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 	motion.velocity = vec2(0, 0);
 	motion.scale = vec2({SLIME_WIDTH, SLIME_HEIGHT});
 
-    auto& enemy = registry.enemies.emplace(entity);
-    auto& slime = registry.slimes.emplace(entity);
+    registry.enemies.emplace(entity);
+    registry.slimes.emplace(entity);
     registry.invisibles.emplace(entity);
 
-	registry.renderRequests.insert(entity, {
+	registry.renderRequests.insert(entity, RenderRequestSingle{
 		Z_MIDDLE,
-		TEXTURE_ASSET_ID::SLIME_R,
+		0,
+		TEXTURE_ASSET_ID::SLIME,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
-
-
 
 	return entity;
 }
@@ -102,32 +200,38 @@ void realignCards(){
 
 }
 
-Entity createCard(RenderSystem *renderer) {
-    const auto entity = Entity();
+void createCardFromItem(RenderSystem *renderer, const Entity item) {
 
     Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-    registry.meshPtrs.emplace(entity, &mesh);
+    registry.meshPtrs.emplace(item, &mesh);
 
-    auto& card = registry.cards.emplace(entity);
+    registry.cards.emplace(item);
 
-    registry.archers.emplace(entity);
-
-    Stationary& card_texture = registry.stationaries.emplace(entity);
+    Stationary& card_texture = registry.stationaries.emplace(item);
     card_texture.scale = vec2({CARD_WIDTH, CARD_HEIGHT});
 
     realignCards();
 
-    registry.renderRequests.insert(entity, {
+    registry.renderRequests.insert(item, RenderRequestSingle{
     	Z_FOREGROUND,
+    	0,
         TEXTURE_ASSET_ID::ARCHER_CARD,
     	EFFECT_ASSET_ID::TEXTURED,
     	GEOMETRY_BUFFER_ID::SPRITE,
     });
-
-    return entity;
 }
 
-Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints) { //is & for checkpoint necessary?
+void returnCardToItem(const Entity card) {
+	assert(registry.cards.has(card));
+
+	registry.meshPtrs.remove(card);
+	registry.cards.remove(card);
+	registry.stationaries.remove(card);
+	registry.renderRequests.remove(card);
+}
+
+
+Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints, TEXTURE_ASSET_ID map_sprite) { //is & for checkpoint necessary?
 	const auto entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
@@ -144,21 +248,47 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints) {
 	float path_length = 0;
 	if (checkpoints.size() > 1) {
 		path_length += abs(distance(checkpoints[0], checkpoints[1]));
+        map_attributes.section_lengths.push_back(path_length);
 		for (uint i = 2; i < checkpoints.size(); ++i) {
-			path_length += abs(distance(checkpoints[i-1], checkpoints[i]));
+            const float section_lenght = abs(distance(checkpoints[i-1], checkpoints[i]));
+            map_attributes.section_lengths.push_back(section_lenght);
+			path_length += section_lenght;
 		}
 	}
 	map_attributes.path_length = path_length;
 
-    registry.renderRequests.insert(entity, {
+    registry.renderRequests.insert(entity, RenderRequestSingle{
     	Z_BACKGROUND,
-    	TEXTURE_ASSET_ID::MAP,
+    	0,
+    	map_sprite,
     	EFFECT_ASSET_ID::TEXTURED,
     	GEOMETRY_BUFFER_ID::SPRITE,
     });
 
     return entity;
 }
+
+Entity createGameOver(RenderSystem *renderer) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& gameover_texture = registry.stationaries.emplace(entity);
+	gameover_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
+	gameover_texture.position = vec2({window_width_px/2, window_height_px/2});
+
+	registry.renderRequests.insert(entity, RenderRequestSingle{
+	Z_FOREGROUND,
+		0,
+		TEXTURE_ASSET_ID::GAME_OVER,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
 
 Entity createOverviewMap(RenderSystem *renderer) {
 	const auto entity = Entity();
@@ -170,8 +300,9 @@ Entity createOverviewMap(RenderSystem *renderer) {
 	overview_texture.position = vec2({window_width_px/2, window_height_px/2});
 	overview_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
 
-	registry.renderRequests.insert(entity, {
+	registry.renderRequests.insert(entity, RenderRequestSingle{
 		Z_BACKGROUND,
+		0,
 		TEXTURE_ASSET_ID::OVERVIEW_MAP,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -188,16 +319,17 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 
 	Stationary& fight_location_pos = registry.stationaries.emplace(entity);
 	fight_location_pos.position = pos;
-	fight_location_pos.scale = vec2({FIGHT_LOCATION_WIDTH, FIGHT_LOCATION_HEIGHT});
+	fight_location_pos.scale = vec2({0.6 * OVERVIEW_ICON_WIDTH, 0.6 * OVERVIEW_ICON_HEIGHT});
 
 	auto &properties = registry.overviewMapLocations.emplace(entity);
 	properties.active = true;
 	properties.overview_selection = createOverviewSelection(renderer, pos);
 
-	registry.renderRequests.insert(entity, {
+	registry.renderRequests.insert(entity, RenderRequestSingle{
 		Z_MIDDLE,
-		TEXTURE_ASSET_ID::FIGHT_ICON,
-		EFFECT_ASSET_ID::TEXTURED,
+		static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::FIGHT),
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
@@ -216,10 +348,11 @@ Entity createStartIcon(RenderSystem *renderer) {
 
 	registry.overviewMapLocations.emplace(entity);
 
-	registry.renderRequests.insert(entity, {
+	registry.renderRequests.insert(entity, RenderRequestSingle{
 		Z_MIDDLE,
-		TEXTURE_ASSET_ID::START_ICON,
-		EFFECT_ASSET_ID::TEXTURED,
+		static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::START),
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
@@ -238,10 +371,11 @@ Entity createGoalIcon(RenderSystem *renderer) {
 
 	registry.overviewMapLocations.emplace(entity);
 
-	registry.renderRequests.insert(entity, {
+	registry.renderRequests.insert(entity, RenderRequestSingle{
 		Z_MIDDLE,
-		TEXTURE_ASSET_ID::GOAL_ICON,
-		EFFECT_ASSET_ID::TEXTURED,
+		static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::END),
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
@@ -261,8 +395,9 @@ Entity createOverviewLine(RenderSystem *renderer, const vec2 firstPos, const vec
 	line_texture.angle = atan2(dp.y, dp.x) + M_PI_2;
 	line_texture.scale = vec2({LINE_WIDTH, 0.5f * length(dp)});
 
-	registry.renderRequests.insert(entity, {
+	registry.renderRequests.insert(entity, RenderRequestSingle{
 		Z_MIDDLE,
+		0,
 		TEXTURE_ASSET_ID::BLACK_PIXEL,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -283,87 +418,25 @@ Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
 
 	registry.invisibles.insert(entity, {});
 
-	registry.renderRequests.insert(entity, {
+	registry.renderRequests.insert(entity, RenderRequestSingle{
 		Z_MIDDLE,
-		TEXTURE_ASSET_ID::MAP_SELECTION,
-		EFFECT_ASSET_ID::TEXTURED,
+		static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::SELECTION),
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
 	return entity;
 }
 
-
-
-/*
-Entity createFish(RenderSystem* renderer, vec2 position)
-{
-	// Reserve en entity
-	auto entity = Entity();
-
-	// Store a reference to the potentially re-used mesh object
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
-
-	// Initialize the position, scale, and physics components
-	auto& motion = registry.motions.emplace(entity);
-	motion.angle = 0.f;
-	motion.velocity = { -50.f, 0.f };
-	motion.position = position;
-
-	// Setting initial values, scale is negative to make it face the opposite way
-	motion.scale = vec2({ -FISH_BB_WIDTH, FISH_BB_HEIGHT });
-
-	// Create an (empty) Fish component to be able to refer to all fish
-	registry.softShells.emplace(entity);
-	registry.renderRequests.insert(
-		entity,
-		{ TEXTURE_ASSET_ID::FISH,
-			EFFECT_ASSET_ID::TEXTURED,
-			GEOMETRY_BUFFER_ID::SPRITE });
-
-	return entity;
-}
-*/
-
-/* TODO: create enemy
-Entity createTurtle(RenderSystem* renderer, vec2 position)
-{
-	auto entity = Entity();
-
-	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
-
-	// Initialize the motion
-	auto& motion = registry.motions.emplace(entity);
-	motion.angle = 0.f;
-	motion.velocity = { -100.f, 0.f };
-	motion.position = position;
-
-	// Setting initial values, scale is negative to make it face the opposite way
-	motion.scale = vec2({ -TURTLE_BB_WIDTH, TURTLE_BB_HEIGHT });
-
-	// Create and (empty) Turtle component to be able to refer to all turtles
-	registry.hardShells.emplace(entity);
-	registry.renderRequests.insert(
-		entity,
-		{ TEXTURE_ASSET_ID::TURTLE,
-		 EFFECT_ASSET_ID::TEXTURED,
-		 GEOMETRY_BUFFER_ID::SPRITE });
-
-	return entity;
-}
-*/
-
-Entity createLine(vec2 position, vec2 scale)
-{
-	Entity entity = Entity();
+Entity createLine(const vec2 position, const vec2 size) {
+	const auto entity = Entity();
 
 	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)
 	registry.renderRequests.insert(
-		entity,{
+		entity,RenderRequestSingle{
 			Z_FOREGROUND,
+			0,
 			TEXTURE_ASSET_ID::TEXTURE_COUNT,
 			EFFECT_ASSET_ID::PEBBLE,
 			GEOMETRY_BUFFER_ID::DEBUG_LINE
@@ -374,32 +447,102 @@ Entity createLine(vec2 position, vec2 scale)
 	motion.angle = 0.f;
 	motion.velocity = { 0.f, 0.f };
 	motion.position = position;
-	motion.scale = scale;
+	motion.scale = size;
 
 	registry.debugComponents.emplace(entity);
 	return entity;
 }
 
-/*
-Entity createPebble(vec2 pos, vec2 size)
-{
-	auto entity = Entity();
+Entity createText(RenderSystem* renderer, const vec2 pos, const vec2 scale, const std::string &text) {
+	const auto entity = Entity();
 
-	// Setting initial motion values
-	Motion& motion = registry.motions.emplace(entity);
-	motion.position = pos;
-	motion.angle = 0.f;
-	motion.velocity = { 0.f, 0.f };
-	motion.scale = size;
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
 
-	// Create and (empty) Salmon component to be able to refer to all turtles
-	registry.hardShells.emplace(entity);
-	registry.renderRequests.insert(
-		entity,
-		{ TEXTURE_ASSET_ID::TEXTURE_COUNT, // TEXTURE_COUNT indicates that no txture is needed
-			EFFECT_ASSET_ID::PEBBLE,
-			GEOMETRY_BUFFER_ID::PEBBLE });
+	if (text.length() > 1) {
+		registry.renderRequests.insert(entity, createTextRenderRequest(text, scale));
+	} else {
+		registry.renderRequests.insert(entity, RenderRequestSingle{
+			Z_FOREGROUND,
+			static_cast<unsigned int>(text.at(0)) - 0x20,
+			TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS,
+			EFFECT_ASSET_ID::TEXTURED_ATLAS,
+			GEOMETRY_BUFFER_ID::SPRITE,
+		});
+	}
+
+	// Create stationary
+	Stationary& stationary = registry.stationaries.emplace(entity);
+	stationary.position = pos;
+	stationary.scale = scale;
+
+	registry.texts.emplace(entity);
 
 	return entity;
 }
-*/
+
+Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size, const float alpha) {
+	const auto entity = Entity();
+
+	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary& position = registry.stationaries.emplace(entity);
+	position.position = pos;
+	position.scale = size;
+
+	vec4& color = registry.colors.emplace(entity);
+	color.r = 1.f;
+	color.g = 1.f;
+	color.b = 1.f;
+	color.a = alpha;
+
+	registry.renderRequests.insert(entity, RenderRequestSingle{
+		Z_FOREGROUND,
+		0,
+		TEXTURE_ASSET_ID::BLACK_PIXEL,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+
+RenderRequestMulti createTextRenderRequest(const std::string& text, const vec2 scale) {
+	RenderRequestMulti request{};
+	vec2 current_pos = {};
+	for (const char character : text) {
+		switch (character) {
+			case '\r': {
+				continue;
+			}
+			case '\n': {
+				current_pos.y += scale.y;
+				current_pos.x = 0;
+				continue;
+			}
+			case ' ': {
+				current_pos.x += scale.x;
+				continue;
+			}
+			default: {
+				if (character < 0x20 || character > 0x7e) {
+					printf("The character '%c' will not be rendered\n", character);
+					continue;
+				}
+				auto& [requestSingle, pos] = request.requests.emplace_back();
+				requestSingle.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+				requestSingle.used_geometry = GEOMETRY_BUFFER_ID::SPRITE;
+				requestSingle.used_texture = TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS;
+				requestSingle.used_texture_atlas_texture_id = static_cast<unsigned int>(character) - 0x20; // all chars after 0x20 are rendered
+
+				pos.position = current_pos;
+				pos.scale = scale;
+
+				current_pos.x += scale.x;
+			}
+		}
+	}
+	return request;
+}
