@@ -31,8 +31,8 @@ inline std::string audio_path(const std::string& name) {return data_path() + "/a
 inline std::string mesh_path(const std::string& name) {return data_path() + "/meshes/" + std::string(name);};
 inline std::string fonts_path(const std::string& name) {return data_path() + "/fonts/" + std::string(name);};
 
-constexpr int window_width_px = 1200;
-constexpr int window_height_px = 800;
+constexpr int window_width_px = 1920;
+constexpr int window_height_px = 1080;
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846f
