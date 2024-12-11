@@ -163,6 +163,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
 	motion.angle = 0.0f;
 	motion.velocity = vec2(0, 0);
 	motion.scale = vec2({SLIME_WIDTH, SLIME_HEIGHT});
+    motion.use_direction_sprite = true;
 
     registry.enemies.emplace(entity);
     registry.slimes.emplace(entity);

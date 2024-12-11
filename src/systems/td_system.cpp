@@ -90,6 +90,10 @@ bool TDSystem::step(const float elapsed_ms) {
                 Enemy &next_enemy = registry.enemies.get(td_map.enemies[0]);
                 if (td_map.combat_time > next_enemy.spawn_time) {
                     next_enemy.spawned = true;
+                    auto path_vector = td_map.checkpoints[0] - td_map.checkpoints[1];
+                    const float angle = atan2(path_vector.y, path_vector.x);
+                    Motion& enemy_motion = registry.motions.get(td_map.enemies[0]);
+                    enemy_motion.angle = angle;
                     registry.invisibles.remove(td_map.enemies[0]);
                     td_map.enemies.erase(td_map.enemies.begin());
                 }
@@ -402,7 +406,7 @@ void TDSystem::handle_aiming() {
                 const float arrow_fly_time = length(d_p) / archer.arrow_speed;
                 // estimation as the enemy also moves during this time TODO: think about considering enemy speed
                 d_p = tower_motion.position -
-                      PhysicsSystem::calculate_enemy_position(enemy, map, arrow_fly_time, false);
+                      PhysicsSystem::calculate_enemy_position(enemy, enemy_entity, map, arrow_fly_time, false);
             }
             const float angle = atan2(d_p.y, d_p.x);
             tower_motion.angle = angle;

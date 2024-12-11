@@ -115,7 +115,7 @@ void PhysicsSystem::step(float elapsed_ms)
             if(enemy.spawned) {
                 Motion &motion = registry.motions.get(enemy_container.entities[i]);
                 const float step_seconds = elapsed_ms / 1000.f;
-            	motion.position = calculate_enemy_position(enemy, active_map, step_seconds, true);
+            	motion.position = calculate_enemy_position(enemy, enemy_container.entities[i], active_map, step_seconds, true);
                 //printf("%f %f\n", motion.position[0], motion.position[0]);
                 //printf("%f, %f\n", enemy.enemy_progress, enemy.section_progress);
             }
@@ -223,6 +223,7 @@ vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, Entity enemy_entity, 
             const float angle = atan2(path_vector.y, path_vector.x);
             Motion& enemy_motion = registry.motions.get(enemy_entity);
             enemy_motion.angle = angle;
+            printf("%f\n", angle);
         }
 	}
 	return previous_checkpoint + (next_checkpoint - previous_checkpoint) * section_progress;

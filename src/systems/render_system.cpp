@@ -44,6 +44,25 @@ void RenderSystem::applyTextureRotation(RenderRequestSingle& render_request, //T
                 //look down
                 render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
             }
+        } else if (registry.slimes.has(entity)) {
+            float angle_by_pi = angle / M_PI;
+            //printf("angle %f\n", angle);
+            float temp_whole;
+            //angle_by_pi = std::modf(angle_by_pi, &temp_whole);
+            //printf("angle mod %f\n", angle_by_pi);
+            if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
+                //look left
+                render_request.used_texture = TEXTURE_ASSET_ID::SLIME_L;
+            } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
+                //look up
+                render_request.used_texture = TEXTURE_ASSET_ID::SLIME_U;
+            } else if (angle_by_pi >= 0.75 || angle_by_pi < -0.75) {
+                //look right
+                render_request.used_texture = TEXTURE_ASSET_ID::SLIME_R;
+            } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
+                //look down
+                render_request.used_texture = TEXTURE_ASSET_ID::SLIME_D;
+            }
         }
     }
 
