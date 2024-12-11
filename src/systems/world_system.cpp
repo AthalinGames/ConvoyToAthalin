@@ -80,7 +80,8 @@ GLFWwindow* WorldSystem::create_window() {
 	glfwWindowHint(GLFW_RESIZABLE, 0);
 
 	// Create the main window (for rendering, keyboard, and mouse input)
-	window = glfwCreateWindow(window_width_px, window_height_px, "Convoy to Athalin", nullptr, nullptr);
+	auto monitor = glfwGetPrimaryMonitor();
+	window = glfwCreateWindow(window_width_px, window_height_px, "Convoy to Athalin", monitor, nullptr);
 	if (window == nullptr) {
 		fprintf(stderr, "Failed to glfwCreateWindow");
 		return nullptr;
@@ -401,6 +402,9 @@ bool WorldSystem::is_over() const {
 // On key callback
 void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	//TODO: handle keyboard shortcuts
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+		exit(0);
+	}
 
 	// If td fight is running handle the proper key-presses
 	if (!current_td_system->is_over()) {
