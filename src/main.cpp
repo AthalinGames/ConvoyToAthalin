@@ -18,15 +18,21 @@
 using Clock = std::chrono::high_resolution_clock;
 
 // Entry point
-int main()
-{
+int main(const int argc, char* argv[]) {
+	bool windowed = false;
+	for (int arg_no = 0; arg_no < argc; ++arg_no) {
+		if (!strcmp(argv[arg_no], "--window") || !strcmp(argv[arg_no], "-w")) {
+			windowed = true;
+		}
+	}
+
 	// Global systems
 	RenderSystem render_system;
 	PhysicsSystem physics_system;
 	WorldSystem world_system;
 
 	// Initializing window
-	GLFWwindow* window = world_system.create_window();
+	GLFWwindow* window = world_system.create_window(windowed);
 	if (!window) {
 		// Time to read the error message
 		printf("Press any key to exit");

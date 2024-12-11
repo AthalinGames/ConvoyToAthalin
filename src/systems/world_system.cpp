@@ -57,7 +57,7 @@ namespace {
 
 // World initialization
 // Note, this has a lot of OpenGL specific things, could be moved to the renderer
-GLFWwindow* WorldSystem::create_window() {
+GLFWwindow* WorldSystem::create_window(const bool windowed) {
 	///////////////////////////////////////
 	// Initialize GLFW
 	glfwSetErrorCallback(glfw_err_cb);
@@ -80,7 +80,12 @@ GLFWwindow* WorldSystem::create_window() {
 	glfwWindowHint(GLFW_RESIZABLE, 0);
 
 	// Create the main window (for rendering, keyboard, and mouse input)
-	auto monitor = glfwGetPrimaryMonitor();
+	GLFWmonitor* monitor;
+	if (windowed) {
+		monitor = nullptr;
+	} else {
+		monitor = glfwGetPrimaryMonitor();
+	}
 	window = glfwCreateWindow(window_width_px, window_height_px, "Convoy to Athalin", monitor, nullptr);
 	if (window == nullptr) {
 		fprintf(stderr, "Failed to glfwCreateWindow");
