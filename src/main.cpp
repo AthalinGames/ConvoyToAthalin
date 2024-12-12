@@ -44,6 +44,8 @@ int main(const int argc, char* argv[]) {
 	render_system.init(window);
 	world_system.init(&render_system);
 
+	printf("Initialized all Main Systems\n");
+
 	// variable timestep loop
 	auto t = Clock::now();
 	while (!world_system.is_over()) {

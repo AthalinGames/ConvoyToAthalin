@@ -207,9 +207,8 @@ constexpr const char* EffectAssetIDToString(const EFFECT_ASSET_ID id) {
 		case EFFECT_ASSET_ID::TEXTURED: return "textured";
 		case EFFECT_ASSET_ID::TEXTURED_ATLAS: return "texturedAtlas";
 		case EFFECT_ASSET_ID::WATER: return "water";
-        //case EFFECT_ASSET_ID::CHARACTER_SPRITE: return "character_sprite"; TODO: needed for choosing direction sprite?
 		default: {
-			fprintf(stderr, "Invalid EFFECT_ASSET_ID: %d", static_cast<int>(id));
+			fprintf(stderr, "Invalid EFFECT_ASSET_ID: %d\n", static_cast<int>(id));
 			assert(false);
             return "";
 		}
@@ -229,17 +228,12 @@ enum class GEOMETRY_BUFFER_ID {
 
 constexpr int geometry_count = static_cast<int>(GEOMETRY_BUFFER_ID::GEOMETRY_COUNT);
 
-struct RenderRequestSingle {
+struct RenderRequest {
+	std::vector<Stationary> offset_positions;
+	std::vector<unsigned int> atlas_ids;
 	float z_position;
-	unsigned int used_texture_atlas_texture_id;
 	TEXTURE_ASSET_ID used_texture = TEXTURE_ASSET_ID::TEXTURE_COUNT;
 	EFFECT_ASSET_ID used_effect = EFFECT_ASSET_ID::EFFECT_COUNT;
 	GEOMETRY_BUFFER_ID used_geometry = GEOMETRY_BUFFER_ID::GEOMETRY_COUNT;
 };
-
-struct RenderRequestMulti {
-	std::vector<std::pair<RenderRequestSingle, Stationary>> requests;
-};
-
-using RenderRequest = std::variant<RenderRequestSingle, RenderRequestMulti>;
 

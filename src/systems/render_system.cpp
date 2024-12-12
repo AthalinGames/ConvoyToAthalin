@@ -8,15 +8,13 @@
 #include "ecs/tiny_ecs_registry.hpp"
 
 // applies rotation to transform or selects fitting directional sprite depending on use_direction_sprite
-void RenderSystem::applyTextureRotation(RenderRequestSingle& render_request, //TODO maybe take just RenderRequest and check which one
-                                        Transform& transform,
+void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO maybe take just RenderRequest and check which one
                                         const Entity entity,
                                         const float angle,
                                         const bool use_direction_sprite) {
 
     // if bow_and_arrow rotate, if character sprite choose view direction sprite
     if (!use_direction_sprite) {
-        transform.rotate(angle);
         if (registry.bows.has(entity)) {
             if (angle < 0) {
                 render_request.z_position = Z_BACKGROUND;
@@ -68,7 +66,7 @@ void RenderSystem::applyTextureRotation(RenderRequestSingle& render_request, //T
 
 }
 
-void RenderSystem::doTexturedRender(const GLuint program, const RenderRequestSingle& render_request) const {
+/*void RenderSystem::doTexturedRender(const GLuint program, const RenderRequestSingle& render_request) const {
 	const GLint in_position_loc = glGetAttribLocation(program, "in_position");
 	const GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
 	gl_has_errors();
@@ -166,8 +164,153 @@ void RenderSystem::drawTexturedMesh(const Entity entity,
 	// Drawing of num_indices/3 triangles specified in the index buffer
 	glDrawElements(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr);
 	gl_has_errors();
-}
+}*/
 
+void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
+											 mat3 &projection,
+											 const Stationary& base_transform,
+											 RenderRequest& render_request) const {
+	const auto used_effect_enum = static_cast<GLuint>(render_request.used_effect);
+	assert(used_effect_enum != static_cast<GLuint>(EFFECT_ASSET_ID::EFFECT_COUNT));
+	const GLuint program = effects[used_effect_enum];
+
+	// Setting shaders
+	glUseProgram(program);
+	gl_has_errors();
+
+	assert(render_request.used_geometry != GEOMETRY_BUFFER_ID::GEOMETRY_COUNT);
+	const GLuint vbo = vertex_buffers[static_cast<GLuint>(render_request.used_geometry)];
+	const GLuint ibo = index_buffers[static_cast<GLuint>(render_request.used_geometry)];
+
+	// Setting vertex and index buffers
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	gl_has_errors();
+
+	// get shader input ids
+	const GLint in_position_loc = glGetAttribLocation(program, "in_position");
+	const GLint in_texcoord_loc = glGetAttribLocation(program, "in_texcoord");
+	gl_has_errors();
+	assert(in_texcoord_loc >= 0);
+
+	// Send vbo and ibo to shader
+	glEnableVertexAttribArray(in_position_loc);
+	glVertexAttribPointer(in_position_loc, 3, GL_FLOAT, GL_FALSE,
+						  sizeof(TexturedVertex), static_cast<void *>(nullptr));
+	gl_has_errors();
+
+	glEnableVertexAttribArray(in_texcoord_loc);
+	glVertexAttribPointer(
+		in_texcoord_loc, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex),
+		reinterpret_cast<void *>(sizeof(vec3))); // note the stride to skip the preceeding vertex position
+
+	// Generate offset Translations
+	std::vector<mat3> transforms(render_request.offset_positions.size());
+	for (size_t i = 0; i < render_request.offset_positions.size(); ++i) {
+		Transform offset_transform;
+		const Stationary& offset_pos = render_request.offset_positions.at(i);
+		offset_transform.translate(offset_pos.position + base_transform.position);
+		if (!base_transform.use_direction_sprite) {
+			offset_transform.rotate(offset_pos.angle + base_transform.angle);
+		}
+		offset_transform.scale(base_transform.scale);
+		transforms[i] = offset_transform.mat;
+		offset_transform.mat.length();
+	}
+	// Transform transforms vector into opengl format
+	GLuint instance_transforms;
+	glGenBuffers(1, &instance_transforms);
+	glBindBuffer(GL_ARRAY_BUFFER, instance_transforms);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(mat3) * transforms.size(), transforms.data(), GL_STATIC_DRAW);
+	// Send data to shader
+	//const GLint in_transforms_loc = glGetAttribLocation(program, "in_instance_transforms");
+	constexpr GLint in_transforms_loc = 2;
+	glEnableVertexAttribArray(in_transforms_loc);
+	glVertexAttribPointer(in_transforms_loc, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(vec3), static_cast<void *>(nullptr));
+	glEnableVertexAttribArray(in_transforms_loc + 1);
+	glVertexAttribPointer(in_transforms_loc + 1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(vec3), reinterpret_cast<void *>(1 * sizeof(vec3)));
+	glEnableVertexAttribArray(in_transforms_loc + 2);
+	glVertexAttribPointer(in_transforms_loc + 2, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(vec3), reinterpret_cast<void *>(2 * sizeof(vec3)));
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glVertexAttribDivisor(in_transforms_loc, 1);
+	glVertexAttribDivisor(in_transforms_loc + 1, 1);
+	glVertexAttribDivisor(in_transforms_loc + 2, 1);
+	gl_has_errors();
+
+
+	// Input data location as in the vertex buffer
+	switch (render_request.used_effect) {
+		case EFFECT_ASSET_ID::TEXTURED_ATLAS: {
+			// Generate atlas positions
+			if (render_request.offset_positions.size() != render_request.atlas_ids.size()) {
+				assert(false && "All offset positions need to have an associated texture position");
+			}
+			std::vector<vec4> atlas_positions(render_request.atlas_ids.size());
+			auto& atlasRefs = atlasLookup.at(render_request.used_texture);
+			for (size_t i = 0; i < render_request.atlas_ids.size(); ++i) {
+				const AtlasTexture atlas_texture = atlasRefs[render_request.atlas_ids.at(i)];
+				vec4 tex_coords;
+				tex_coords.x = atlas_texture.tex_pos.x;
+				tex_coords.y = atlas_texture.tex_pos.y;
+				tex_coords.z = atlas_texture.tex_size.x;
+				tex_coords.w = atlas_texture.tex_size.y;
+				atlas_positions[i] = tex_coords;
+			}
+			// Transform atlas positions into opengl format
+			GLuint instance_atlas_positions;
+			glGenBuffers(1, &instance_atlas_positions);
+			glBindBuffer(GL_ARRAY_BUFFER, instance_atlas_positions);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(vec4) * atlas_positions.size(), atlas_positions.data(), GL_STATIC_DRAW);
+			// Send data to shader
+			//const GLint in_atlas_positions_loc = glGetAttribLocation(program, "in_instance_atlas_positions");
+			constexpr GLint in_atlas_positions_loc = 5;
+			glEnableVertexAttribArray(in_atlas_positions_loc);
+			glVertexAttribPointer(in_atlas_positions_loc, 4, GL_FLOAT, GL_FALSE, sizeof(vec4), static_cast<void *>(nullptr));
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glVertexAttribDivisor(in_atlas_positions_loc, 1);
+			gl_has_errors();
+			// Continue to normal Texture rendering
+		}
+		case EFFECT_ASSET_ID::TEXTURED: {
+			// Enable and bind texture to slot 0
+			glActiveTexture(GL_TEXTURE0);
+			gl_has_errors();
+
+			const GLuint texture_id = texture_gl_handles[static_cast<GLuint>(render_request.used_texture)];
+			glBindTexture(GL_TEXTURE_2D, texture_id);
+			gl_has_errors();
+			break;
+		}
+		default:
+			assert(false && "Type of render request not supported");
+	}
+
+	// Getting uniform locations for glUniform* calls
+	const GLint color_uloc = glGetUniformLocation(program, "fcolor");
+	vec4 color = registry.colors.has(entity) ? registry.colors.get(entity) : vec4(1);
+	glUniform4fv(color_uloc, 1, reinterpret_cast<float *>(&color));
+	gl_has_errors();
+
+	// Get number of indices from index buffer, which has elements uint16_t
+	GLint size = 0;
+	glGetBufferParameteriv(GL_ELEMENT_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
+	gl_has_errors();
+
+	const GLsizei num_indices = size / sizeof(uint16_t);
+	// GLsizei num_triangles = num_indices / 3;
+
+	GLint currProgram;
+	glGetIntegerv(GL_CURRENT_PROGRAM, &currProgram);
+	// Setting uniform values to the currently bound program
+	const GLuint projection_loc = glGetUniformLocation(currProgram, "projection");
+	glUniformMatrix3fv(projection_loc, 1, GL_FALSE, reinterpret_cast<float *>(&projection));
+	const GLuint z_pos_loc = glGetUniformLocation(currProgram, "z_pos");
+	glUniform1f(z_pos_loc, render_request.z_position);
+	gl_has_errors();
+	// Drawing of num_indices/3 triangles specified in the index buffer
+	glDrawElementsInstanced(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr, render_request.offset_positions.size());
+	gl_has_errors();
+}
 
 // draw the intermediate texture to the screen, with some distortion to simulate
 // water
@@ -263,44 +406,21 @@ void RenderSystem::draw()
 			continue;
 		}
 		// calculate base transform;
-		vec2 position;
-		vec2 scale;
-		float angle;
-		bool direction_sprite;
+		Stationary pos;
 		if (registry.motions.has(entity)) {
 			const Motion &motion = registry.motions.get(entity);
-			position = motion.position;
-			angle = motion.angle;
-			scale = motion.scale;
-			direction_sprite = motion.use_direction_sprite;
+			pos.position = motion.position;
+			pos.angle = motion.angle;
+			pos.scale = motion.scale;
+			pos.use_direction_sprite = motion.use_direction_sprite;
 		} else if (registry.stationaries.has(entity)) {
-			const Stationary &stationary = registry.stationaries.get(entity);
-			position = stationary.position;
-			angle = stationary.angle;
-			scale = stationary.scale;
-			direction_sprite = stationary.use_direction_sprite;
+			pos = registry.stationaries.get(entity);
 		} else {
 			assert(false && "RenderRequest does not have a position");
 		}
 		// dispatch render request
-		std::visit(overloaded{
-			[position, entity, angle, direction_sprite, scale, &projection_2D, this](RenderRequestSingle& single_request) {
-				Transform transform;
-				transform.translate(position);
-				applyTextureRotation(single_request, transform, entity, angle, direction_sprite);
-				transform.scale(scale);
-				drawTexturedMesh(entity, projection_2D, transform, single_request);
-			},
-			[position, entity, angle, scale, &projection_2D, this](RenderRequestMulti& multi_request) {
-				for (auto & [render_request, stationary] : multi_request.requests) {
-					Transform transform;
-					transform.translate(stationary.position + position);
-					applyTextureRotation(render_request, transform, entity, stationary.angle + angle, stationary.use_direction_sprite);
-					transform.scale(scale);
-					drawTexturedMesh(entity, projection_2D, transform, render_request);
-				}
-			},
-		}, request);
+		applyTextureRotation(request, entity, pos.angle, pos.use_direction_sprite);
+		drawTexturedMeshInstanced(entity, projection_2D, pos, request);
 	}
 
 	// Truly render to the screen

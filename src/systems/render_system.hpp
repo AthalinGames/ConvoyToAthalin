@@ -106,19 +106,23 @@ public:
 
 private:
 	// Internal drawing functions for each entity type
-    static void applyTextureRotation(RenderRequestSingle& render_request,
-                                     Transform& transform,
+    static void applyTextureRotation(RenderRequest& render_request,
                                      Entity entity,
                                      float angle,
                                      bool use_direction_sprite);
 
-	void doTexturedRender(GLuint program, const RenderRequestSingle& render_request) const;
+	//void doTexturedRender(GLuint program, const RenderRequestSingle& render_request) const;
 
-	void drawTexturedMesh(
-		Entity entity,
-		mat3& projection,
-		Transform& transform,
-		const RenderRequestSingle& render_request) const;
+	//void drawTexturedMesh(
+	//	Entity entity,
+	//	mat3& projection,
+	//	Transform& transform,
+	//	const RenderRequestSingle& render_request) const;
+
+	void drawTexturedMeshInstanced(Entity entity,
+	                               mat3 &projection,
+	                               const Stationary& base_transform,
+	                               RenderRequest& render_request) const ;
 
 	void drawToScreen();
 

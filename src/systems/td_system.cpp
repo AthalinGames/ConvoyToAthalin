@@ -72,17 +72,15 @@ bool TDSystem::step(const float elapsed_ms) {
                 if (registry.archers.has(tower_entity)) {
                     const auto &bow_entity = registry.archers.get(tower_entity).bow;
                     RenderRequest &render_request = registry.renderRequests.get(bow_entity);
-                    if (RenderRequestSingle *single_request = std::get_if<RenderRequestSingle>(&render_request)) {
-                        if (shot_timer.time < 0) {
-                            //change bow to empty
-                            single_request->used_texture = TEXTURE_ASSET_ID::BOW3;
-                        } else if (shot_timer.time < 150.) {
-                            //change bow to drawn
-                            single_request->used_texture = TEXTURE_ASSET_ID::BOW2;
-                        } else if (shot_timer.time < 500.) {
-                            //change bow to loaded
-                            single_request->used_texture = TEXTURE_ASSET_ID::BOW1;
-                        }
+                    if (shot_timer.time < 0) {
+                        //change bow to empty
+                        render_request.used_texture = TEXTURE_ASSET_ID::BOW3;
+                    } else if (shot_timer.time < 150.) {
+                        //change bow to drawn
+                        render_request.used_texture = TEXTURE_ASSET_ID::BOW2;
+                    } else if (shot_timer.time < 500.) {
+                        //change bow to loaded
+                        render_request.used_texture = TEXTURE_ASSET_ID::BOW1;
                     }
                 }
             }
@@ -621,8 +619,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         registry.cards.components[i].dragged = true;
                         dragged_entity = registry.cards.entities[i];
                         dragging = true;
-                        printf("z:%f\n",
-                               std::get<RenderRequestSingle>(registry.renderRequests.get(dragged_entity)).z_position);
+                        printf("z:%f\n", registry.renderRequests.get(dragged_entity).z_position);
                     }
                 }
             }

@@ -70,8 +70,8 @@ GLFWwindow* WorldSystem::create_window(const bool windowed) {
 	// If you are on Linux or Windows, you can change these 2 numbers to 4 and 3 and
 	// enable the glDebugMessageCallback to have OpenGL catch your mistakes for you.
 	// GLFW / OGL Initialization
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 #if __APPLE__

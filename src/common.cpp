@@ -49,7 +49,7 @@ bool gl_has_errors()
 			break;
 		}
 
-		fprintf(stderr, "OpenGL: %s", error_str);
+		fprintf(stderr, "OpenGL: %s\n", error_str);
 		error = glGetError();
 		assert(false);
 	}
