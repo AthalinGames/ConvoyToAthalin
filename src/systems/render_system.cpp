@@ -314,8 +314,7 @@ void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
 
 // draw the intermediate texture to the screen, with some distortion to simulate
 // water
-void RenderSystem::drawToScreen()
-{
+void RenderSystem::drawToScreen() const {
 	// Setting shaders
 	// get the water texture, sprite mesh, and program
 	glUseProgram(effects[static_cast<GLuint>(EFFECT_ASSET_ID::WATER)]);// TODO: Replace with battle map background?
@@ -373,10 +372,31 @@ void RenderSystem::drawToScreen()
 	gl_has_errors();
 }
 
+void RenderSystem::draw_layer(mat3 projection_2D, const Entity entity, RenderRequest &request) const {
+	if (registry.invisibles.has(entity)) {
+		return;
+	}
+	// calculate base transform;
+	Stationary pos;
+	if (registry.motions.has(entity)) {
+		const Motion &motion = registry.motions.get(entity);
+		pos.position = motion.position;
+		pos.angle = motion.angle;
+		pos.scale = motion.scale;
+		pos.use_direction_sprite = motion.use_direction_sprite;
+	} else if (registry.stationaries.has(entity)) {
+		pos = registry.stationaries.get(entity);
+	} else {
+		assert(false && "RenderRequest does not have a position");
+	}
+	// dispatch render request
+	applyTextureRotation(request, entity, pos.angle, pos.use_direction_sprite);
+	drawTexturedMeshInstanced(entity, projection_2D, pos, request);
+}
+
 // Render our game world
 // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture/
-void RenderSystem::draw()
-{
+void RenderSystem::draw() const {
 	// Getting size of window
 	int w, h;
 	glfwGetFramebufferSize(window, &w, &h); // Note, this will be 2x the resolution given to glfwCreateWindow on retina displays
@@ -396,31 +416,42 @@ void RenderSystem::draw()
 							  // and alpha blending, one would have to sort
 							  // sprites back to front
 	gl_has_errors();
-	mat3 projection_2D = createProjectionMatrix();
+	constexpr mat3 projection_2D = createProjectionMatrix();
+	// Sort Render Requests
+	// TODO do this only when adding or removing every time is quite inefficient
+	// TODO think about improving the algorithm, having two ecs lookups per comparison is mega ass
+	const auto sort_func = [](const Entity& e1, const Entity& e2, ComponentContainer<RenderRequest>& registry) {
+		const RenderRequest& r1 = registry.get(e1);
+		const RenderRequest& r2 = registry.get(e2);
+		return r1.z_position < r2.z_position;
+	};
+	registry.renderBackground.sort([sort_func](const Entity& e1, const Entity& e2) {
+		return sort_func(e1, e2, registry.renderBackground);
+	});
+	registry.renderGameLayer.sort([](const Entity& e1, const Entity& e2) {
+		const Motion& m1 = registry.motions.get(e1);
+		const Motion& m2 = registry.motions.get(e2);
+		return m1.position.y < m2.position.y;
+	});
+	registry.renderForeground.sort([sort_func](const Entity& e1, const Entity& e2) {
+		return sort_func(e1, e2, registry.renderForeground);
+	});
+
 	// Draw all textured meshes that have a position and size component
-	// TODO: rework this to enable more influence on order of rendering
-	for (std::size_t i = 0; i < registry.renderRequests.size(); ++i) {
-		const Entity entity = registry.renderRequests.entities[i];
-		RenderRequest& request = registry.renderRequests.components[i];
-		if (registry.invisibles.has(entity)) {
-			continue;
-		}
-		// calculate base transform;
-		Stationary pos;
-		if (registry.motions.has(entity)) {
-			const Motion &motion = registry.motions.get(entity);
-			pos.position = motion.position;
-			pos.angle = motion.angle;
-			pos.scale = motion.scale;
-			pos.use_direction_sprite = motion.use_direction_sprite;
-		} else if (registry.stationaries.has(entity)) {
-			pos = registry.stationaries.get(entity);
-		} else {
-			assert(false && "RenderRequest does not have a position");
-		}
-		// dispatch render request
-		applyTextureRotation(request, entity, pos.angle, pos.use_direction_sprite);
-		drawTexturedMeshInstanced(entity, projection_2D, pos, request);
+	for (std::size_t i = 0; i < registry.renderBackground.size(); ++i) {
+		const Entity entity = registry.renderBackground.entities[i];
+		RenderRequest& request = registry.renderBackground.components[i];
+		draw_layer(projection_2D, entity, request);
+	}
+	for (std::size_t i = 0; i < registry.renderGameLayer.size(); ++i) {
+		const Entity entity = registry.renderGameLayer.entities[i];
+		RenderRequest& request = registry.renderGameLayer.components[i];
+		draw_layer(projection_2D, entity, request);
+	}
+	for (std::size_t i = 0; i < registry.renderForeground.size(); ++i) {
+		const Entity entity = registry.renderForeground.entities[i];
+		RenderRequest& request = registry.renderForeground.components[i];
+		draw_layer(projection_2D, entity, request);
 	}
 
 	// Truly render to the screen

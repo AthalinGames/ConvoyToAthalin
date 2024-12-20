@@ -100,7 +100,7 @@ public:
 	~RenderSystem();
 
 	// Draw all entities
-	void draw();
+	void draw() const;
 
 	constexpr static mat3 createProjectionMatrix();
 
@@ -124,7 +124,8 @@ private:
 	                               const Stationary& base_transform,
 	                               RenderRequest& render_request) const ;
 
-	void drawToScreen();
+	void drawToScreen() const;
+	void draw_layer(mat3 projection_2D, const Entity entity, RenderRequest& request) const;
 
 	// Window handle
 	GLFWwindow* window;
