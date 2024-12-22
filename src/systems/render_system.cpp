@@ -304,8 +304,6 @@ void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
 	// Setting uniform values to the currently bound program
 	const GLuint projection_loc = glGetUniformLocation(currProgram, "projection");
 	glUniformMatrix3fv(projection_loc, 1, GL_FALSE, reinterpret_cast<float *>(&projection));
-	const GLuint z_pos_loc = glGetUniformLocation(currProgram, "z_pos");
-	glUniform1f(z_pos_loc, render_request.z_position);
 	gl_has_errors();
 	// Drawing of num_indices/3 triangles specified in the index buffer
 	glDrawElementsInstanced(GL_TRIANGLES, num_indices, GL_UNSIGNED_SHORT, nullptr, render_request.offset_positions.size());
@@ -394,6 +392,21 @@ void RenderSystem::draw_layer(mat3 projection_2D, const Entity entity, RenderReq
 	drawTexturedMeshInstanced(entity, projection_2D, pos, request);
 }
 
+constexpr mat3 RenderSystem::createProjectionMatrix() {
+	// Fake projection matrix, scales with respect to window coordinates
+	constexpr float left = 0.f;
+	constexpr float top = 0.f;
+
+	constexpr float right = static_cast<float>(window_width_px);
+	constexpr float bottom = static_cast<float>(window_height_px);
+
+	constexpr float sx = 2.f / (right - left);
+	constexpr float sy = 2.f / (top - bottom);
+	constexpr float tx = -(right + left) / (right - left);
+	constexpr float ty = -(top + bottom) / (top - bottom);
+	return {{sx, 0.f, 0.f}, {0.f, sy, 0.f}, {tx, ty, 1.f}};
+}
+
 // Render our game world
 // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-14-render-to-texture/
 void RenderSystem::draw() const {
@@ -464,19 +477,4 @@ void RenderSystem::draw() const {
 	// flicker-free display with a double buffer
 	glfwSwapBuffers(window);
 	gl_has_errors();
-}
-
-constexpr mat3 RenderSystem::createProjectionMatrix() {
-	// Fake projection matrix, scales with respect to window coordinates
-	constexpr float left = 0.f;
-	constexpr float top = 0.f;
-
-	constexpr float right = static_cast<float>(window_width_px);
-	constexpr float bottom = static_cast<float>(window_height_px);
-
-	constexpr float sx = 2.f / (right - left);
-	constexpr float sy = 2.f / (top - bottom);
-	constexpr float tx = -(right + left) / (right - left);
-	constexpr float ty = -(top + bottom) / (top - bottom);
-	return {{sx, 0.f, 0.f}, {0.f, sy, 0.f}, {tx, ty, 1.f}};
 }

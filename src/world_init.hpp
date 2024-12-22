@@ -32,9 +32,9 @@ constexpr float MAP_WIDTH = static_cast<float>(window_width_px);
 constexpr float MAP_HEIGHT = static_cast<float>(window_height_px);
 
 // These are hard coded for each render layer
-constexpr float Z_BACKGROUND = 1;
+constexpr float Z_BACKGROUND = -1;
 constexpr float Z_MIDDLE = 0;
-constexpr float Z_FOREGROUND = -1;
+constexpr float Z_FOREGROUND = 1;
 
 // the player
 Entity createPlayer();

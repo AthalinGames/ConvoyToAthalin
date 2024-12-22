@@ -155,8 +155,8 @@ void PhysicsSystem::step(float elapsed_ms)
             } else if (collides(motion_i, motion_j)) {
             	// Check if coarse collision is an actual collision
             	// TODO Think about Entities with multiple render requests
-            	const RenderRequest& request_i = registry.renderRequests.get(entity_i);
-            	const RenderRequest& request_j = registry.renderRequests.get(entity_j);
+            	const RenderRequest& request_i = registry.renderGameLayer.get(entity_i);
+            	const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
             	auto& poly_i = getCollisionMeshOfTexture(request_i.used_texture);
             	auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
             	if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
