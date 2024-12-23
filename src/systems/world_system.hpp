@@ -68,6 +68,7 @@ private:
     bool td_fight_launched = false;
 
     // Tutorial entity;
+    Entity tutorial_hint;
     Entity tutorial_text;
     static constexpr std::string_view tutorial_string = R"(
 Welcome to Convoy to Athalin!

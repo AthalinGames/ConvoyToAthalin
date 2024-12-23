@@ -71,7 +71,7 @@ bool TDSystem::step(const float elapsed_ms) {
                 }
                 if (registry.archers.has(tower_entity)) {
                     const auto &bow_entity = registry.archers.get(tower_entity).bow;
-                    RenderRequest &render_request = registry.renderRequests.get(bow_entity);
+                    RenderRequest &render_request = registry.renderGameLayer.get(bow_entity);
                     if (shot_timer.time < 0) {
                         //change bow to empty
                         render_request.used_texture = TEXTURE_ASSET_ID::BOW3;
@@ -619,7 +619,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         registry.cards.components[i].dragged = true;
                         dragged_entity = registry.cards.entities[i];
                         dragging = true;
-                        printf("z:%f\n", registry.renderRequests.get(dragged_entity).z_position);
+                        printf("z:%f\n", registry.renderForeground.get(dragged_entity).z_position);
                     }
                 }
             }

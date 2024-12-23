@@ -342,8 +342,12 @@ RenderSystem::~RenderSystem()
 	gl_has_errors();
 
 	// remove all entities created by the render system
-	while (!registry.renderRequests.entities.empty())
-	    registry.remove_all_components_of(registry.renderRequests.entities.back());
+	while (!registry.renderBackground.entities.empty())
+	    registry.remove_all_components_of(registry.renderBackground.entities.back());
+	while (!registry.renderGameLayer.entities.empty())
+		registry.remove_all_components_of(registry.renderGameLayer.entities.back());
+	while (!registry.renderForeground.entities.empty())
+		registry.remove_all_components_of(registry.renderForeground.entities.back());
 
 	// Shutdown ImGui
 	ImGui_ImplOpenGL3_Shutdown();

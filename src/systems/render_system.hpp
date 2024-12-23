@@ -100,7 +100,7 @@ public:
 	~RenderSystem();
 
 	// Draw all entities
-	void draw();
+	void draw() const;
 
 	constexpr static mat3 createProjectionMatrix();
 
@@ -108,8 +108,7 @@ private:
 	// Internal drawing functions for each entity type
     static void applyTextureRotation(RenderRequest& render_request,
                                      Entity entity,
-                                     float angle,
-                                     bool use_direction_sprite);
+                                     Stationary& pos);
 
 	//void doTexturedRender(GLuint program, const RenderRequestSingle& render_request) const;
 
@@ -124,7 +123,8 @@ private:
 	                               const Stationary& base_transform,
 	                               RenderRequest& render_request) const ;
 
-	void drawToScreen();
+	void drawToScreen() const;
+	void draw_layer(mat3 projection_2D, const Entity entity, RenderRequest& request) const;
 
 	// Window handle
 	GLFWwindow* window;

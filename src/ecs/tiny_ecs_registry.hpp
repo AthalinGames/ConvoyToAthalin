@@ -32,7 +32,9 @@ public:
 	ComponentContainer<OverviewMapLocation> overviewMapLocations;
 	// TODO Think about deleting this or replace this for the collision polygons
 	ComponentContainer<Mesh*> meshPtrs;
-	ComponentContainer<RenderRequest> renderRequests;
+	ComponentContainer<RenderRequest> renderBackground;
+	ComponentContainer<RenderRequest> renderGameLayer;
+	ComponentContainer<RenderRequest> renderForeground;
 	ComponentContainer<ScreenState> screenStates;
 	ComponentContainer<DebugComponent> debugComponents;
 	ComponentContainer<vec4> colors;
@@ -63,7 +65,9 @@ public:
         registry_list.push_back(&slimes);
 		registry_list.push_back(&overviewMapLocations);
 		registry_list.push_back(&meshPtrs);
-		registry_list.push_back(&renderRequests);
+		registry_list.push_back(&renderBackground);
+		registry_list.push_back(&renderGameLayer);
+		registry_list.push_back(&renderForeground);
 		registry_list.push_back(&screenStates);
 		registry_list.push_back(&debugComponents);
 		registry_list.push_back(&colors);
