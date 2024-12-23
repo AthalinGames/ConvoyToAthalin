@@ -10,6 +10,7 @@ struct Player {
     int health = 100;
     int maxHealth = 100;
     int coins = 0;
+	int food = 10;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
 };
@@ -58,14 +59,17 @@ enum class EnemyPriority {
 struct Tower {
 	bool placed = false;
 	float range = 50.0f;
+	int food_cost = 5;
+	int food_gain = 10;
 	EnemyPriority priority = EnemyPriority::FIRST;
 	bool is_aiming = false;
 };
 
 // given to card representation of tower while off field
-struct Card{
+struct Card {
 	Entity item_entity;
     bool selected = false;
+	bool selectable = true;
     bool dragged = false; //TODO: follow mouse pointer when true
     // TODO: add int parameter for position from left to right on screen?
 };
