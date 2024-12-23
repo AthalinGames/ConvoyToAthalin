@@ -11,6 +11,7 @@ struct Player {
     int maxHealth = 100;
     int coins = 0;
 	int food = 10;
+	int baseFoodGain = 5;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
 };

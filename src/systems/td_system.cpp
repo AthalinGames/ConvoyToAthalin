@@ -128,6 +128,7 @@ bool TDSystem::step(const float elapsed_ms) {
             current_phase = GamePhase::CHOOSE_REWARD;
             // Add gathered food
             auto& current_player = registry.players.get(player);
+            current_player.food += current_player.baseFoodGain;
             for (const Entity card : cards) {
                 if (registry.towers.has(card)) {
                     const auto& tower = registry.towers.get(card);
