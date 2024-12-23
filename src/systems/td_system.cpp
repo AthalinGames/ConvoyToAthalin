@@ -19,6 +19,7 @@ void TDSystem::cleanup_ecs() {
     // Remove all components related to a td fight
     for (const auto card: cards) {
         returnCardToItem(card);
+        registry.colors.remove(card);
     }
     for (const auto enemy: enemies) {
         registry.remove_all_components_of(enemy);
@@ -125,6 +126,15 @@ bool TDSystem::step(const float elapsed_ms) {
         }
         case GamePhase::FIGHT_DONE: {
             current_phase = GamePhase::CHOOSE_REWARD;
+            // Add gathered food
+            auto& current_player = registry.players.get(player);
+            current_player.food += current_player.baseFoodGain;
+            for (const Entity card : cards) {
+                if (registry.towers.has(card)) {
+                    const auto& tower = registry.towers.get(card);
+                    current_player.food += tower.food_gain;
+                }
+            }
             // Setup next screen
             const Entity square = createBlackSquare(renderer, {window_width_px / 2, window_height_px / 2},
                                                         {window_width_px, window_height_px}, 0.5f);
@@ -328,6 +338,13 @@ void TDSystem::restart_td_fight() {
     for (const Entity itemEntity: registry.items.entities) {
         createCardFromItem(renderer, itemEntity);
         cards.push_back(itemEntity);
+        if (registry.towers.has(itemEntity)) {
+            Tower& tower = registry.towers.get(itemEntity);
+            if (tower.food_cost > current_player.food) {
+                registry.cards.get(itemEntity).selectable = false;
+                registry.colors.insert(itemEntity, {0.5f, 0.5f, 0.5f, 1.f});
+            }
+        }
     }
 
     const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial");
@@ -492,7 +509,7 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
             //if(selected_card_id<card_count) {
             for (std::size_t i = 0; i < card_count; ++i) {
                 Entity card_entity = cardRegistry.entities[i];
-                if (i == selected_card_id) {
+                if (i == selected_card_id && registry.cards.get(card_entity).selectable) {
                     registry.stationaries.get(card_entity).scale = vec2(1.3 * CARD_WIDTH, 1.3 * CARD_HEIGHT);
                     cardRegistry.components[i].selected = true;
                 } else {
@@ -608,6 +625,20 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     createTowerFromCard(renderer, dragged_entity);
                     auto tower_motion = registry.motions.get(dragged_entity);
                     towers.emplace_back(dragged_entity);
+                    // subtract food cost
+                    auto& current_player = registry.players.get(player);
+                    current_player.food -= registry.towers.get(dragged_entity).food_cost;
+                    // recalculate cards that can be placed
+                    for (const Entity card : cards) {
+                        if (registry.towers.has(card)) {
+                            auto& tower = registry.towers.get(card);
+                            auto& card_comp = registry.cards.get(card);
+                            if (card_comp.selectable && tower.food_cost < current_player.food) {
+                                card_comp.selectable = false;
+                                registry.colors.insert(card, {0.5f, 0.5f, 0.5f, 1.f});
+                            }
+                        }
+                    }
                 }
                 realignCards();
             }
