@@ -120,7 +120,10 @@ void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
 	GLuint instance_transforms;
 	glGenBuffers(1, &instance_transforms);
 	glBindBuffer(GL_ARRAY_BUFFER, instance_transforms);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(mat3) * transforms.size(), transforms.data(), GL_STATIC_DRAW);
+    // TODO Debug: wrote these variables line by line to debug
+    auto size_test = sizeof(mat3) * transforms.size();
+    auto data_test = transforms.data();
+	glBufferData(GL_ARRAY_BUFFER, size_test, data_test, GL_STATIC_DRAW);
 	// Send data to shader
 	//const GLint in_transforms_loc = glGetAttribLocation(program, "in_instance_transforms");
 	constexpr GLint in_transforms_loc = 2;
@@ -159,7 +162,10 @@ void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
 			GLuint instance_atlas_positions;
 			glGenBuffers(1, &instance_atlas_positions);
 			glBindBuffer(GL_ARRAY_BUFFER, instance_atlas_positions);
-			glBufferData(GL_ARRAY_BUFFER, sizeof(vec4) * atlas_positions.size(), atlas_positions.data(), GL_STATIC_DRAW);
+            // TODO Debug: wrote these variables line by line to debug
+            auto size_test2 = sizeof(vec4) * atlas_positions.size();
+            auto data_test2 = atlas_positions.data();
+			glBufferData(GL_ARRAY_BUFFER, size_test2, data_test2, GL_STATIC_DRAW);
 			// Send data to shader
 			//const GLint in_atlas_positions_loc = glGetAttribLocation(program, "in_instance_atlas_positions");
 			constexpr GLint in_atlas_positions_loc = 5;
