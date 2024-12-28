@@ -59,7 +59,7 @@ void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& mot
 
 	motion.angle = M_PI;
 	motion.use_direction_sprite = true;
-	motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+	motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     vec2 motion_pos = motion.position;
 
 	RenderRequest request = registry.renderForeground.get(card);
@@ -79,7 +79,7 @@ void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& mot
 	bow_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
 	bow_motion.angle = M_PI/2;
 	bow_motion.velocity = vec2(0, 0);
-	bow_motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+	bow_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     printf("%f|%f\n", motion.position.x, motion.position.y);
 	registry.renderGameLayer.insert(bow, {
 		{Stationary{}},
@@ -89,6 +89,54 @@ void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& mot
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
+}
+
+void createKnightFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
+    const auto sword = Entity();
+
+    motion.angle = M_PI;
+    motion.use_direction_sprite = true;
+    motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+    vec2 motion_pos = motion.position;
+
+    RenderRequest request = registry.renderForeground.get(card);
+    request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
+    request.z_position = Z_MIDDLE;
+    request.used_texture = TEXTURE_ASSET_ID::KNIGHT;
+    request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+    registry.renderForeground.remove(card);
+    registry.renderGameLayer.emplace(card, request);
+
+    //registry.renderGameLayer.insert(card, {
+    //        {Stationary{}},
+    //        {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
+    //        Z_MIDDLE,
+    //        TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+    //        EFFECT_ASSET_ID::TEXTURED_ATLAS,
+    //        GEOMETRY_BUFFER_ID::SPRITE,
+    //});
+
+    registry.bows.emplace(bow);
+    registry.weapons.emplace(bow);
+    registry.archers.get(card).bow = bow;
+
+    Mesh& bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+    registry.meshPtrs.emplace(bow, &bow_mesh);
+
+    Motion& bow_motion = registry.motions.emplace(bow);
+    bow_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
+    bow_motion.angle = M_PI/2;
+    bow_motion.velocity = vec2(0, 0);
+    bow_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+    printf("%f|%f\n", motion.position.x, motion.position.y);
+    registry.renderGameLayer.insert(bow, {
+            {Stationary{}},
+            {0},
+            Z_MIDDLE,
+            TEXTURE_ASSET_ID::BOW1,
+            EFFECT_ASSET_ID::TEXTURED,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
 }
 
 void createTowerFromCard(RenderSystem* renderer, const Entity card) {

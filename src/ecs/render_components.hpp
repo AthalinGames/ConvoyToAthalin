@@ -65,11 +65,14 @@ enum class TEXTURE_ASSET_ID {
     ARCHER_U,
     ARCHER_R,
     ARCHER_D,
+    KNIGHT,
     ARCHER_CARD,
+    KNIGHT_CARD,
     BOW1,
     BOW2,
     BOW3,
 	ARROW,
+    SWORD,
     SLIME,
     SLIME_L,
     SLIME_U,
@@ -99,11 +102,14 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
         case TEXTURE_ASSET_ID::ARCHER_U: return "archer_perspective1.png";
         case TEXTURE_ASSET_ID::ARCHER_R: return "archer_perspective4.png";
         case TEXTURE_ASSET_ID::ARCHER_D: return "archer_perspective3.png";
+        case TEXTURE_ASSET_ID::KNIGHT: return "knight.png";
         case TEXTURE_ASSET_ID::ARCHER_CARD: return "archerCard.png";
+        case TEXTURE_ASSET_ID::KNIGHT_CARD: return "knightCard.png";
         case TEXTURE_ASSET_ID::BOW1: return "bow_and_arrow1.png";
         case TEXTURE_ASSET_ID::BOW2: return "bow_and_arrow2.png";
         case TEXTURE_ASSET_ID::BOW3: return "bow_and_arrow3.png";
 		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
+        case TEXTURE_ASSET_ID::SWORD: return "sword.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
         case TEXTURE_ASSET_ID::SLIME_L: return "Slime4.png";
         case TEXTURE_ASSET_ID::SLIME_U: return "Slime1.png";

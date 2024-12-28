@@ -7,8 +7,8 @@
 #include "systems/render_system.hpp"
 
 // These are hard coded to the dimensions of the entity texture
-constexpr float ARCHER_BB_WIDTH = 0.1f * window_height_px;
-constexpr float ARCHER_BB_HEIGHT = 0.1f * window_height_px;
+constexpr float TOWER_WIDTH = 0.1f * window_height_px;
+constexpr float TOWER_HEIGHT = 0.1f * window_height_px;
 constexpr float ARROW_BB_WIDTH = 0.05f * window_height_px;
 constexpr float ARROW_BB_HEIGHT = 0.05f * window_height_px;
 constexpr float CARD_HEIGHT = 0.2f * window_height_px;

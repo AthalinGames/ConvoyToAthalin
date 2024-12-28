@@ -574,8 +574,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
 
                 // block placement on other towers
                 bool place_occupied = false;
-                constexpr float tower_blocked_radius = ARCHER_BB_HEIGHT;
-                //abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
+                constexpr float tower_blocked_radius = TOWER_HEIGHT;
+                //abs(distance(vec2(0, 0), vec2(TOWER_WIDTH, TOWER_HEIGHT)));
                 for (std::size_t tower_index = 0; tower_index < registry.towers.size(); ++tower_index) {
                     if (!registry.towers.components[tower_index].placed) {
                         continue;

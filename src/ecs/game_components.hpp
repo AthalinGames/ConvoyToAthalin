@@ -57,6 +57,13 @@ enum class EnemyPriority {
 	FIRST
 };
 
+enum class DIRECTION_SPRITE {
+    UP = 0,
+    RIGHT,
+    DOWN,
+    LEFT
+};
+
 struct Tower {
 	bool placed = false;
 	float range = 50.0f;
@@ -99,6 +106,19 @@ struct Arrow {
 // Bow
 struct Bow {
 
+};
+
+// Knight
+struct Knight {
+    float swing_speed = 100.0f;
+    Entity sword;
+};
+
+// Sword
+struct Sword { //TODO: maybe outsource hitcound and hit list to Weapon and make Arrow Weapon, too.
+    int damage = 40;
+    std::size_t max_hitcount = 1;
+    std::set<Entity> hit_entities{}; //TODO: clear hit enemies after every swing
 };
 
 // Weapon
