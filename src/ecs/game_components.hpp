@@ -36,6 +36,7 @@ struct Slime {
 // Items
 enum class TowerType {
 	ARCHER = 0,
+    KNIGHT,
 	TOWER_TYPE_COUNT
 };
 
@@ -55,13 +56,6 @@ struct Item {};
 enum class EnemyPriority {
 	LAST,
 	FIRST
-};
-
-enum class DIRECTION_SPRITE {
-    UP = 0,
-    RIGHT,
-    DOWN,
-    LEFT
 };
 
 struct Tower {

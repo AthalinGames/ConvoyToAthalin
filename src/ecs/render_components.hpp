@@ -157,6 +157,28 @@ enum class OVERVIEW_ICON_TEXTURES {
 	COUNT
 };
 
+enum class DIRECTION_SPRITE {
+    UP = 0,
+    RIGHT,
+    DOWN,
+    LEFT,
+    COUNT
+};
+
+enum class SWORD_FRAME {
+    HOLD = 0,
+    SWING,
+    COUNT
+};
+
+enum class BOW_FRAME { //TODO: make bow animation atlas
+    LOAD = 0,
+    DRAW,
+    SHOOT,
+    COUNT
+};
+
+
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
 	// here the texture positions are defined
 	switch (atlas_id) {
@@ -189,6 +211,32 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			}
 			break;
 		}
+        case TEXTURE_ASSET_ID::KNIGHT: {
+            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
+        case TEXTURE_ASSET_ID::SWORD: {
+            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
 		default:
 			assert(false && "Texture atlas has no textures defined");
 	}
@@ -200,7 +248,7 @@ enum class EFFECT_ASSET_ID {
 	SALMON,
 	TEXTURED,
 	TEXTURED_ATLAS,
-	WATER, // TODO GROUND,
+	WATER,
     //CHARACTER_SPRITE,
 	EFFECT_COUNT
 };

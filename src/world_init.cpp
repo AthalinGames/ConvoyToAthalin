@@ -22,6 +22,10 @@ Entity createItem(const ItemType item) {
 					registry.archers.emplace(entity);
 					break;
 				}
+                case TowerType::KNIGHT: {
+                    registry.knights.emplace(entity);
+                    break;
+                }
 				case TowerType::TOWER_TYPE_COUNT: {
 					assert(false && "Invalid Tower type");
 				}
@@ -116,25 +120,25 @@ void createKnightFromCard(RenderSystem* renderer, const Entity card, Motion& mot
     //        GEOMETRY_BUFFER_ID::SPRITE,
     //});
 
-    registry.bows.emplace(bow);
-    registry.weapons.emplace(bow);
-    registry.archers.get(card).bow = bow;
+    registry.swords.emplace(sword);
+    registry.weapons.emplace(sword);
+    registry.knights.get(card).sword = sword;
 
-    Mesh& bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-    registry.meshPtrs.emplace(bow, &bow_mesh);
+    Mesh& sword_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+    registry.meshPtrs.emplace(sword, &sword_mesh);
 
-    Motion& bow_motion = registry.motions.emplace(bow);
+    Motion& bow_motion = registry.motions.emplace(sword);
     bow_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
     bow_motion.angle = M_PI/2;
     bow_motion.velocity = vec2(0, 0);
     bow_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     printf("%f|%f\n", motion.position.x, motion.position.y);
-    registry.renderGameLayer.insert(bow, {
+    registry.renderGameLayer.insert(sword, {
             {Stationary{}},
-            {0},
+            request.atlas_ids = {static_cast<unsigned int>(SWORD_FRAME::HOLD)},
             Z_MIDDLE,
-            TEXTURE_ASSET_ID::BOW1,
-            EFFECT_ASSET_ID::TEXTURED,
+            TEXTURE_ASSET_ID::SWORD,
+            EFFECT_ASSET_ID::TEXTURED_ATLAS,
             GEOMETRY_BUFFER_ID::SPRITE,
     });
 }
@@ -152,7 +156,10 @@ void createTowerFromCard(RenderSystem* renderer, const Entity card) {
         printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
 		createArcherFromCard(renderer, card, tower_motion);
         printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
-	} else {
+	} else if (registry.knights.has(card)) {
+        createKnightFromCard(renderer, card, tower_motion);
+    }
+    else {
 		assert(false && "Invalid Tower type for tower creation");
 	}
 }
@@ -162,6 +169,11 @@ void returnArcherToItem(const Entity tower) {
 	registry.remove_all_components_of(bow);
 }
 
+void returnKnightToItem(const Entity tower) {
+    const Entity sword = registry.knights.get(tower).sword;
+    registry.remove_all_components_of(sword);
+}
+
 void returnTowerToItem(const Entity tower) {
 	assert(registry.items.has(tower));
 	registry.motions.remove(tower);
@@ -169,7 +181,12 @@ void returnTowerToItem(const Entity tower) {
 	registry.renderGameLayer.remove(tower);
 
 	if (registry.items.has(tower)) {
-		returnArcherToItem(tower);
+        if (registry.archers.has(tower)) {
+            returnArcherToItem(tower);
+        }
+        else if (registry.knights.has(tower)) {
+            returnKnightToItem(tower);
+        }
 	} else {
 		assert(false && "Invalid Tower type for returning to Item");
 	}
@@ -263,15 +280,26 @@ void createCardFromItem(RenderSystem *renderer, const Entity item) {
     card_texture.scale = vec2({CARD_WIDTH, CARD_HEIGHT});
 
     realignCards();
+    if (registry.archers.has(item)) {
+        registry.renderForeground.insert(item, {
+                {Stationary{}},
+                {0},
+                Z_FOREGROUND,
+                TEXTURE_ASSET_ID::ARCHER_CARD,
+                EFFECT_ASSET_ID::TEXTURED,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+    } else if (registry.archers.has(item)) {
+        registry.renderForeground.insert(item, {
+                {Stationary{}},
+                {0},
+                Z_FOREGROUND,
+                TEXTURE_ASSET_ID::KNIGHT_CARD,
+                EFFECT_ASSET_ID::TEXTURED,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+    }
 
-    registry.renderForeground.insert(item, {
-    	{Stationary{}},
-    	{0},
-    	Z_FOREGROUND,
-        TEXTURE_ASSET_ID::ARCHER_CARD,
-    	EFFECT_ASSET_ID::TEXTURED,
-    	GEOMETRY_BUFFER_ID::SPRITE,
-    });
 }
 
 void returnCardToItem(const Entity card) {
