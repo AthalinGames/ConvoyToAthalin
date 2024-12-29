@@ -43,7 +43,6 @@ private:
 
     // restart TD fight
     std::vector<Entity> generate_combat(int difficulty);
-    std::vector<vec2> grid_to_coordinates(std::vector<vec2> grid_coords);
     Entity generate_map(int difficulty);
     void restart_td_fight();
 
@@ -88,5 +87,5 @@ You defend the camping fire and the enemies spawn at the opposite side of the pa
 
     // C++ random number generator
     std::default_random_engine rng;
-    std::uniform_real_distribution<float> uniform_dist;
+    std::uniform_real_distribution<float> uniform_dist = std::uniform_real_distribution<float>(0.0, 1.0);
 };

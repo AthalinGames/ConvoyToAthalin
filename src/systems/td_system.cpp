@@ -232,77 +232,60 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
     return enemy_list;
 }
 
-std::vector<vec2> TDSystem::grid_to_coordinates(std::vector<vec2> grid_coords) {
-    std::vector<vec2> map_coordinates = {};
-    const int grid_width = 16;
-    const int grid_height = 9;
-    const float width_step = window_width_px/grid_width;
-    const float height_step = window_height_px/grid_height;
-    const float width_step_center = width_step/2;
-    const float height_step_center = height_step/2;
-    for (int i = 0; i < grid_coords.size(); ++i) {
-        vec2 grid_coord = grid_coords[i];
-        float x = grid_coord.x * width_step + width_step_center;
-        float y = grid_coord.y * height_step + height_step_center;
-        map_coordinates.emplace_back(x, y);
-    }
-    return map_coordinates;
-}
-
 Entity TDSystem::generate_map(int difficulty) {
     //TODO: maps accesible for different difficulty levels some maps more likely for difficulty to be in pool,
     // maybe do normal distr curve around difficulty?
 
     Entity new_map;
     if (difficulty == 0) {
-        std::vector<vec2> path_coords = grid_to_coordinates({
-            vec2(0, 2), vec2(7, 2), vec2(7, 5), vec2(13, 5)
-        });
-        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP);
+        const std::vector<vec2> path_coords = {
+            {0, 2}, {7, 2}, {7, 5}, {13, 5}
+        };
+        new_map = createMap(renderer, path_coords, rng, uniform_dist);
     }
     else if (difficulty == 1) {
-        std::vector<vec2> path_coords = grid_to_coordinates({
-            vec2(0, 6), vec2(7, 6), vec2(7, 3), vec2(12, 3), vec2(12, 5)
-        });
-        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP2);
+        const std::vector<vec2> path_coords = {
+            {0, 6}, {7, 6}, {7, 3}, {2, 3}, {12, 5}
+        };
+        new_map = createMap(renderer, path_coords, rng, uniform_dist);
     }
     else if (difficulty == 2) {
-        std::vector<vec2> path_coords = grid_to_coordinates({
-            vec2(0, 6), vec2(2, 6), vec2(2, 0), vec2(14, 0), vec2(14, 6), vec2(6, 6), vec2(6, 2), vec2(11, 2), vec2(11, 4)});
-        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP3);
+        const std::vector<vec2> path_coords = {
+            vec2(0, 6), vec2(2, 6), vec2(2, 0), vec2(14, 0), vec2(14, 6), vec2(6, 6), vec2(6, 2), vec2(11, 2), vec2(11, 4)
+        };
+        new_map = createMap(renderer, path_coords, rng, uniform_dist);
     }
     else if (difficulty == 3) {
-        std::vector<vec2> path_coords = grid_to_coordinates({
+        const std::vector<vec2> path_coords = {
             vec2(0, 3), vec2(13, 3), vec2(13, 0), vec2(8, 0), vec2(8, 6)
-        });
-        new_map = createMap(renderer, path_coords,TEXTURE_ASSET_ID::MAP4);
+        };
+        new_map = createMap(renderer, path_coords, rng, uniform_dist);
     }
     else if (difficulty == 4) {
-        std::vector<vec2> path_coords = grid_to_coordinates({
+        const std::vector<vec2> path_coords = {
             vec2(0, 5), vec2(2, 5), vec2(2, 1), vec2(6, 1), vec2(6, 6), vec2(9, 6), vec2(9, 3), vec2(12, 3)
-        });
-        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP5);
+        };
+        new_map = createMap(renderer, path_coords, rng, uniform_dist);
     }
     else if (difficulty == 5) {
-        std::vector<vec2> path_coords = grid_to_coordinates({
+        const std::vector<vec2> path_coords = {
             vec2(15, 6), vec2(11, 6), vec2(11, 4), vec2(8, 4), vec2(8, 2), vec2(5, 2)
-        });
-        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP6);
+        };
+        new_map = createMap(renderer, path_coords, rng, uniform_dist);
     }
     else if (difficulty == 6) {
-
-        std::vector<vec2> path_coords = grid_to_coordinates({
+        const std::vector<vec2> path_coords = {
             vec2(15, 4), vec2(10, 4), vec2(10, 5), vec2(7, 5), vec2(7, 4), vec2(6, 4),
             vec2(6, 2), vec2(5, 2), vec2(5, 1), vec2(1, 1), vec2(1, 5), vec2(5, 5),
             vec2(5, 4), vec2(6, 4), vec2(6, 2), vec2(7, 2), vec2(7, 1), vec2(10, 1),
             vec2(10, 2), vec2(12, 2), vec2(12, 6)
-        });
-        new_map = createMap(renderer, path_coords, TEXTURE_ASSET_ID::MAP7);
+        };
+        new_map = createMap(renderer, path_coords, rng, uniform_dist);
     }
     else {
         new_map = createMap(renderer,{
             vec2(0, 180),vec2(550, 180), vec2(550, 440), vec2(970, 440)}, //TODO percentage relative to window size
-            TEXTURE_ASSET_ID::MAP);
+            rng, uniform_dist);
     }
     return  new_map;
 }

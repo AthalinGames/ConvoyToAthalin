@@ -161,6 +161,7 @@ enum class TD_MAP_ATLAS_TEXTURES {
 	DIRT_GRASS_CORNER_BOTTOM_LEFT_INVERTED,
 	DIRT_GRASS_CORNER_TOP_LEFT,
 	DIRT_GRASS_CORNER_TOP_LEFT_INVERTED,
+	DIRT_GRASS_CORNER_DOUBLE_MIRRORED,
 };
 
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
@@ -220,6 +221,9 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			AtlasTexture& texDef4 = atlasLookup.at(atlas_id).emplace_back();
 			texDef4.tex_pos = vec2(3 * tex_width, tex_height);
 			texDef4.tex_size = vec2(-tex_width, tex_height);
+			AtlasTexture& texDef5 = atlasLookup.at(atlas_id).emplace_back();
+			texDef5.tex_pos = vec2(tex_width, tex_height);
+			texDef5.tex_size = vec2(-tex_width, tex_height);
 			break;
 		}
 		default:
