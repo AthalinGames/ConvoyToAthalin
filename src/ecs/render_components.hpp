@@ -147,6 +147,8 @@ struct AtlasTexture {
 const std::set texture_atlases = {
 	TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
 	TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS,
+    TEXTURE_ASSET_ID::KNIGHT,
+    TEXTURE_ASSET_ID::SWORD,
 };
 
 enum class OVERVIEW_ICON_TEXTURES {
@@ -225,7 +227,7 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
             break;
         }
         case TEXTURE_ASSET_ID::SWORD: {
-            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr unsigned int cols = 2, rows = 1, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
             atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
             for (unsigned int i = 0; i < maxCount; i++) {

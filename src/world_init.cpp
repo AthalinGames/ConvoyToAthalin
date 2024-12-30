@@ -289,7 +289,7 @@ void createCardFromItem(RenderSystem *renderer, const Entity item) {
                 EFFECT_ASSET_ID::TEXTURED,
                 GEOMETRY_BUFFER_ID::SPRITE,
         });
-    } else if (registry.archers.has(item)) {
+    } else if (registry.knights.has(item)) {
         registry.renderForeground.insert(item, {
                 {Stationary{}},
                 {0},
