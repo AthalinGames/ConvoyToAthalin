@@ -232,60 +232,71 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
     return enemy_list;
 }
 
-Entity TDSystem::generate_map(int difficulty) {
-    //TODO: maps accesible for different difficulty levels some maps more likely for difficulty to be in pool,
+Entity TDSystem::generate_map(const int difficulty) const {
+    //TODO: maps accessible for different difficulty levels some maps more likely for difficulty to be in pool,
     // maybe do normal distr curve around difficulty?
 
     Entity new_map;
-    if (difficulty == 0) {
-        const std::vector<vec2> path_coords = {
-            {0, 2}, {7, 2}, {7, 5}, {13, 5}
-        };
-        new_map = createMap(renderer, path_coords, rng, uniform_dist);
-    }
-    else if (difficulty == 1) {
-        const std::vector<vec2> path_coords = {
-            {0, 6}, {7, 6}, {7, 3}, {2, 3}, {12, 5}
-        };
-        new_map = createMap(renderer, path_coords, rng, uniform_dist);
-    }
-    else if (difficulty == 2) {
-        const std::vector<vec2> path_coords = {
-            vec2(0, 6), vec2(2, 6), vec2(2, 0), vec2(14, 0), vec2(14, 6), vec2(6, 6), vec2(6, 2), vec2(11, 2), vec2(11, 4)
-        };
-        new_map = createMap(renderer, path_coords, rng, uniform_dist);
-    }
-    else if (difficulty == 3) {
-        const std::vector<vec2> path_coords = {
-            vec2(0, 3), vec2(13, 3), vec2(13, 0), vec2(8, 0), vec2(8, 6)
-        };
-        new_map = createMap(renderer, path_coords, rng, uniform_dist);
-    }
-    else if (difficulty == 4) {
-        const std::vector<vec2> path_coords = {
-            vec2(0, 5), vec2(2, 5), vec2(2, 1), vec2(6, 1), vec2(6, 6), vec2(9, 6), vec2(9, 3), vec2(12, 3)
-        };
-        new_map = createMap(renderer, path_coords, rng, uniform_dist);
-    }
-    else if (difficulty == 5) {
-        const std::vector<vec2> path_coords = {
-            vec2(15, 6), vec2(11, 6), vec2(11, 4), vec2(8, 4), vec2(8, 2), vec2(5, 2)
-        };
-        new_map = createMap(renderer, path_coords, rng, uniform_dist);
-    }
-    else if (difficulty == 6) {
-        const std::vector<vec2> path_coords = {
-            vec2(15, 4), vec2(10, 4), vec2(10, 5), vec2(7, 5), vec2(7, 4), vec2(6, 4),
-            vec2(6, 2), vec2(5, 2), vec2(5, 1), vec2(1, 1), vec2(1, 5), vec2(5, 5),
-            vec2(5, 4), vec2(6, 4), vec2(6, 2), vec2(7, 2), vec2(7, 1), vec2(10, 1),
-            vec2(10, 2), vec2(12, 2), vec2(12, 6)
-        };
-        new_map = createMap(renderer, path_coords, rng, uniform_dist);
-    }
-    else {
-        new_map = createMap(renderer,{
-            vec2(0, 180),vec2(550, 180), vec2(550, 440), vec2(970, 440)}, //TODO percentage relative to window size
-            rng, uniform_dist);
+    switch (difficulty) {
+        case 0: {
+            const std::vector<vec2> path_coords = {
+                {0, 2}, {7, 2}, {7, 5}, {13, 5}
+            };
+            new_map = createMap(renderer, path_coords, rng, uniform_dist);
+            break;
+        }
+        case 1: {
+            const std::vector<vec2> path_coords = {
+                {0, 6}, {7, 6}, {7, 3}, {12, 3}, {12, 5}
+            };
+            new_map = createMap(renderer, path_coords, rng, uniform_dist);
+            break;
+        }
+        case 2: {
+            const std::vector<vec2> path_coords = {
+                {0, 6}, {2, 6}, {2, 0}, {14, 0}, {14, 6}, {6, 6}, {6, 2}, {11, 2}, {11, 4}
+            };
+            new_map = createMap(renderer, path_coords, rng, uniform_dist);
+            break;
+        }
+        case 3: {
+            const std::vector<vec2> path_coords = {
+                {0, 3}, {13, 3}, {13, 0}, {8, 0}, {8, 6}
+            };
+            new_map = createMap(renderer, path_coords, rng, uniform_dist);
+            break;
+        }
+        case 4: {
+            const std::vector<vec2> path_coords = {
+                {0, 5}, {2, 5}, {2, 1}, {6, 1}, {6, 6}, {9, 6}, {9, 3}, {12, 3}
+            };
+            new_map = createMap(renderer, path_coords, rng, uniform_dist);
+            break;
+        }
+        case 5: {
+            const std::vector<vec2> path_coords = {
+                {15, 6}, {11, 6}, {11, 4}, {8, 4}, {8, 2}, {5, 2}
+            };
+            new_map = createMap(renderer, path_coords, rng, uniform_dist);
+            break;
+        }
+        case 6: {
+            const std::vector<vec2> path_coords = {
+                {15, 4}, {10, 4}, {10, 5}, {7, 5}, {7, 4}, {6, 4},
+                {6, 2}, {5, 2}, {5, 1}, {1, 1}, {1, 5}, {5, 5},
+                {5, 4}, {6, 4}, {6, 2}, {7, 2}, {7, 1}, {10, 1},
+                {10, 2}, {12, 2}, {12, 6}
+            };
+            new_map = createMap(renderer, path_coords, rng, uniform_dist);
+            break;
+        }
+        default: {
+            const std::vector<vec2> path_coords = {
+                {0, 2}, {7, 2}, {7, 5}, {13, 5}
+            };
+            new_map = createMap(renderer, path_coords, rng, uniform_dist);
+            break;
+        }
     }
     return  new_map;
 }

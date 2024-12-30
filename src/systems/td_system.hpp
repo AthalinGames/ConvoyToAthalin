@@ -43,7 +43,7 @@ private:
 
     // restart TD fight
     std::vector<Entity> generate_combat(int difficulty);
-    Entity generate_map(int difficulty);
+    Entity generate_map(int difficulty) const;
     void restart_td_fight();
 
     enum class GamePhase {

@@ -235,88 +235,106 @@ void returnCardToItem(const Entity card) {
 	registry.renderForeground.remove(card);
 }
 
-TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(vec2 tile_pos, const std::vector<vec2>& path, const TD_MAP_ATLAS_TEXTURES initial_tile) {
+TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<vec2>& path, const TD_MAP_ATLAS_TEXTURES initial_tile) {
 	vec2 checkpoint = path[0];
-	bool top = false, bottom = false, left = false, right = false;
 	bool top_left = false, top_right = false, bottom_left = false, bottom_right = false;
 	for (uint i = 1; i < path.size(); ++i) {
 		const vec2 second_checkpoint = path[i];
-		// check corners
-		if (second_checkpoint == tile_pos) {
-			top_left = true;
-		} else if (second_checkpoint + vec2{1, 0} == tile_pos) {
-			top_right = true;
-		} else if (second_checkpoint + vec2{0, 1} == tile_pos) {
-			bottom_left = true;
-		} else if (second_checkpoint + vec2{1, 1} == tile_pos) {
-			bottom_right = true;
-		}
 		// check sides
-		if (checkpoint.y == second_checkpoint.y && (
-				(checkpoint.x <= tile_pos.x && second_checkpoint.x >= tile_pos.x) ||
-				(checkpoint.x >= tile_pos.x && checkpoint.x <= tile_pos.x)
-			)) {
-			// this section is on the x-axis
-			if (checkpoint.y == tile_pos.y) {
-				top = true;
-			} else if (checkpoint.y + 1 == tile_pos.y) {
-				bottom = true;
+		if (checkpoint.y == second_checkpoint.y) {
+			// this section is horizontal
+			if ((checkpoint.x <= tile_pos.x && second_checkpoint.x >= tile_pos.x) ||
+				(checkpoint.x >= tile_pos.x && checkpoint.x <= tile_pos.x)) {
+				// left side of the square is on the line
+				if (checkpoint.y == tile_pos.y) {
+					top_left = true;
+				} else if (checkpoint.y + 1 == tile_pos.y) {
+					bottom_left = true;
+				}
 			}
-		} else if (checkpoint.x == second_checkpoint.x && (
-				(checkpoint.y <= tile_pos.y && second_checkpoint.y >= tile_pos.y) ||
-				(checkpoint.y >= tile_pos.y && second_checkpoint.y <= tile_pos.y)
-		    )) {
-			// this section is on the y-axis
-			if (checkpoint.x == tile_pos.x) {
-				left = true;
-			} else if (checkpoint.x + 1 == tile_pos.x) {
-				printf("%f, %f\n%f, %f; %f, %f\n", tile_pos.x, tile_pos.y, checkpoint.x, checkpoint.y, second_checkpoint.x, second_checkpoint.y);
-				right = true;
+			if ((checkpoint.x + 1 <= tile_pos.x && second_checkpoint.x + 1 >= tile_pos.x) ||
+				(checkpoint.x + 1 >= tile_pos.x && second_checkpoint.x + 1 <= tile_pos.x)) {
+				// right side of the square is on the line
+				if (checkpoint.y == tile_pos.y) {
+					top_right = true;
+				} else if (checkpoint.y + 1 == tile_pos.y) {
+					bottom_right = true;
+				}
+			}
+		} else if (checkpoint.x == second_checkpoint.x) {
+			// this section is vertical
+			if ((checkpoint.y <= tile_pos.y && second_checkpoint.y >= tile_pos.y) ||
+				(checkpoint.y >= tile_pos.y && second_checkpoint.y <= tile_pos.y)) {
+				// top side of the square is on the line
+				if (checkpoint.x == tile_pos.x) {
+					top_left = true;
+				} else if (checkpoint.x + 1 == tile_pos.x) {
+					//printf("%f, %f\n%f, %f; %f, %f\n", tile_pos.x, tile_pos.y, checkpoint.x, checkpoint.y, second_checkpoint.x, second_checkpoint.y);
+					top_right = true;
+				}
+			}
+			if ((checkpoint.y + 1 <= tile_pos.y && second_checkpoint.y + 1 >= tile_pos.y) ||
+				(checkpoint.y + 1 >= tile_pos.y && second_checkpoint.y + 1 <= tile_pos.y)) {
+				// bottom side of the square is on the line
+				if (checkpoint.x == tile_pos.x) {
+					bottom_left = true;
+				} else if (checkpoint.x + 1 == tile_pos.x) {
+					//printf("%f, %f\n%f, %f; %f, %f\n", tile_pos.x, tile_pos.y, checkpoint.x, checkpoint.y, second_checkpoint.x, second_checkpoint.y);
+					bottom_right = true;
+				}
 			}
 		}
 		checkpoint = second_checkpoint;
 	}
-	if (top) {
-		if (left) {
-			return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_TOP_LEFT_INVERTED;
-		}
-		if (right) {
-			return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_TOP_RIGHT_INVERTED;
-		}
-		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_BOTTOM;
-	}
-	if (bottom) {
-		if (left) {
-			return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_BOTTOM_LEFT_INVERTED;
-		}
-		if (right) {
-			return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_BOTTOM_RIGHT_INVERTED;
-		}
-		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_TOP;
-	}
-	if (left) {
-		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_RIGHT;
-	}
-	if (right) {
-		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_LEFT;
-	}
-	if (top_left) {
-		if (bottom_right) {
-			return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_DOUBLE;
-		}
+	// Corners
+	if (top_left && !top_right && !bottom_left && !bottom_right) {
 		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_BOTTOM_RIGHT;
 	}
-	if (top_right) {
-		if (bottom_left) {
-			return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_DOUBLE_MIRRORED;
-		}
+	if (!top_left && top_right && !bottom_left && !bottom_right) {
 		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_BOTTOM_LEFT;
 	}
-	if (bottom_left) {
+	if (!top_left && !top_right && bottom_left && !bottom_right) {
 		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_TOP_RIGHT;
 	}
-	if (bottom_right) {
+	if (!top_left && !top_right && !bottom_left && bottom_right) {
 		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_TOP_LEFT;
+	}
+	// Sides
+	if (top_left && top_right && !bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_BOTTOM;
+	}
+	if (top_left && !top_right && bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_RIGHT;
+	}
+	if (!top_left && top_right && !bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_LEFT;
+	}
+	if (!top_left && !top_right && bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_TOP;
+	}
+	// Curves
+	if (top_left && top_right && bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_TOP_LEFT_INVERTED;
+	}
+	if (top_left && top_right && !bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_TOP_RIGHT_INVERTED;
+	}
+	if (top_left && !top_right && bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_BOTTOM_LEFT_INVERTED;
+	}
+	if (!top_left && top_right && bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_BOTTOM_RIGHT_INVERTED;
+	}
+	// Double-corners
+	if (top_left && !top_right && !bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_DOUBLE;
+	}
+	if (!top_left && top_right && bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_DOUBLE_MIRRORED;
+	}
+	// Full
+	if (top_left && top_right && bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT;
 	}
 	return initial_tile;
 }
