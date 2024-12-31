@@ -414,7 +414,17 @@ void TDSystem::handle_aiming() {
             auto &tower_motion = registry.motions.get(tower_entity);
             auto &enemy_motion = registry.motions.get(enemy_entity);
             auto d_p = tower_motion.position - enemy_motion.position;
+            TowerType towerType;
             if (registry.archers.has(tower_entity)) {
+                towerType = TowerType::ARCHER;
+            } else if (registry.knights.has(tower_entity)) {
+                towerType = TowerType::KNIGHT;
+            } else {
+                towerType = TowerType::TOWER_TYPE_COUNT;
+                assert(false && "Tower type not found");
+            }
+
+            if (towerType == TowerType::ARCHER) {
                 Enemy &enemy = registry.enemies.get(enemy_entity);
                 const Archer &archer = registry.archers.get(tower_entity);
                 const Map &map = registry.maps.get(this->map);
@@ -425,7 +435,7 @@ void TDSystem::handle_aiming() {
             }
             const float angle = atan2(d_p.y, d_p.x);
             tower_motion.angle = angle;
-            if (registry.archers.has(tower_entity)) {
+            if (towerType == TowerType::ARCHER) {
                 auto &bow = registry.archers.get(tower_entity).bow;
                 auto &bow_motion = registry.motions.get(bow);
                 bow_motion.angle = angle - M_PI_2 - M_PI_2 / 2; //+ (2 * M_PI) - (M_PI_2/2);
@@ -433,13 +443,25 @@ void TDSystem::handle_aiming() {
                     //keep angle within [-pi, pi]
                     bow_motion.angle += 2 * M_PI;
                 }
+            } else if (towerType == TowerType::KNIGHT) {
+                auto &sword = registry.knights.get(tower_entity).sword;
+                auto &sword_motion = registry.motions.get(sword);
+                sword_motion.angle = angle - M_PI_2 - M_PI_2 / 2; //+ (2 * M_PI) - (M_PI_2/2);
+                if (sword_motion.angle < M_PI) {
+                    //keep angle within [-pi, pi]
+                    sword_motion.angle += 2 * M_PI;
+                }
             }
 
             if (!registry.shotTimers.has(tower_entity)) {
-                const auto &archer = registry.archers.get(tower_entity);
-                registry.shotTimers.emplace(tower_entity);
-                if (registry.archers.has(tower_entity)) {
-                    createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
+                if (towerType == TowerType::ARCHER) {
+                    const auto &archer = registry.archers.get(tower_entity);
+                    registry.shotTimers.emplace(tower_entity);
+                    if (registry.archers.has(tower_entity)) {
+                        createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
+                    }
+                } else if (towerType == TowerType::KNIGHT) {
+                    //TODO: Swing sword in circle
                 }
             }
         }

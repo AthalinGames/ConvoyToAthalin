@@ -14,7 +14,7 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
 
     // if bow_and_arrow rotate, if character sprite choose view direction sprite
     if (!pos.use_direction_sprite) {
-        if (registry.bows.has(entity)) {
+        if (registry.bows.has(entity) || registry.swords.has(entity)) {
             if (pos.angle > M_PI) {
                 render_request.z_position = Z_BACKGROUND;
             } else {
@@ -40,6 +40,25 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
             } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
                 //look down
                 render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
+            }
+        } else if(registry.knights.has(entity)) { // TODO: include archer here with atlas
+            float angle_by_pi = pos.angle / M_PI;
+            //printf("angle %f\n", angle);
+            float temp_whole;
+            //angle_by_pi = std::modf(angle_by_pi, &temp_whole);
+            //printf("angle mod %f\n", angle_by_pi);
+            if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
+                //look left
+                render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::LEFT)};
+            } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
+                //look up
+                render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::UP)};
+            } else if (angle_by_pi >= 0.75 || angle_by_pi < -0.75) {
+                //look right
+                render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::RIGHT)};
+            } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
+                //look down
+                render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
             }
         } else if (registry.slimes.has(entity)) {
             float angle_by_pi = pos.angle / M_PI;

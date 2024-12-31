@@ -160,10 +160,10 @@ enum class OVERVIEW_ICON_TEXTURES {
 };
 
 enum class DIRECTION_SPRITE {
-    UP = 0,
-    RIGHT,
-    DOWN,
+    DOWN = 0,
     LEFT,
+    UP,
+    RIGHT,
     COUNT
 };
 
