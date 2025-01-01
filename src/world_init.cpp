@@ -238,13 +238,18 @@ void returnCardToItem(const Entity card) {
 TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<vec2>& path, const TD_MAP_ATLAS_TEXTURES initial_tile) {
 	vec2 checkpoint = path[0];
 	bool top_left = false, top_right = false, bottom_left = false, bottom_right = false;
+	if (checkpoint == tile_pos) {
+		top_right = true;
+	} else if (checkpoint + vec2{0, 1} == tile_pos) {
+		bottom_right = true;
+	}
 	for (uint i = 1; i < path.size(); ++i) {
 		const vec2 second_checkpoint = path[i];
 		// check sides
 		if (checkpoint.y == second_checkpoint.y) {
 			// this section is horizontal
 			if ((checkpoint.x <= tile_pos.x && second_checkpoint.x >= tile_pos.x) ||
-				(checkpoint.x >= tile_pos.x && checkpoint.x <= tile_pos.x)) {
+				(checkpoint.x >= tile_pos.x && second_checkpoint.x <= tile_pos.x)) {
 				// left side of the square is on the line
 				if (checkpoint.y == tile_pos.y) {
 					top_left = true;
