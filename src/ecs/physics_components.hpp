@@ -39,12 +39,22 @@ const std::vector arrow_collision_poly { //TODO: check if hitbox still rotates c
         vec2{0.09, 0.40} - grid_shift
 };
 
+const std::vector sword_collision_poly { //TODO: check if hitbox still rotates correctly with texture
+        vec2{0.20, 0.68} - grid_shift,
+        vec2{0.66, 0.22} - grid_shift,
+        vec2{0.85, 0.15} - grid_shift,
+        vec2{0.78, 0.35} - grid_shift,
+        vec2{0.31, 0.80} - grid_shift
+};
+
 inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id) {
     switch (id) {
         case TEXTURE_ASSET_ID::SLIME:
             return slime_collision_poly;
         case TEXTURE_ASSET_ID::ARROW:
             return arrow_collision_poly;
+        case TEXTURE_ASSET_ID::SWORD:
+            return sword_collision_poly;
         default: // This is just the bounding box of the texture
             return basic_bounding_box;
     }

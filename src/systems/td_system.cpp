@@ -83,11 +83,15 @@ bool TDSystem::step(const float elapsed_ms) {
                 } else if (registry.knights.has(tower_entity)) {
                     const auto &knight = registry.knights.get(tower_entity);
                     const auto &sword_entity = knight.sword;
+                    auto &sword = registry.swords.get(sword_entity);
                     RenderRequest &render_request = registry.renderGameLayer.get(sword_entity);
                     if (shot_timer.time < knight.swing_time && shot_timer.time >= 0) {
                         render_request.atlas_ids = {static_cast<unsigned int>(SWORD_FRAME::SWING)};
+                        sword.has_collision = true;
                     } else {
                         render_request.atlas_ids = {static_cast<unsigned int>(SWORD_FRAME::HOLD)};
+                        sword.hit_entities = {};
+                        sword.has_collision = false;
                     }
                 }
 
@@ -367,11 +371,11 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
     if (registry.enemies.has(second) && registry.arrows.has(first)) {
         auto &enemy = registry.enemies.get(second);
         auto &arrow = registry.arrows.get(first);
-        enemy.health -= arrow.damage;
         if (arrow.hit_entities.contains(second)) {
             // Arrow has already hit that enemy
             return;
         }
+        enemy.health -= arrow.damage;
         arrow.hit_entities.emplace(second);
         if (enemy.health <= 0) {
             enemy.alive = false;
@@ -387,6 +391,32 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         // delete arrow if the amount of enemies has been reached
         if (arrow.max_hitcount <= arrow.hit_entities.size()) {
             registry.remove_all_components_of(first);
+        }
+    } else if (registry.enemies.has(second) && registry.swords.has(first)) {
+        //TODO: sword collision
+        auto &sword = registry.swords.get(first);
+        if (!sword.has_collision) {
+            //Sword is currently on cooldown
+            printf("on cooldown\n");
+            return;
+        }
+        auto &enemy = registry.enemies.get(second);
+        enemy.health -= sword.damage;
+        printf("enemy health: %d\n", enemy.health);
+        if (sword.hit_entities.contains(second)) {
+            // Sword has already hit that enemy
+            return;
+        }
+        if (enemy.health <= 0) {
+            enemy.alive = false;
+            // clear tower aiming
+            auto &aimingRegistry = registry.aimingAts;
+            for (const Entity &aiming: aimingRegistry.entities) {
+                if (aimingRegistry.get(aiming).aimed_entity == second) {
+                    aimingRegistry.remove(aiming);
+                }
+            }
+            registry.remove_all_components_of(second);
         }
     } else if (registry.towers.has(first) && registry.enemies.has(second)) {
         auto &tower = registry.towers.get(first);
