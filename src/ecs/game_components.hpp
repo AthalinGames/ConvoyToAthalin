@@ -104,13 +104,15 @@ struct Bow {
 
 // Knight
 struct Knight {
-    float swing_speed = 100.0f;
+    float swing_time = 800.0f; //time to complete a full swing
+    float cooldown = 1200.0f;
     Entity sword;
 };
 
 // Sword
 struct Sword { //TODO: maybe outsource hitcound and hit list to Weapon and make Arrow Weapon, too.
     int damage = 40;
+    bool has_collision = false; // activate collision when sword is swung
     std::size_t max_hitcount = 1;
     std::set<Entity> hit_entities{}; //TODO: clear hit enemies after every swing
 };

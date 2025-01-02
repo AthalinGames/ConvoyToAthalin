@@ -61,7 +61,7 @@ Entity createRandomItem(std::default_random_engine& rng) {
 void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
 	const auto bow = Entity();
 
-	motion.angle = M_PI;
+	motion.angle = -M_PI_2;
 	motion.use_direction_sprite = true;
 	motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     vec2 motion_pos = motion.position;
@@ -81,7 +81,7 @@ void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& mot
 
 	Motion& bow_motion = registry.motions.emplace(bow);
 	bow_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
-	bow_motion.angle = M_PI/2;
+	bow_motion.angle = -M_PI_2;
 	bow_motion.velocity = vec2(0, 0);
 	bow_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     printf("%f|%f\n", motion.position.x, motion.position.y);
@@ -98,7 +98,7 @@ void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& mot
 void createKnightFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
     const auto sword = Entity();
 
-    motion.angle = M_PI;
+    motion.angle = -M_PI_2;
     motion.use_direction_sprite = true;
     motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     vec2 motion_pos = motion.position;
@@ -127,11 +127,11 @@ void createKnightFromCard(RenderSystem* renderer, const Entity card, Motion& mot
     Mesh& sword_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
     registry.meshPtrs.emplace(sword, &sword_mesh);
 
-    Motion& bow_motion = registry.motions.emplace(sword);
-    bow_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
-    bow_motion.angle = M_PI/2;
-    bow_motion.velocity = vec2(0, 0);
-    bow_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+    Motion& sword_motion = registry.motions.emplace(sword);
+    sword_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
+    sword_motion.angle = -M_PI_2;
+    sword_motion.velocity = vec2(0, 0);
+    sword_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     printf("%f|%f\n", motion.position.x, motion.position.y);
     registry.renderGameLayer.insert(sword, {
             {Stationary{}},

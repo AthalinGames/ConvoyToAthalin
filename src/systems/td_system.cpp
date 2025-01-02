@@ -67,9 +67,6 @@ bool TDSystem::step(const float elapsed_ms) {
                 auto &shot_timer = registry.shotTimers.get(tower_entity);
                 shot_timer.time -= elapsed_ms;
 
-                if (shot_timer.time < 0) {
-                    registry.shotTimers.remove(tower_entity);
-                }
                 if (registry.archers.has(tower_entity)) {
                     const auto &bow_entity = registry.archers.get(tower_entity).bow;
                     RenderRequest &render_request = registry.renderGameLayer.get(bow_entity);
@@ -83,6 +80,19 @@ bool TDSystem::step(const float elapsed_ms) {
                         //change bow to loaded
                         render_request.used_texture = TEXTURE_ASSET_ID::BOW1;
                     }
+                } else if (registry.knights.has(tower_entity)) {
+                    const auto &knight = registry.knights.get(tower_entity);
+                    const auto &sword_entity = knight.sword;
+                    RenderRequest &render_request = registry.renderGameLayer.get(sword_entity);
+                    if (shot_timer.time < knight.swing_time && shot_timer.time >= 0) {
+                        render_request.atlas_ids = {static_cast<unsigned int>(SWORD_FRAME::SWING)};
+                    } else {
+                        render_request.atlas_ids = {static_cast<unsigned int>(SWORD_FRAME::HOLD)};
+                    }
+                }
+
+                if (shot_timer.time < 0) {
+                    registry.shotTimers.remove(tower_entity);
                 }
             }
             if (!td_map.enemies.empty()) {
@@ -439,29 +449,52 @@ void TDSystem::handle_aiming() {
                 auto &bow = registry.archers.get(tower_entity).bow;
                 auto &bow_motion = registry.motions.get(bow);
                 bow_motion.angle = angle - M_PI_2 - M_PI_2 / 2; //+ (2 * M_PI) - (M_PI_2/2);
-                if (bow_motion.angle < M_PI) {
+                while (bow_motion.angle < M_PI) {
                     //keep angle within [-pi, pi]
                     bow_motion.angle += 2 * M_PI;
                 }
             } else if (towerType == TowerType::KNIGHT) {
                 auto &sword = registry.knights.get(tower_entity).sword;
                 auto &sword_motion = registry.motions.get(sword);
-                sword_motion.angle = angle - M_PI_2 - M_PI_2 / 2; //+ (2 * M_PI) - (M_PI_2/2);
-                if (sword_motion.angle < M_PI) {
+                sword_motion.angle = angle - M_PI_2 - M_PI_2 / 2;
+                //TODO: put sword in static position depending on direction sprite and in radius when swung
+                float radius = 0.5 * TOWER_HEIGHT;
+                while (sword_motion.angle < M_PI) {
                     //keep angle within [-pi, pi]
                     sword_motion.angle += 2 * M_PI;
                 }
+                sword_motion.position = tower_motion.position - radius * vec2(cos(angle), sin(angle)) + vec2(0, TOWER_HEIGHT * 0.2);
             }
 
             if (!registry.shotTimers.has(tower_entity)) {
                 if (towerType == TowerType::ARCHER) {
                     const auto &archer = registry.archers.get(tower_entity);
                     registry.shotTimers.emplace(tower_entity);
-                    if (registry.archers.has(tower_entity)) {
-                        createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
-                    }
+                    createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
                 } else if (towerType == TowerType::KNIGHT) {
-                    //TODO: Swing sword in circle
+                    const auto &knight = registry.knights.get(tower_entity);
+                    ShotTimer &swing_timer = registry.shotTimers.emplace(tower_entity);
+                    swing_timer.time = knight.cooldown;
+                }
+            } else {
+                if (towerType == TowerType::KNIGHT) { //TODO: maybe put the swing in step() instead
+                    const auto &knight = registry.knights.get(tower_entity);
+                    auto &sword = registry.knights.get(tower_entity).sword;
+                    auto &sword_motion = registry.motions.get(sword);
+                    float pos_angle = angle;
+                    ShotTimer swing_timer = registry.shotTimers.get(tower_entity);
+                    if (swing_timer.time <= knight.swing_time) {
+                        //sword_motion.angle = angle - M_PI_2 - M_PI_2 / 2;
+                        pos_angle = - 2*M_PI * swing_timer.time / knight.swing_time - M_PI;
+                        sword_motion.angle = pos_angle - M_PI_2 - M_PI_2 / 2;
+                    }
+
+                    while (sword_motion.angle < M_PI) {
+                        //keep angle within [-pi, pi]
+                        sword_motion.angle += 2 * M_PI;
+                    }
+                    float radius = 0.9 * TOWER_HEIGHT;
+                    sword_motion.position = tower_motion.position - radius * vec2(cos(pos_angle), sin(pos_angle)) + vec2(0, TOWER_HEIGHT * 0.25);
                 }
             }
         }
