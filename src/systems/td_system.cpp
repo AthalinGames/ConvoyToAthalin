@@ -90,7 +90,7 @@ bool TDSystem::step(const float elapsed_ms) {
                         sword.has_collision = true;
                     } else {
                         render_request.atlas_ids = {static_cast<unsigned int>(SWORD_FRAME::HOLD)};
-                        sword.hit_entities = {};
+                        sword.hit_entities.clear();
                         sword.has_collision = false;
                     }
                 }
@@ -393,7 +393,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
             registry.remove_all_components_of(first);
         }
     } else if (registry.enemies.has(second) && registry.swords.has(first)) {
-        //TODO: sword collision
+        //TODO: somehow sword collision does not work on left side of map?
         auto &sword = registry.swords.get(first);
         if (!sword.has_collision) {
             //Sword is currently on cooldown

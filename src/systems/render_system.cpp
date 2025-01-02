@@ -140,6 +140,8 @@ void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
 	glGenBuffers(1, &instance_transforms);
 	glBindBuffer(GL_ARRAY_BUFFER, instance_transforms);
     // TODO Debug: wrote these variables line by line to debug
+    // TODO: create framework like vertex and index buffer arrays or put the instance stuff into one of them?
+    printf("inst trans %d\n", instance_transforms);
     auto size_test = sizeof(mat3) * transforms.size();
     auto data_test = transforms.data();
 	glBufferData(GL_ARRAY_BUFFER, size_test, data_test, GL_STATIC_DRAW);
@@ -182,6 +184,7 @@ void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
 			glGenBuffers(1, &instance_atlas_positions);
 			glBindBuffer(GL_ARRAY_BUFFER, instance_atlas_positions);
             // TODO Debug: wrote these variables line by line to debug
+            printf("inst atlas pos %d\n", instance_atlas_positions);
             auto size_test2 = sizeof(vec4) * atlas_positions.size();
             auto data_test2 = atlas_positions.data();
 			glBufferData(GL_ARRAY_BUFFER, size_test2, data_test2, GL_STATIC_DRAW);

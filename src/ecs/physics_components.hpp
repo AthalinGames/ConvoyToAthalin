@@ -41,9 +41,11 @@ const std::vector arrow_collision_poly { //TODO: check if hitbox still rotates c
 
 const std::vector sword_collision_poly { //TODO: check if hitbox still rotates correctly with texture
         vec2{0.20, 0.68} - grid_shift,
+        vec2{0.22, 0.44} - grid_shift,
         vec2{0.66, 0.22} - grid_shift,
         vec2{0.85, 0.15} - grid_shift,
         vec2{0.78, 0.35} - grid_shift,
+        vec2{0.55, 0.58} - grid_shift,
         vec2{0.31, 0.80} - grid_shift
 };
 
