@@ -290,6 +290,7 @@ void WorldSystem::restart_game() {
 	// Setup initial Player Hand (Start with one archer)
     player = createPlayer();
 	createItem(TowerType::ARCHER);
+    createItem(TowerType::KNIGHT);
 
 
 	current_td_system.reset(new TDSystem());

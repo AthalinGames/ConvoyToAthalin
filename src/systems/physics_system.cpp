@@ -29,16 +29,24 @@ bool collides(const Motion& motion1, const Motion& motion2)
 }
 
 bool pointInsidePoly(const vec2& point, const std::vector<vec2>& polygon) {
+    // only works if vertices saved in counterclockwise order!
 	for (std::size_t i = 0; i < polygon.size(); ++i) {
 		const vec2 p0 = polygon[i];
 		const vec2 p1 = polygon[(i + 1) % polygon.size()];
 		// Calculate if point is on the left of the line
-		if (const auto result = point.x * (p1.y - p0.y) + point.y * (p0.x - p1.x) + p0.x * (p1.y - p0.y) - p0.y * (p1.x - p0.y);
-			result <= 0) {
-			return true;
-		}
+		//if (const auto result = point.x * (p1.y - p0.y) + point.y * (p0.x - p1.x) + p0.x * (p1.y - p0.y) - p0.y * (p1.x - p0.y);
+		//	result <= 0) {
+		//	return true;
+		//}
+        const vec2 affine_segment = p1 - p0;
+        const vec2 affine_point = point - p0;
+        const float cosine_sign = affine_segment.x * affine_point.y - affine_segment.y * affine_point.x; //only works if vertices saved in counterclockwise order
+        if (cosine_sign > 0) { // true when point on right side
+            return false;
+        }
 	}
-	return false;
+	//return false;
+    return true;
 }
 
 // This assumes that both polys are convex
@@ -152,14 +160,21 @@ void PhysicsSystem::step(float elapsed_ms)
                         registry.collisions.emplace_with_duplicates(entity_j, entity_i);
                     }
                 }
-            } else if (collides(motion_i, motion_j)) {
+            } else if (!(registry.enemies.has(entity_i) && registry.enemies.has(entity_j)) // ignore collision between enemies
+                        && !(registry.towers.has(entity_i) || registry.towers.has(entity_j)) // ignore collision with towers
+                        && collides(motion_i, motion_j)) {
             	// Check if coarse collision is an actual collision
             	// TODO Think about Entities with multiple render requests
             	const RenderRequest& request_i = registry.renderGameLayer.get(entity_i);
             	const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
             	auto& poly_i = getCollisionMeshOfTexture(request_i.used_texture);
             	auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
-            	if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
+            	if (registry.swords.has(entity_j)) {
+                    if (registry.swords.get(entity_j).has_collision) {
+                        printf("a\n");
+                    }
+                }
+                if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
             		// Create a collisions event
             		// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
             		registry.collisions.emplace_with_duplicates(entity_i, entity_j);

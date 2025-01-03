@@ -10,13 +10,14 @@
 // For proper positions this grid must be shifted, so that 0, 0 is in the center
 // Final Transformations are done when calculating the collision
 // Remember that even if a texture-atlas is used, only the percentages for the single texture should be used
+// Vertices have to be defined in counterclockwise order for collision detection to work (physics_system::pointInsidePoly)
 constexpr vec2 grid_shift{0.5, 0.5};
 
 const std::vector basic_bounding_box {
     vec2{0, 0} - grid_shift,
-    vec2{1, 0} - grid_shift,
+    vec2{0, 1} - grid_shift,
     vec2{1, 1} - grid_shift,
-    vec2{0, 1} - grid_shift
+    vec2{1, 0} - grid_shift
 };
 
 const std::vector slime_collision_poly {
@@ -41,12 +42,10 @@ const std::vector arrow_collision_poly { //TODO: check if hitbox still rotates c
 
 const std::vector sword_collision_poly { //TODO: check if hitbox still rotates correctly with texture
         vec2{0.20, 0.68} - grid_shift,
-        vec2{0.22, 0.44} - grid_shift,
-        vec2{0.66, 0.22} - grid_shift,
-        vec2{0.85, 0.15} - grid_shift,
+        vec2{0.31, 0.80} - grid_shift,
         vec2{0.78, 0.35} - grid_shift,
-        vec2{0.55, 0.58} - grid_shift,
-        vec2{0.31, 0.80} - grid_shift
+        vec2{0.85, 0.15} - grid_shift,
+        vec2{0.66, 0.22} - grid_shift
 };
 
 inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id) {
