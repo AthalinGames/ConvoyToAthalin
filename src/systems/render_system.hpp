@@ -68,6 +68,8 @@ class RenderSystem {
 
 	std::array<GLuint, geometry_count> vertex_buffers{};
 	std::array<GLuint, geometry_count> index_buffers{};
+    std::array<GLuint, geometry_count> transform_buffers{};
+    std::array<GLuint, geometry_count> atlas_position_buffers{};
 	std::array<Mesh, geometry_count> meshes;
 
 	std::map<char, Character> Characters;

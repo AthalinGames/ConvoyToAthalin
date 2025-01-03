@@ -136,8 +136,9 @@ void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
 		offset_transform.mat.length();
 	}
 	// Transform transforms vector into opengl format
-	GLuint instance_transforms;
-	glGenBuffers(1, &instance_transforms);
+	//const GLuint instance_transforms;
+    const GLuint instance_transforms = transform_buffers[static_cast<GLuint>(render_request.used_geometry)];
+	//glGenBuffers(1, &instance_transforms);
 	glBindBuffer(GL_ARRAY_BUFFER, instance_transforms);
     // TODO Debug: wrote these variables line by line to debug
     // TODO: create framework like vertex and index buffer arrays or put the instance stuff into one of them?
@@ -180,8 +181,9 @@ void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
 				atlas_positions[i] = tex_coords;
 			}
 			// Transform atlas positions into opengl format
-			GLuint instance_atlas_positions;
-			glGenBuffers(1, &instance_atlas_positions);
+			//GLuint instance_atlas_positions;
+            GLuint instance_atlas_positions = atlas_position_buffers[static_cast<GLuint>(render_request.used_geometry)];
+			//glGenBuffers(1, &instance_atlas_positions);
 			glBindBuffer(GL_ARRAY_BUFFER, instance_atlas_positions);
             // TODO Debug: wrote these variables line by line to debug
             printf("inst atlas pos %d\n", instance_atlas_positions);
