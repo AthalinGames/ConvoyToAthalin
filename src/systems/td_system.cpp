@@ -34,6 +34,8 @@ void TDSystem::cleanup_ecs() {
         registry.remove_all_components_of(entity);
     }
 
+    registry.maps.remove(map);
+
     towers.clear();
     enemies.clear();
     cards.clear();
@@ -562,7 +564,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
             if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
                 //TODO range of placed tower seems really small, maybe only on collision with tower
                 dragging = false;
-                auto maps = registry.maps;
+                auto &maps = registry.maps;
                 const auto &mapProperties = maps.get(map);
                 vec2 card_pos = registry.stationaries.get(dragged_entity).position;
 

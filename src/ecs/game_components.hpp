@@ -139,7 +139,15 @@ struct Map
     std::vector<float> section_lengths = {};
     std::vector<Entity> enemies = {};
     float combat_time = 0.f; // time passed since combat started (in ms)
+	Entity fireplace;
     bool active = false;
+	// This is some wild shit, but should work to help cleaning up the fireplace
+	// (maybe there is a better way, but including the ecs registry in this header is not possible)
+	std::function<void()> destruction_lambda = [] {};
+
+	~Map() {
+		destruction_lambda();
+	}
 };
 
 struct OverviewMapLocation {

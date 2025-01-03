@@ -380,9 +380,9 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints,
 		path_length += abs(distance(map_coordinates[0], map_coordinates[1]));
         map_attributes.section_lengths.push_back(path_length);
 		for (uint i = 2; i < map_coordinates.size(); ++i) {
-            const float section_lenght = abs(distance(map_coordinates[i-1], map_coordinates[i]));
-            map_attributes.section_lengths.push_back(section_lenght);
-			path_length += section_lenght;
+            const float section_length = abs(distance(map_coordinates[i-1], map_coordinates[i]));
+            map_attributes.section_lengths.push_back(section_length);
+			path_length += section_length;
 		}
 	}
 	map_attributes.path_length = path_length;
@@ -435,6 +435,11 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints,
     });
 
 	const auto fireplace_entity = Entity();
+	map_attributes.fireplace = fireplace_entity;
+	map_attributes.destruction_lambda = [fireplace_entity] {
+		registry.remove_all_components_of(fireplace_entity);
+		printf("Fireplace was destroyed\n");
+	};
 
 	Stationary& fireplace_pos = registry.stationaries.emplace(fireplace_entity);
 	fireplace_pos.position = map_coordinates.back() - vec2(0, tile_height * 0.3);
