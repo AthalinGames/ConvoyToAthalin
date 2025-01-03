@@ -50,7 +50,7 @@ const std::vector sword_collision_poly { //TODO: check if hitbox still rotates c
 
 inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id) {
     switch (id) {
-        case TEXTURE_ASSET_ID::SLIME:
+        case TEXTURE_ASSET_ID::SLIME: //TODO: Slime poly currently not used, since other asset ids used for different textures
             return slime_collision_poly;
         case TEXTURE_ASSET_ID::ARROW:
             return arrow_collision_poly;
