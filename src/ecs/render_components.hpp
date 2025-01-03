@@ -75,10 +75,12 @@ enum class TEXTURE_ASSET_ID {
     SLIME_U,
     SLIME_R,
     SLIME_D,
-    TD_MAP_ATLAS,
 	OVERVIEW_MAP,
 	BLACK_PIXEL,
 	GAME_OVER,
+	CAMPFIRE,
+	CAMPFIRE2,
+    TD_MAP_ATLAS,
 	OVERVIEW_ICONS_ATLAS,
 	ASCII_CHAR_ATLAS,
 	TEXTURE_COUNT
@@ -103,10 +105,12 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
         case TEXTURE_ASSET_ID::SLIME_U: return "Slime1.png";
         case TEXTURE_ASSET_ID::SLIME_R: return "Slime2.png";
         case TEXTURE_ASSET_ID::SLIME_D: return "Slime3.png";
-		case TEXTURE_ASSET_ID::TD_MAP_ATLAS: return "TDMapAtlas.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
 		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";
+		case TEXTURE_ASSET_ID::CAMPFIRE: return "campfire.png";
+		case TEXTURE_ASSET_ID::CAMPFIRE2: return "campfire2.png";
+		case TEXTURE_ASSET_ID::TD_MAP_ATLAS: return "TDMapAtlas.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: return "overviewIconsAtlas.png";
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: return "charmap-oldschool_preview.png"; // Source: https://opengameart.org/content/ascii-bitmap-font-oldschool
 		default: {

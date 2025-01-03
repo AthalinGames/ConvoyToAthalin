@@ -350,8 +350,7 @@ std::vector<vec2> grid_to_coordinates(const std::vector<vec2> &grid_coords) {
 	constexpr float height_step = window_height_px/(MAP_COUNT_Y - 1);
 	constexpr float width_step_center = width_step/2;
 	constexpr float height_step_center = height_step/2;
-	for (int i = 0; i < grid_coords.size(); ++i) {
-		const vec2 grid_coord = grid_coords[i];
+	for (const auto grid_coord : grid_coords) {
 		float x = grid_coord.x * width_step + width_step_center;
 		float y = grid_coord.y * height_step + height_step_center;
 		map_coordinates.emplace_back(x, y);
@@ -434,6 +433,22 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints,
     	EFFECT_ASSET_ID::TEXTURED_ATLAS,
     	GEOMETRY_BUFFER_ID::SPRITE,
     });
+
+	const auto fireplace_entity = Entity();
+
+	Stationary& fireplace_pos = registry.stationaries.emplace(fireplace_entity);
+	fireplace_pos.position = map_coordinates.back() - vec2(0, tile_height * 0.3);
+	fireplace_pos.use_direction_sprite = false;
+	fireplace_pos.scale = vec2(1.4 * tile_width, 1.4 * tile_height);
+
+	registry.renderBackground.insert(fireplace_entity, {
+		{Stationary{}},
+		{0},
+		Z_FOREGROUND,
+		TEXTURE_ASSET_ID::CAMPFIRE2,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
 
     return entity;
 }
