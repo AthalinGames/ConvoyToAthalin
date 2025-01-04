@@ -78,8 +78,7 @@ enum class TEXTURE_ASSET_ID {
 	OVERVIEW_MAP,
 	BLACK_PIXEL,
 	GAME_OVER,
-	CAMPFIRE,
-	CAMPFIRE2,
+	TD_MAP_DECORATION_ATLAS,
     TD_MAP_ATLAS,
 	OVERVIEW_ICONS_ATLAS,
 	ASCII_CHAR_ATLAS,
@@ -108,8 +107,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
 		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";
-		case TEXTURE_ASSET_ID::CAMPFIRE: return "campfire.png";
-		case TEXTURE_ASSET_ID::CAMPFIRE2: return "campfire2.png";
+		case TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS: return "TDMapDecorationAtlas.png";
 		case TEXTURE_ASSET_ID::TD_MAP_ATLAS: return "TDMapAtlas.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: return "overviewIconsAtlas.png";
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: return "charmap-oldschool_preview.png"; // Source: https://opengameart.org/content/ascii-bitmap-font-oldschool
@@ -133,6 +131,7 @@ struct AtlasTexture {
 const std::set texture_atlases = {
 	TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
 	TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS,
+	TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
 	TEXTURE_ASSET_ID::TD_MAP_ATLAS,
 };
 
@@ -168,13 +167,22 @@ enum class TD_MAP_ATLAS_TEXTURES {
 	DIRT_GRASS_CORNER_DOUBLE_MIRRORED,
 };
 
+enum class TD_MAP_DECORATION_TEXTURES {
+	CAMPFIRE,
+	CAMPFIRE2,
+	TENT,
+	TENT2,
+	WAGON,
+	COUNT
+};
+
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
 	// here the texture positions are defined
 	switch (atlas_id) {
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: {
 			constexpr unsigned int cols = 3, rows = 3, maxCount = cols * rows;
 			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-			constexpr unsigned int definedCount = static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::COUNT);
+			constexpr auto definedCount = static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::COUNT);
 			assert(definedCount <= maxCount); // Atlas cannot have more defined textures than available space
 			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
 			for (unsigned int i = 0; i < definedCount; i++) {
@@ -228,6 +236,21 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			AtlasTexture& texDef5 = atlasLookup.at(atlas_id).emplace_back();
 			texDef5.tex_pos = vec2(tex_width, tex_height);
 			texDef5.tex_size = vec2(-tex_width, tex_height);
+			break;
+		}
+		case TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS: {
+			constexpr unsigned int cols = 3, rows = 3, maxCount = cols * rows;
+			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+			constexpr auto definedCount = static_cast<unsigned int>(TD_MAP_DECORATION_TEXTURES::COUNT);
+			assert(definedCount <= maxCount); // Atlas cannot have more defined textures than available space
+			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+			for (unsigned int i = 0; i < definedCount; i++) {
+				const float x_start = (i % cols) * tex_width;
+				const float y_start = (i / cols) * tex_height;
+				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+				texDef.tex_pos = vec2(x_start, y_start);
+				texDef.tex_size = vec2(tex_width, tex_height);
+			}
 			break;
 		}
 		default:

@@ -434,24 +434,48 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints,
     	GEOMETRY_BUFFER_ID::SPRITE,
     });
 
-	const auto fireplace_entity = Entity();
-	map_attributes.fireplace = fireplace_entity;
-	map_attributes.destruction_lambda = [fireplace_entity] {
-		registry.remove_all_components_of(fireplace_entity);
-		printf("Fireplace was destroyed\n");
+	const auto map_decoration = Entity();
+	map_attributes.map_decoration = map_decoration;
+	map_attributes.destruction_lambda = [map_decoration] {
+		registry.remove_all_components_of(map_decoration);
 	};
 
-	Stationary& fireplace_pos = registry.stationaries.emplace(fireplace_entity);
-	fireplace_pos.position = map_coordinates.back() - vec2(0, tile_height * 0.3);
-	fireplace_pos.use_direction_sprite = false;
-	fireplace_pos.scale = vec2(1.4 * tile_width, 1.4 * tile_height);
+	Stationary& deco_pos = registry.stationaries.emplace(map_decoration);
+	deco_pos.position = map_coordinates.back() - vec2(0, tile_height * 0.3);
+	deco_pos.use_direction_sprite = false;
+	deco_pos.scale = vec2(1.4 * tile_width, 1.4 * tile_height);
 
-	registry.renderBackground.insert(fireplace_entity, {
-		{Stationary{}},
-		{0},
+	registry.renderBackground.insert(map_decoration, {
+		{
+			Stationary{},
+			{
+				0.8f * vec2{tile_width, -tile_height},
+				0,
+				false,
+				{1, 1}
+			},
+			{
+				0.8f * vec2{tile_width, tile_height},
+				0,
+				false,
+				{1, 1}
+			},
+			{
+				0.8f * vec2{-tile_width, -tile_height},
+				0,
+				false,
+				{1, 1}
+			}
+		},
+		{
+			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::CAMPFIRE2),
+			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::TENT),
+			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::TENT2),
+			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::WAGON),
+		},
 		Z_FOREGROUND,
-		TEXTURE_ASSET_ID::CAMPFIRE2,
-		EFFECT_ASSET_ID::TEXTURED,
+		TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
