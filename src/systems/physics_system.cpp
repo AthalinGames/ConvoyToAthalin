@@ -169,11 +169,6 @@ void PhysicsSystem::step(float elapsed_ms)
             	const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
             	auto& poly_i = getCollisionMeshOfTexture(request_i.used_texture);
             	auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
-            	if (registry.swords.has(entity_j)) {
-                    if (registry.swords.get(entity_j).has_collision) {
-                        printf("a\n");
-                    }
-                }
                 if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
             		// Create a collisions event
             		// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity

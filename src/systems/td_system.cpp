@@ -82,28 +82,38 @@ bool TDSystem::step(const float elapsed_ms) {
                     }
                 } else if (registry.knights.has(tower_entity)) {
                     const auto &knight = registry.knights.get(tower_entity);
+                    const auto &knight_motion = registry.motions.get(tower_entity);
                     const auto &sword_entity = knight.sword;
                     auto &sword = registry.swords.get(sword_entity);
                     auto &sword_motion = registry.motions.get(sword_entity);
                     auto &tower_motion = registry.motions.get(tower_entity);
                     RenderRequest &render_request = registry.renderGameLayer.get(sword_entity);
                     if (shot_timer.time <= knight.swing_time && shot_timer.time >= 0) {
-                        render_request.atlas_ids = {static_cast<unsigned int>(SWORD_FRAME::SWING)};
+                        if (sword_motion.use_direction_sprite) {
+                            sword_motion.use_direction_sprite = false;
+                        }
+                        render_request.atlas_ids = {static_cast<unsigned int>(SWORD_SPRITE::SWING)};
                         sword.has_collision = true;
-                        const float pos_angle = - 2 * M_PI * shot_timer.time / knight.swing_time - M_PI;
+                        const float pos_angle = tower_motion.angle - 2 * M_PI * shot_timer.time / knight.swing_time - M_PI_2;
                         sword_motion.angle = pos_angle - M_PI_2 - M_PI_2 / 2;
                         const float radius = 0.9 * TOWER_HEIGHT;
                         sword_motion.position = tower_motion.position - radius * vec2(cos(pos_angle), sin(pos_angle)) + vec2(0, TOWER_HEIGHT * 0.25);
-                    } else {
-                        render_request.atlas_ids = {static_cast<unsigned int>(SWORD_FRAME::HOLD)};
+                    }
+                    else {
+                        if (!sword_motion.use_direction_sprite) {
+                            sword_motion.use_direction_sprite = true;
+                        }
                         sword.hit_entities.clear();
                         sword.has_collision = false;
-                        sword_motion.angle = - M_PI_2 - M_PI_2 / 2;
+                        sword_motion.angle = tower_motion.angle;
                         sword_motion.position = tower_motion.position;
                     }
-                    while (sword_motion.angle < M_PI) {
-                        //keep angle within [-pi, pi]
+                    //keep angle within [-pi, pi]
+                    while (sword_motion.angle < -M_PI) {
                         sword_motion.angle += 2 * M_PI;
+                    }
+                    while (sword_motion.angle > M_PI) {
+                        sword_motion.angle -= 2 * M_PI;
                     }
                 }
 
@@ -198,7 +208,7 @@ bool TDSystem::step(const float elapsed_ms) {
 }
 
 std::vector<Entity> TDSystem::generate_combat(int difficulty) {
-    //TODO: create pools of enemy spawn times/amounts that can be concatenated depending on (map and) difficulty
+    //TODO: maybe remove entry from pool when selected, to increase variation
 
     //{enemy_type, amount, interval, speed}
     std::vector<vec4> combat_pool = {vec4(1, 1, 1000., 100.),
@@ -405,20 +415,18 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
             registry.remove_all_components_of(first);
         }
     } else if (registry.enemies.has(second) && registry.swords.has(first)) {
-        //TODO: somehow sword collision does not work on left side of map?
         auto &sword = registry.swords.get(first);
         if (!sword.has_collision) {
             //Sword is currently on cooldown
-            printf("on cooldown\n");
             return;
         }
-        auto &enemy = registry.enemies.get(second);
-        enemy.health -= sword.damage;
-        printf("enemy health: %d\n", enemy.health);
         if (sword.hit_entities.contains(second)) {
             // Sword has already hit that enemy
             return;
         }
+        auto &enemy = registry.enemies.get(second);
+        enemy.health -= sword.damage;
+        sword.hit_entities.emplace(second);
         if (enemy.health <= 0) {
             enemy.alive = false;
             // clear tower aiming
@@ -491,9 +499,12 @@ void TDSystem::handle_aiming() {
                 auto &bow = registry.archers.get(tower_entity).bow;
                 auto &bow_motion = registry.motions.get(bow);
                 bow_motion.angle = angle - M_PI_2 - M_PI_2 / 2; //+ (2 * M_PI) - (M_PI_2/2);
-                while (bow_motion.angle < M_PI) {
-                    //keep angle within [-pi, pi]
+                //keep angle within [-pi, pi]
+                while (bow_motion.angle < -M_PI) {
                     bow_motion.angle += 2 * M_PI;
+                }
+                while (bow_motion.angle > M_PI) {
+                    bow_motion.angle -= 2 * M_PI;
                 }
             }
 

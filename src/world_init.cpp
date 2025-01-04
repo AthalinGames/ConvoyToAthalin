@@ -15,11 +15,12 @@ Entity createItem(const ItemType item) {
 	registry.items.emplace(entity);
 
 	std::visit(overloaded{
-		[entity] (const TowerType tower) {
-			registry.towers.emplace(entity);
-			switch (tower) {
+		[entity] (const TowerType towerType) {
+            auto &tower = registry.towers.emplace(entity);
+			switch (towerType) {
 				case TowerType::ARCHER: {
 					registry.archers.emplace(entity);
+                    tower.range = 400.0f; //TODO: save range somewhere in components?
 					break;
 				}
                 case TowerType::KNIGHT: {
@@ -88,7 +89,7 @@ void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& mot
 	registry.renderGameLayer.insert(bow, {
 		{Stationary{}},
 		{0},
-		Z_MIDDLE,
+		Z_BACKGROUND,
 		TEXTURE_ASSET_ID::BOW1,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -111,15 +112,6 @@ void createKnightFromCard(RenderSystem* renderer, const Entity card, Motion& mot
     registry.renderForeground.remove(card);
     registry.renderGameLayer.emplace(card, request);
 
-    //registry.renderGameLayer.insert(card, {
-    //        {Stationary{}},
-    //        {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
-    //        Z_MIDDLE,
-    //        TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
-    //        EFFECT_ASSET_ID::TEXTURED_ATLAS,
-    //        GEOMETRY_BUFFER_ID::SPRITE,
-    //});
-
     registry.swords.emplace(sword);
     registry.weapons.emplace(sword);
     registry.knights.get(card).sword = sword;
@@ -130,13 +122,14 @@ void createKnightFromCard(RenderSystem* renderer, const Entity card, Motion& mot
     Motion& sword_motion = registry.motions.emplace(sword);
     sword_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
     sword_motion.angle = -M_PI_2;
+    sword_motion.use_direction_sprite = true;
     sword_motion.velocity = vec2(0, 0);
     sword_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     printf("%f|%f\n", motion.position.x, motion.position.y);
     registry.renderGameLayer.insert(sword, {
             {Stationary{}},
-            request.atlas_ids = {static_cast<unsigned int>(SWORD_FRAME::HOLD)},
-            Z_MIDDLE,
+            request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
+            Z_BACKGROUND,
             TEXTURE_ASSET_ID::SWORD,
             EFFECT_ASSET_ID::TEXTURED_ATLAS,
             GEOMETRY_BUFFER_ID::SPRITE,

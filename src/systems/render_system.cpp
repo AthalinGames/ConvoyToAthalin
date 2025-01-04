@@ -15,7 +15,7 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
     // if bow_and_arrow rotate, if character sprite choose view direction sprite
     if (!pos.use_direction_sprite) {
         if (registry.bows.has(entity) || registry.swords.has(entity)) {
-            if (pos.angle > M_PI) {
+            if (pos.angle < 0) {
                 render_request.z_position = Z_BACKGROUND;
             } else {
                 render_request.z_position = Z_FOREGROUND;
@@ -41,12 +41,8 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
                 //look down
                 render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
             }
-        } else if(registry.knights.has(entity)) { // TODO: include archer here with atlas
+        } else if(registry.knights.has(entity) || registry.swords.has(entity)) { // TODO: include archer here with atlas
             float angle_by_pi = pos.angle / M_PI;
-            //printf("angle %f\n", angle);
-            float temp_whole;
-            //angle_by_pi = std::modf(angle_by_pi, &temp_whole);
-            //printf("angle mod %f\n", angle_by_pi);
             if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
                 //look left
                 render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::LEFT)};
@@ -59,6 +55,9 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
             } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
                 //look down
                 render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
+                if (registry.swords.has(entity)) {
+                    render_request.z_position = Z_BACKGROUND;
+                }
             }
         } else if (registry.slimes.has(entity)) {
             float angle_by_pi = pos.angle / M_PI;
@@ -142,7 +141,7 @@ void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
 	glBindBuffer(GL_ARRAY_BUFFER, instance_transforms);
     // TODO Debug: wrote these variables line by line to debug
     // TODO: create framework like vertex and index buffer arrays or put the instance stuff into one of them?
-    printf("inst trans %d\n", instance_transforms);
+    //printf("inst trans %d\n", instance_transforms);
     auto size_test = sizeof(mat3) * transforms.size();
     auto data_test = transforms.data();
 	glBufferData(GL_ARRAY_BUFFER, size_test, data_test, GL_STATIC_DRAW);
@@ -186,7 +185,7 @@ void RenderSystem::drawTexturedMeshInstanced(const Entity entity,
 			//glGenBuffers(1, &instance_atlas_positions);
 			glBindBuffer(GL_ARRAY_BUFFER, instance_atlas_positions);
             // TODO Debug: wrote these variables line by line to debug
-            printf("inst atlas pos %d\n", instance_atlas_positions);
+            //printf("inst atlas pos %d\n", instance_atlas_positions);
             auto size_test2 = sizeof(vec4) * atlas_positions.size();
             auto data_test2 = atlas_positions.data();
 			glBufferData(GL_ARRAY_BUFFER, size_test2, data_test2, GL_STATIC_DRAW);

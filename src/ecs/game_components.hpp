@@ -60,7 +60,7 @@ enum class EnemyPriority {
 
 struct Tower {
 	bool placed = false;
-	float range = 50.0f;
+	float range = 50.0f; //TODO: is range scaled with window?
 	int food_cost = 5;
 	int food_gain = 10;
 	EnemyPriority priority = EnemyPriority::FIRST;
@@ -111,10 +111,10 @@ struct Knight {
 
 // Sword
 struct Sword { //TODO: maybe outsource hitcound and hit list to Weapon and make Arrow Weapon, too.
-    int damage = 50;
+    int damage = 40;
     bool has_collision = false; // activate collision when sword is swung
     std::size_t max_hitcount = 1;
-    std::set<Entity> hit_entities{}; //TODO: clear hit enemies after every swing
+    std::set<Entity> hit_entities{};
 };
 
 // Weapon
