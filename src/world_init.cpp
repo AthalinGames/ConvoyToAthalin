@@ -68,8 +68,10 @@ void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& mot
     vec2 motion_pos = motion.position;
 
 	RenderRequest request = registry.renderForeground.get(card);
-	request.z_position = Z_MIDDLE;
-	request.used_texture = TEXTURE_ASSET_ID::ARCHER;
+    request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
+    request.z_position = Z_MIDDLE;
+    request.used_texture = TEXTURE_ASSET_ID::ARCHER;
+    request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
 	registry.renderForeground.remove(card);
 	registry.renderGameLayer.emplace(card, request);
 
@@ -82,16 +84,16 @@ void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& mot
 
 	Motion& bow_motion = registry.motions.emplace(bow);
 	bow_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
-	bow_motion.angle = -M_PI_2;
+	bow_motion.angle = M_PI_2;
 	bow_motion.velocity = vec2(0, 0);
 	bow_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     printf("%f|%f\n", motion.position.x, motion.position.y);
 	registry.renderGameLayer.insert(bow, {
 		{Stationary{}},
-		{0},
-		Z_BACKGROUND,
-		TEXTURE_ASSET_ID::BOW1,
-		EFFECT_ASSET_ID::TEXTURED,
+        {static_cast<unsigned int>(BOW_SPRITE::LOAD)},
+		Z_FOREGROUND,
+		TEXTURE_ASSET_ID::BOW,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 }
@@ -128,7 +130,7 @@ void createKnightFromCard(RenderSystem* renderer, const Entity card, Motion& mot
     printf("%f|%f\n", motion.position.x, motion.position.y);
     registry.renderGameLayer.insert(sword, {
             {Stationary{}},
-            request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
+            {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
             Z_BACKGROUND,
             TEXTURE_ASSET_ID::SWORD,
             EFFECT_ASSET_ID::TEXTURED_ATLAS,
@@ -196,16 +198,16 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity,
 	motion.position = pos;
 	motion.angle = static_cast<float>(atan2(dir.y, dir.x)) + (M_PI_2/2) + M_PI;
 	motion.velocity = -velocity * normalize(dir);
-	motion.scale = vec2({ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
+	motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
 
     registry.arrows.emplace(entity);
 
 	registry.renderGameLayer.insert(entity, {
 		{Stationary{}},
-		{0},
+        {static_cast<unsigned int>(BOW_SPRITE::ARROW)},
 		Z_MIDDLE,
-		TEXTURE_ASSET_ID::ARROW,
-		EFFECT_ASSET_ID::TEXTURED,
+		TEXTURE_ASSET_ID::BOW,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 

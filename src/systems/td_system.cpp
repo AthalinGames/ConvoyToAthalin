@@ -72,13 +72,13 @@ bool TDSystem::step(const float elapsed_ms) {
                     RenderRequest &render_request = registry.renderGameLayer.get(bow_entity);
                     if (shot_timer.time < 0) {
                         //change bow to empty
-                        render_request.used_texture = TEXTURE_ASSET_ID::BOW3;
+                        render_request.atlas_ids = {static_cast<unsigned int>(BOW_SPRITE::SHOOT)};
                     } else if (shot_timer.time < 150.) {
                         //change bow to drawn
-                        render_request.used_texture = TEXTURE_ASSET_ID::BOW2;
+                        render_request.atlas_ids = {static_cast<unsigned int>(BOW_SPRITE::DRAW)};
                     } else if (shot_timer.time < 500.) {
                         //change bow to loaded
-                        render_request.used_texture = TEXTURE_ASSET_ID::BOW1;
+                        render_request.atlas_ids = {static_cast<unsigned int>(BOW_SPRITE::LOAD)};
                     }
                 } else if (registry.knights.has(tower_entity)) {
                     const auto &knight = registry.knights.get(tower_entity);
@@ -710,7 +710,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         if (registry.towers.has(card)) {
                             auto& tower = registry.towers.get(card);
                             auto& card_comp = registry.cards.get(card);
-                            if (card_comp.selectable && tower.food_cost < current_player.food) {
+                            if (card_comp.selectable && tower.food_cost > current_player.food) {
                                 card_comp.selectable = false;
                                 registry.colors.insert(card, {0.5f, 0.5f, 0.5f, 1.f});
                             }

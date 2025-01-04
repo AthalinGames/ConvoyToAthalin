@@ -22,26 +22,27 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
             }
         }
     } else { // decide cardinal directions by angle in pi/4
-        if (registry.archers.has(entity)) {
-            float angle_by_pi = pos.angle / M_PI;
-            //printf("angle %f\n", angle);
-            float temp_whole;
-            //angle_by_pi = std::modf(angle_by_pi, &temp_whole);
-            //printf("angle mod %f\n", angle_by_pi);
-            if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
-                //look left
-                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_L;
-            } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
-                //look up
-                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_U;
-            } else if (angle_by_pi >= 0.75 || angle_by_pi < -0.75) {
-                //look right
-                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_R;
-            } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
-                //look down
-                render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
-            }
-        } else if(registry.knights.has(entity) || registry.swords.has(entity)) { // TODO: include archer here with atlas
+        //if (registry.archers.has(entity)) {
+        //    float angle_by_pi = pos.angle / M_PI;
+        //    //printf("angle %f\n", angle);
+        //    float temp_whole;
+        //    //angle_by_pi = std::modf(angle_by_pi, &temp_whole);
+        //    //printf("angle mod %f\n", angle_by_pi);
+        //    if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
+        //        //look left
+        //        render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_L;
+        //    } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
+        //        //look up
+        //        render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_U;
+        //    } else if (angle_by_pi >= 0.75 || angle_by_pi < -0.75) {
+        //        //look right
+        //        render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_R;
+        //    } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
+        //        //look down
+        //        render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
+        //    }
+        //} else 
+        if(registry.archers.has(entity) || registry.knights.has(entity) || registry.swords.has(entity)) { // TODO: include archer here with atlas
             float angle_by_pi = pos.angle / M_PI;
             if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
                 //look left

@@ -61,17 +61,10 @@ enum class TEXTURE_ASSET_ID {
 	FISH = 0,
 	TURTLE,
 	ARCHER,
-    ARCHER_L,
-    ARCHER_U,
-    ARCHER_R,
-    ARCHER_D,
     KNIGHT,
     ARCHER_CARD,
     KNIGHT_CARD,
-    BOW1,
-    BOW2,
-    BOW3,
-	ARROW,
+    BOW,
     SWORD,
     SLIME,
     SLIME_L,
@@ -98,17 +91,10 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::FISH: return "fish.png";
 		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
-        case TEXTURE_ASSET_ID::ARCHER_L: return "archer_perspective2.png";
-        case TEXTURE_ASSET_ID::ARCHER_U: return "archer_perspective1.png";
-        case TEXTURE_ASSET_ID::ARCHER_R: return "archer_perspective4.png";
-        case TEXTURE_ASSET_ID::ARCHER_D: return "archer_perspective3.png";
         case TEXTURE_ASSET_ID::KNIGHT: return "knight.png";
         case TEXTURE_ASSET_ID::ARCHER_CARD: return "archerCard.png";
         case TEXTURE_ASSET_ID::KNIGHT_CARD: return "knightCard.png";
-        case TEXTURE_ASSET_ID::BOW1: return "bow_and_arrow1.png";
-        case TEXTURE_ASSET_ID::BOW2: return "bow_and_arrow2.png";
-        case TEXTURE_ASSET_ID::BOW3: return "bow_and_arrow3.png";
-		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
+        case TEXTURE_ASSET_ID::BOW: return "bow_and_arrow.png";
         case TEXTURE_ASSET_ID::SWORD: return "sword.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
         case TEXTURE_ASSET_ID::SLIME_L: return "Slime4.png";
@@ -147,6 +133,8 @@ struct AtlasTexture {
 const std::set texture_atlases = {
 	TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
 	TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS,
+    TEXTURE_ASSET_ID::ARCHER,
+    TEXTURE_ASSET_ID::BOW,
     TEXTURE_ASSET_ID::KNIGHT,
     TEXTURE_ASSET_ID::SWORD,
 };
@@ -177,6 +165,7 @@ enum class BOW_SPRITE { //TODO: make bow animation atlas
     LOAD = 0,
     DRAW,
     SHOOT,
+    ARROW,
     COUNT
 };
 
@@ -213,6 +202,32 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			}
 			break;
 		}
+        case TEXTURE_ASSET_ID::ARCHER: {
+            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
+        case TEXTURE_ASSET_ID::BOW: {
+            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
         case TEXTURE_ASSET_ID::KNIGHT: {
             constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;

@@ -34,10 +34,10 @@ const std::vector slime_collision_poly {
 };
 
 const std::vector arrow_collision_poly { //TODO: check if hitbox still rotates correctly with texture
-        vec2{0.09, 0.52} - grid_shift,
-        vec2{0.92, 0.52} - grid_shift,
-        vec2{0.92, 0.40} - grid_shift,
-        vec2{0.09, 0.40} - grid_shift
+        vec2{0.33, 0.61} - grid_shift,
+        vec2{0.38, 0.66} - grid_shift,
+        vec2{0.67, 0.37} - grid_shift,
+        vec2{0.62, 0.32} - grid_shift,
 };
 
 const std::vector sword_collision_poly { //TODO: check if hitbox still rotates correctly with texture
@@ -52,7 +52,15 @@ inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID
     switch (id) {
         case TEXTURE_ASSET_ID::SLIME: //TODO: Slime poly currently not used, since other asset ids used for different textures
             return slime_collision_poly;
-        case TEXTURE_ASSET_ID::ARROW:
+        case TEXTURE_ASSET_ID::SLIME_D:
+            return slime_collision_poly;
+        case TEXTURE_ASSET_ID::SLIME_L:
+            return slime_collision_poly;
+        case TEXTURE_ASSET_ID::SLIME_U:
+            return slime_collision_poly;
+        case TEXTURE_ASSET_ID::SLIME_R:
+            return slime_collision_poly;
+        case TEXTURE_ASSET_ID::BOW:
             return arrow_collision_poly;
         case TEXTURE_ASSET_ID::SWORD:
             return sword_collision_poly;
