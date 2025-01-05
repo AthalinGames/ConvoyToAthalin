@@ -161,6 +161,10 @@ bool TDSystem::step(const float elapsed_ms) {
             Stationary& stationary2 = registry.stationaries.get(random_item2);
             stationary2.position = {2 * (window_width_px / 3), window_height_px / 2};
             new_cards.push_back(random_item2);
+            for (const auto card : cards) {
+                returnCardToItem(card);
+            }
+            cards.clear();
             break;
         }
         case GamePhase::CHOOSE_REWARD: {
@@ -202,7 +206,8 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
         enemy2.spawn_time = 1000;
 
         return {debug_enemy, debug_enemy2};
-    } else if (difficulty >= 1) {
+    }
+    if (difficulty >= 1) {
         float spawn_time = 0;
         for (int i = 0; i <= wave_amount; ++i) {
             vec4 wave = combat_pool[uniform_int_dist(rng)];
@@ -629,7 +634,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         if (registry.towers.has(card)) {
                             auto& tower = registry.towers.get(card);
                             auto& card_comp = registry.cards.get(card);
-                            if (card_comp.selectable && tower.food_cost < current_player.food) {
+                            if (card_comp.selectable && tower.food_cost > current_player.food) {
                                 card_comp.selectable = false;
                                 registry.colors.insert(card, {0.5f, 0.5f, 0.5f, 1.f});
                             }
