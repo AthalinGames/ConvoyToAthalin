@@ -235,41 +235,249 @@ void returnCardToItem(const Entity card) {
 	registry.renderForeground.remove(card);
 }
 
+TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<vec2>& path, const TD_MAP_ATLAS_TEXTURES initial_tile) {
+	vec2 checkpoint = path[0];
+	bool top_left = false, top_right = false, bottom_left = false, bottom_right = false;
+	if (checkpoint == tile_pos) {
+		top_right = true;
+	} else if (checkpoint + vec2{0, 1} == tile_pos) {
+		bottom_right = true;
+	}
+	for (uint i = 1; i < path.size(); ++i) {
+		const vec2 second_checkpoint = path[i];
+		// check sides
+		if (checkpoint.y == second_checkpoint.y) {
+			// this section is horizontal
+			if ((checkpoint.x <= tile_pos.x && second_checkpoint.x >= tile_pos.x) ||
+				(checkpoint.x >= tile_pos.x && second_checkpoint.x <= tile_pos.x)) {
+				// left side of the square is on the line
+				if (checkpoint.y == tile_pos.y) {
+					top_left = true;
+				} else if (checkpoint.y + 1 == tile_pos.y) {
+					bottom_left = true;
+				}
+			}
+			if ((checkpoint.x + 1 <= tile_pos.x && second_checkpoint.x + 1 >= tile_pos.x) ||
+				(checkpoint.x + 1 >= tile_pos.x && second_checkpoint.x + 1 <= tile_pos.x)) {
+				// right side of the square is on the line
+				if (checkpoint.y == tile_pos.y) {
+					top_right = true;
+				} else if (checkpoint.y + 1 == tile_pos.y) {
+					bottom_right = true;
+				}
+			}
+		} else if (checkpoint.x == second_checkpoint.x) {
+			// this section is vertical
+			if ((checkpoint.y <= tile_pos.y && second_checkpoint.y >= tile_pos.y) ||
+				(checkpoint.y >= tile_pos.y && second_checkpoint.y <= tile_pos.y)) {
+				// top side of the square is on the line
+				if (checkpoint.x == tile_pos.x) {
+					top_left = true;
+				} else if (checkpoint.x + 1 == tile_pos.x) {
+					//printf("%f, %f\n%f, %f; %f, %f\n", tile_pos.x, tile_pos.y, checkpoint.x, checkpoint.y, second_checkpoint.x, second_checkpoint.y);
+					top_right = true;
+				}
+			}
+			if ((checkpoint.y + 1 <= tile_pos.y && second_checkpoint.y + 1 >= tile_pos.y) ||
+				(checkpoint.y + 1 >= tile_pos.y && second_checkpoint.y + 1 <= tile_pos.y)) {
+				// bottom side of the square is on the line
+				if (checkpoint.x == tile_pos.x) {
+					bottom_left = true;
+				} else if (checkpoint.x + 1 == tile_pos.x) {
+					//printf("%f, %f\n%f, %f; %f, %f\n", tile_pos.x, tile_pos.y, checkpoint.x, checkpoint.y, second_checkpoint.x, second_checkpoint.y);
+					bottom_right = true;
+				}
+			}
+		}
+		checkpoint = second_checkpoint;
+	}
+	// Corners
+	if (top_left && !top_right && !bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_BOTTOM_RIGHT;
+	}
+	if (!top_left && top_right && !bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_BOTTOM_LEFT;
+	}
+	if (!top_left && !top_right && bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_TOP_RIGHT;
+	}
+	if (!top_left && !top_right && !bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_TOP_LEFT;
+	}
+	// Sides
+	if (top_left && top_right && !bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_BOTTOM;
+	}
+	if (top_left && !top_right && bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_RIGHT;
+	}
+	if (!top_left && top_right && !bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_LEFT;
+	}
+	if (!top_left && !top_right && bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_TOP;
+	}
+	// Curves
+	if (top_left && top_right && bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_TOP_LEFT_INVERTED;
+	}
+	if (top_left && top_right && !bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_TOP_RIGHT_INVERTED;
+	}
+	if (top_left && !top_right && bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_BOTTOM_LEFT_INVERTED;
+	}
+	if (!top_left && top_right && bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_BOTTOM_RIGHT_INVERTED;
+	}
+	// Double-corners
+	if (top_left && !top_right && !bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_DOUBLE;
+	}
+	if (!top_left && top_right && bottom_left && !bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT_GRASS_CORNER_DOUBLE_MIRRORED;
+	}
+	// Full
+	if (top_left && top_right && bottom_left && bottom_right) {
+		return TD_MAP_ATLAS_TEXTURES::DIRT;
+	}
+	return initial_tile;
+}
 
-Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints, TEXTURE_ASSET_ID map_sprite) { //is & for checkpoint necessary?
+std::vector<vec2> grid_to_coordinates(const std::vector<vec2> &grid_coords) {
+	std::vector<vec2> map_coordinates = {};
+	constexpr float width_step = window_width_px/(MAP_COUNT_X - 1);
+	constexpr float height_step = window_height_px/(MAP_COUNT_Y - 1);
+	constexpr float width_step_center = width_step/2;
+	constexpr float height_step_center = height_step/2;
+	for (const auto grid_coord : grid_coords) {
+		float x = grid_coord.x * width_step + width_step_center;
+		float y = grid_coord.y * height_step + height_step_center;
+		map_coordinates.emplace_back(x, y);
+	}
+	return map_coordinates;
+}
+
+Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints,
+	             std::default_random_engine rng, std::uniform_real_distribution<float> dist) { //is & for checkpoint necessary? yes, we don't need to copy that value
 	const auto entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
 	Stationary& map_texture = registry.stationaries.emplace(entity);
-	map_texture.position = vec2({window_width_px/2, window_height_px/2});
-	map_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
+	//map_texture.position = vec2({window_width_px/2, window_height_px/2});
+	//map_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
+	map_texture.position = vec2(0, 0);
 
 	Map& map_attributes = registry.maps.emplace(entity);
-	map_attributes.checkpoints = checkpoints;//{vec2(0, 100), vec2(300, 100), vec2(300, 400)};
+	const std::vector<vec2> map_coordinates = grid_to_coordinates(checkpoints);
+	map_attributes.checkpoints = map_coordinates;
 
 	//calculate path length
 	float path_length = 0;
-	if (checkpoints.size() > 1) {
-		path_length += abs(distance(checkpoints[0], checkpoints[1]));
+	if (map_coordinates.size() > 1) {
+		path_length += abs(distance(map_coordinates[0], map_coordinates[1]));
         map_attributes.section_lengths.push_back(path_length);
-		for (uint i = 2; i < checkpoints.size(); ++i) {
-            const float section_lenght = abs(distance(checkpoints[i-1], checkpoints[i]));
-            map_attributes.section_lengths.push_back(section_lenght);
-			path_length += section_lenght;
+		for (uint i = 2; i < map_coordinates.size(); ++i) {
+            const float section_length = abs(distance(map_coordinates[i-1], map_coordinates[i]));
+            map_attributes.section_lengths.push_back(section_length);
+			path_length += section_length;
 		}
 	}
 	map_attributes.path_length = path_length;
 
+	// build map
+	constexpr float tile_height = window_height_px / (MAP_COUNT_Y - 1);
+	constexpr float tile_width = window_width_px / (MAP_COUNT_X - 1);
+
+	map_texture.scale = vec2(tile_width, tile_height);
+
+	std::vector<Stationary> stationaries(MAP_COUNT_X * MAP_COUNT_Y);
+	std::vector<uint> atlas_ids(MAP_COUNT_X * MAP_COUNT_Y);
+	for (uint x = 0; x < MAP_COUNT_X; x++) {
+		for (uint y = 0; y < MAP_COUNT_Y; y++) {
+			const uint index = y + x * MAP_COUNT_Y;
+			const float selection = dist(rng);
+			stationaries[index] = {
+					.position = {
+						x * tile_width,
+						y * tile_height,
+					},
+					.use_direction_sprite = false,
+					.scale = {1, 1}
+				};
+			TD_MAP_ATLAS_TEXTURES selected_tile;
+			if (selection < 0.4) {
+				selected_tile = TD_MAP_ATLAS_TEXTURES::GRASS;
+			} else if (selection < 0.8) {
+				selected_tile = TD_MAP_ATLAS_TEXTURES::GRASS_2;
+			} else if (selection < 0.85) {
+				selected_tile = TD_MAP_ATLAS_TEXTURES::GRASS_FLOWER;
+			} else if (selection < 0.9) {
+				selected_tile = TD_MAP_ATLAS_TEXTURES::GRASS_FLOWER_2;
+			} else if (selection < 0.95) {
+				selected_tile = TD_MAP_ATLAS_TEXTURES::GRASS_STICK;
+			} else {
+				selected_tile = TD_MAP_ATLAS_TEXTURES::GRASS_STONE;
+			}
+			atlas_ids[index] = static_cast<uint>(tileAdjacentToPath({x, y}, checkpoints, selected_tile));
+		}
+	}
+
     registry.renderBackground.insert(entity, {
-    	{Stationary{}},
-    	{0},
+    	std::move(stationaries),
+    	std::move(atlas_ids),
     	Z_MIDDLE,
-    	map_sprite,
-    	EFFECT_ASSET_ID::TEXTURED,
+    	TEXTURE_ASSET_ID::TD_MAP_ATLAS,
+    	EFFECT_ASSET_ID::TEXTURED_ATLAS,
     	GEOMETRY_BUFFER_ID::SPRITE,
     });
+
+	const auto map_decoration = Entity();
+	map_attributes.map_decoration = map_decoration;
+	map_attributes.destruction_lambda = [map_decoration] {
+		registry.remove_all_components_of(map_decoration);
+	};
+
+	Stationary& deco_pos = registry.stationaries.emplace(map_decoration);
+	deco_pos.position = map_coordinates.back() - vec2(0, tile_height * 0.3);
+	deco_pos.use_direction_sprite = false;
+	deco_pos.scale = vec2(1.4 * tile_width, 1.4 * tile_height);
+
+	registry.renderBackground.insert(map_decoration, {
+		{
+			Stationary{},
+			{
+				0.8f * vec2{tile_width, -tile_height},
+				0,
+				false,
+				{1, 1}
+			},
+			{
+				0.8f * vec2{tile_width, tile_height},
+				0,
+				false,
+				{1, 1}
+			},
+			{
+				0.8f * vec2{-tile_width, -tile_height},
+				0,
+				false,
+				{1, 1}
+			}
+		},
+		{
+			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::CAMPFIRE2),
+			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::TENT),
+			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::TENT2),
+			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::WAGON),
+		},
+		Z_FOREGROUND,
+		TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
 
     return entity;
 }
