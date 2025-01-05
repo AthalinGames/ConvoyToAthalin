@@ -18,6 +18,7 @@ public:
 	ComponentContainer<Player> players;
 	ComponentContainer<Item> items;
 	ComponentContainer<Tower> towers;
+    ComponentContainer<Consumable> consumables;
     ComponentContainer<Card> cards;
 	ComponentContainer<TowerAimingAt> aimingAts;
 	ComponentContainer<ShotTimer> shotTimers;
@@ -27,6 +28,8 @@ public:
     ComponentContainer<Knight> knights;
     ComponentContainer<Sword> swords;
     ComponentContainer<Weapon> weapons;
+    ComponentContainer<Bomb> bombs;
+    ComponentContainer<BombTimer> bombTimers;
     ComponentContainer<Stationary> stationaries;
     ComponentContainer<Map> maps;
 	ComponentContainer<Enemy> enemies;
@@ -63,6 +66,8 @@ public:
         registry_list.push_back(&knights);
         registry_list.push_back(&swords);
         registry_list.push_back(&weapons);
+        registry_list.push_back(&bombs);
+        registry_list.push_back(&bombTimers);
         registry_list.push_back(&stationaries);
         registry_list.push_back(&maps);
 		registry_list.push_back(&enemies);

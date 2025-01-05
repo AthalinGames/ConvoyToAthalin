@@ -63,6 +63,7 @@ private:
     bool dragging; // shows if mouse is currently dragging something
     Entity dragged_entity;
     std::vector<Entity> towers;
+    std::vector<Entity> consumables;
     std::vector<Entity> cards;
     std::set<Entity> enemies;
     Entity map;

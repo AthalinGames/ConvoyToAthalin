@@ -41,6 +41,7 @@ enum class TowerType {
 };
 
 enum class ConsumableType {
+    BOMB = 0,
 	CONSUMABLE_TYPE_COUNT
 };
 
@@ -120,6 +121,23 @@ struct Sword { //TODO: maybe outsource hitcound and hit list to Weapon and make 
 // Weapon
 struct Weapon { //TODO: give to bows, swords or any other future weapon types
 
+};
+
+//Consumable components
+struct Consumable {
+    bool placed = false;
+};
+
+struct Bomb {
+    int damage = 100;
+    float range = 50;
+    bool exploding = false;
+    std::set<Entity> hit_entities{};
+};
+
+struct BombTimer {
+    float time = 3300.0f;
+    float explosion_time = 300.0f; //explodes when timer below this
 };
 
 // All data relevant to the shape and motion of entities

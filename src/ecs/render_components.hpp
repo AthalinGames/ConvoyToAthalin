@@ -62,8 +62,10 @@ enum class TEXTURE_ASSET_ID {
 	TURTLE,
 	ARCHER,
     KNIGHT,
+    BOMB,
     ARCHER_CARD,
     KNIGHT_CARD,
+    BOMB_CARD,
     BOW,
     SWORD,
     SLIME,
@@ -92,8 +94,10 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
         case TEXTURE_ASSET_ID::KNIGHT: return "knight.png";
+        case TEXTURE_ASSET_ID::BOMB: return "items/bomb.png";
         case TEXTURE_ASSET_ID::ARCHER_CARD: return "archerCard.png";
         case TEXTURE_ASSET_ID::KNIGHT_CARD: return "knightCard.png";
+        case TEXTURE_ASSET_ID::BOMB_CARD: return "bombCard.png";
         case TEXTURE_ASSET_ID::BOW: return "bow_and_arrow.png";
         case TEXTURE_ASSET_ID::SWORD: return "sword.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
@@ -137,6 +141,7 @@ const std::set texture_atlases = {
     TEXTURE_ASSET_ID::BOW,
     TEXTURE_ASSET_ID::KNIGHT,
     TEXTURE_ASSET_ID::SWORD,
+    TEXTURE_ASSET_ID::BOMB,
 };
 
 enum class OVERVIEW_ICON_TEXTURES {
@@ -161,12 +166,23 @@ enum class SWORD_SPRITE {
     COUNT
 };
 
-enum class BOW_SPRITE { //TODO: make bow animation atlas
+enum class BOW_SPRITE {
     LOAD = 0,
     DRAW,
     SHOOT,
     ARROW,
     COUNT
+};
+
+enum class BOMB_SPRITE {
+    BOMB0 = 0,
+    BOMB1,
+    BOMB2,
+    BOMB3,
+    EXPLOSION1,
+    EXPLOSION2,
+    EXPLOSION3,
+    COUNT,
 };
 
 
@@ -243,6 +259,19 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
         }
         case TEXTURE_ASSET_ID::SWORD: {
             constexpr unsigned int cols = 2, rows = 3, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
+        case TEXTURE_ASSET_ID::BOMB: {
+            constexpr unsigned int cols = 4, rows = 2, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
             atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
             for (unsigned int i = 0; i < maxCount; i++) {

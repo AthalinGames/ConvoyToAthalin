@@ -291,6 +291,7 @@ void WorldSystem::restart_game() {
     player = createPlayer();
 	createItem(TowerType::ARCHER);
     createItem(TowerType::KNIGHT);
+    createItem(ConsumableType::BOMB);
 
 
 	current_td_system.reset(new TDSystem());

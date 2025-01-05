@@ -82,16 +82,33 @@ bool collidesPoly(const Motion& motion1, const Motion& motion2, const std::vecto
 	return false;
 }
 
-bool enemyInTowerRange(const Motion& tower_motion, const Tower& tower, const Motion& enemy_motion) {
+bool enemyInRange(const Motion& tower_motion, const float input_range, const Motion& enemy_motion) {
 	const vec2 d_p = tower_motion.position - enemy_motion.position;
 	const float dist_squared = dot(d_p, d_p);
 	const vec2 enemy_bounding_box = get_bounding_box(enemy_motion);
 	const float enemy_r_squared = dot(enemy_bounding_box, enemy_bounding_box);
-	const float tower_r_squared = tower.range * tower.range;
-	const float r_squared = max(enemy_r_squared, tower_r_squared);
+	const float input_r_squared = input_range * input_range;
+	const float r_squared = max(enemy_r_squared, input_r_squared);
 	if (dist_squared < r_squared)
 		return true;
 	return false;
+}
+
+bool enemyPolyInBombRange(const Motion& bomb_motion, const Bomb& bomb, const Motion& enemy_motion, const std::vector<vec2>& poly) {
+    Transform tf;
+    tf.translate(enemy_motion.position);
+    tf.rotate(enemy_motion.angle);
+    tf.scale(enemy_motion.scale);
+    auto polyTF = std::vector<vec2>(poly.size());
+    for (std::size_t i = 0; i < poly.size(); ++i) {
+        polyTF[i] = tf * poly[i];
+    }
+    for (const auto& poly_pos : polyTF) {
+        if (distance(poly_pos, bomb_motion.position) <= bomb.range) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void PhysicsSystem::step(float elapsed_ms)
@@ -148,16 +165,27 @@ void PhysicsSystem::step(float elapsed_ms)
 			Entity entity_j = motion_container.entities[j];
 			if ((registry.towers.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j))){
                 if(registry.enemies.get(entity_j).spawned) {
-                    if (enemyInTowerRange(motion_i, registry.towers.get(entity_i), motion_j)) {
+                    if (enemyInRange(motion_i, registry.towers.get(entity_i).range, motion_j)) {
                         registry.collisions.emplace_with_duplicates(entity_i, entity_j);
                         registry.collisions.emplace_with_duplicates(entity_j, entity_i);
                     }
                 }
 			} else if (registry.towers.has(entity_j) && !registry.cards.has(entity_j) && registry.enemies.has(entity_i)) {
                 if(registry.enemies.get(entity_i).spawned) {
-                    if (enemyInTowerRange(motion_j, registry.towers.get(entity_j), motion_i)) {
+                    if (enemyInRange(motion_j, registry.towers.get(entity_j).range, motion_i)) {
                         registry.collisions.emplace_with_duplicates(entity_i, entity_j);
                         registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+                    }
+                }
+            } else if (registry.bombs.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j)) {
+                if(registry.enemies.get(entity_j).spawned) {
+                    if (enemyInRange(motion_i, registry.bombs.get(entity_i).range, motion_j)) {
+                        const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
+                        auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
+                        if (enemyPolyInBombRange(motion_i, registry.bombs.get(entity_i), motion_j, poly_j)) {
+                            registry.collisions.emplace_with_duplicates(entity_i, entity_j);
+                            registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+                        }
                     }
                 }
             } else if (!(registry.enemies.has(entity_i) && registry.enemies.has(entity_j)) // ignore collision between enemies

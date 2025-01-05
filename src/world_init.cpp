@@ -32,9 +32,13 @@ Entity createItem(const ItemType item) {
 				}
 			}
 		},
-		[] (const ConsumableType consumable) {
-			switch (consumable) {
-				//TODO
+		[entity] (const ConsumableType consumableType) {
+            registry.consumables.emplace(entity);
+			switch (consumableType) {
+                case ConsumableType::BOMB: {
+                    registry.bombs.emplace(entity);
+                    break;
+                }
 				case ConsumableType::CONSUMABLE_TYPE_COUNT: {
 					assert(false && "Invalid Consumable type");
 				}
@@ -159,6 +163,41 @@ void createTowerFromCard(RenderSystem* renderer, const Entity card) {
 	}
 }
 
+void createBombFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
+
+    motion.angle = -M_PI_2;
+    motion.use_direction_sprite = true;
+    motion.scale = vec2({2*TOWER_WIDTH, 2*TOWER_HEIGHT});
+    vec2 motion_pos = motion.position;
+
+    RenderRequest request = registry.renderForeground.get(card);
+    request.atlas_ids = {static_cast<unsigned int>(BOMB_SPRITE::BOMB0)};
+    request.z_position = Z_FOREGROUND;
+    request.used_texture = TEXTURE_ASSET_ID::BOMB;
+    request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+    registry.renderForeground.remove(card);
+    registry.renderGameLayer.emplace(card, request);
+
+    registry.bombTimers.emplace(card);
+}
+
+void createConsumableFromCard(RenderSystem* renderer, const Entity card) {
+    assert(registry.cards.has(card));
+    registry.cards.remove(card);
+    const Stationary& card_pos = registry.stationaries.get(card);
+    Motion& consumable_motion = registry.motions.emplace(card);
+    consumable_motion.position = card_pos.position;
+    consumable_motion.velocity = vec2(0, 0);
+    registry.stationaries.remove(card);
+
+    if (registry.bombs.has(card)) {
+        createBombFromCard(renderer, card, consumable_motion);
+    }
+    else {
+        assert(false && "Invalid Consumable type for consumable creation");
+    }
+}
+
 void returnArcherToItem(const Entity tower) {
 	const Entity bow = registry.archers.get(tower).bow;
 	registry.remove_all_components_of(bow);
@@ -275,6 +314,7 @@ void createCardFromItem(RenderSystem *renderer, const Entity item) {
     card_texture.scale = vec2({CARD_WIDTH, CARD_HEIGHT});
 
     realignCards();
+    //TODO: do this with switch, like createItem
     if (registry.archers.has(item)) {
         registry.renderForeground.insert(item, {
                 {Stationary{}},
@@ -290,6 +330,15 @@ void createCardFromItem(RenderSystem *renderer, const Entity item) {
                 {0},
                 Z_FOREGROUND,
                 TEXTURE_ASSET_ID::KNIGHT_CARD,
+                EFFECT_ASSET_ID::TEXTURED,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+    } else if (registry.bombs.has(item)) {
+        registry.renderForeground.insert(item, {
+                {Stationary{}},
+                {0},
+                Z_FOREGROUND,
+                TEXTURE_ASSET_ID::BOMB_CARD,
                 EFFECT_ASSET_ID::TEXTURED,
                 GEOMETRY_BUFFER_ID::SPRITE,
         });
