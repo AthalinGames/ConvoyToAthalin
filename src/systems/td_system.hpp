@@ -59,6 +59,7 @@ private:
     // Game state
     RenderSystem* renderer;
     Entity player;
+    Entity placement_marker;
     float current_speed;
     bool dragging; // shows if mouse is currently dragging something
     Entity dragged_entity;

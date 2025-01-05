@@ -82,6 +82,7 @@ enum class TEXTURE_ASSET_ID {
     MAP7,
 	OVERVIEW_MAP,
 	BLACK_PIXEL,
+    PLACEMENT_MARKER,
 	GAME_OVER,
 	OVERVIEW_ICONS_ATLAS,
 	ASCII_CHAR_ATLAS,
@@ -114,6 +115,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
         case TEXTURE_ASSET_ID::MAP7: return "tdmap_tiled7.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
+        case TEXTURE_ASSET_ID::PLACEMENT_MARKER: return "placement_marker.png";
 		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: return "overviewIconsAtlas.png";
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: return "charmap-oldschool_preview.png"; // Source: https://opengameart.org/content/ascii-bitmap-font-oldschool

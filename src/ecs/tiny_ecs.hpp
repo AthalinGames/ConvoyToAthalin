@@ -80,6 +80,9 @@ public:
 
 	// A wrapper to return the component of an entity
 	Component& get(const Entity e) {
+        if (!has(e)) {
+            printf("a");
+        }
 		assert(has(e) && "Entity not contained in ECS registry");
 		return components[map_entity_componentID[e]];
 	}

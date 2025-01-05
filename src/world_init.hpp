@@ -54,6 +54,8 @@ void createCardFromItem(RenderSystem* renderer, Entity item);
 void returnCardToItem(Entity card);
 // the combat map
 Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints, TEXTURE_ASSET_ID map_sprite);
+// marker to place cards on combat map
+Entity createPlacementMarker(RenderSystem *renderer);
 // the overview map
 Entity createOverviewMap(RenderSystem* renderer);
 // location on the overview map

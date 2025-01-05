@@ -394,6 +394,29 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints, T
     return entity;
 }
 
+Entity createPlacementMarker(RenderSystem *renderer) {
+    const auto entity = Entity();
+    registry.placementMarkers.emplace(entity);
+    Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+    registry.meshPtrs.emplace(entity, &mesh);
+
+    Stationary& placement_marker = registry.stationaries.emplace(entity);
+    placement_marker.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+
+    registry.renderForeground.insert(entity, {
+            {Stationary{}},
+            {0},
+            Z_FOREGROUND,
+            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+            EFFECT_ASSET_ID::TEXTURED,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+
+    registry.invisibles.emplace(entity);
+
+    return entity;
+}
+
 Entity createGameOver(RenderSystem *renderer) {
 	const auto entity = Entity();
 

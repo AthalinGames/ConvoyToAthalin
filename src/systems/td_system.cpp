@@ -54,6 +54,7 @@ TDSystem::~TDSystem() {
 void TDSystem::init(RenderSystem *renderer, Entity player) {
     this->renderer = renderer;
     this->player = player;
+    placement_marker = registry.players.get(player).placement_marker;
 
     // Set all states to default
     restart_td_fight();
@@ -629,7 +630,8 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
         if (dragging) {
             if (registry.cards.has(dragged_entity)) {
                 registry.stationaries.get(dragged_entity).position = pos;
-                registry.stationaries.get(dragged_entity).scale = vec2(0.5 * CARD_WIDTH, 0.5 * CARD_HEIGHT);
+                registry.stationaries.get(placement_marker).position = pos;
+                //registry.stationaries.get(dragged_entity).scale = vec2(0.5 * CARD_WIDTH, 0.5 * CARD_HEIGHT);
             }
         } else if (pos[1] > (CARD_AXIS_HEIGHT - CARD_HEIGHT / 2) && pos[1] < (CARD_AXIS_HEIGHT + CARD_HEIGHT / 2) &&
                    pos[0] < CARD_AXIS_WIDTH) {
@@ -683,7 +685,7 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
 void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *window) {
     printf("mouse button\n");
     if (current_phase == GamePhase::SETUP || current_phase == GamePhase::RUNNING) {
-        if (dragging) {
+        if (dragging) { //TODO: combat ending when card is being dragged destroys a lot
             //double mouse_x;
             //double mouse_y;
             //glfwGetCursorPos(window, &mouse_x, &mouse_y);
@@ -691,6 +693,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
             if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
                 dragging = false;
                 registry.cards.get(dragged_entity).dragged = false;
+                registry.invisibles.remove(dragged_entity);
+                registry.invisibles.emplace(placement_marker);
                 realignCards();
             }
             //if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) { //TODO move this to on_mouse_move
@@ -705,6 +709,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                 auto maps = registry.maps;
                 const auto &mapProperties = maps.get(map);
                 vec2 card_pos = registry.stationaries.get(dragged_entity).position;
+                registry.invisibles.remove(dragged_entity);
+                registry.invisibles.emplace(placement_marker);
 
                 // block placement on other towers
                 bool place_occupied = false;
@@ -801,6 +807,9 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         dragged_entity = registry.cards.entities[i];
                         dragging = true;
                         printf("z:%f\n", registry.renderForeground.get(dragged_entity).z_position);
+                        registry.invisibles.emplace(dragged_entity);
+                        registry.stationaries.get(placement_marker).position = registry.stationaries.get(dragged_entity).position;
+                        registry.invisibles.remove(placement_marker);
                     }
                 }
             }

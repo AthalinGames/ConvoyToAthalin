@@ -14,6 +14,7 @@ struct Player {
 	int baseFoodGain = 5;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
+    Entity placement_marker;
 };
 
 // Enemy components
@@ -164,6 +165,9 @@ struct Stationary
     float angle = 0.f;
     bool use_direction_sprite = false; // TODO: maybe param in render request instead?
     vec2 scale = { 100.f, 100.f };
+};
+
+struct PlacementMarker {
 };
 
 struct Map

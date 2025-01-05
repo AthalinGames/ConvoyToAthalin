@@ -293,6 +293,7 @@ void WorldSystem::restart_game() {
     createItem(TowerType::KNIGHT);
     createItem(ConsumableType::BOMB);
 
+    registry.players.get(player).placement_marker = createPlacementMarker(renderer);
 
 	current_td_system.reset(new TDSystem());
 	overview_map = createOverviewMap(renderer);
