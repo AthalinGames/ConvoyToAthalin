@@ -19,6 +19,7 @@ void TDSystem::cleanup_ecs() {
     // Remove all components related to a td fight
     for (const auto card: cards) {
         returnCardToItem(card);
+        registry.colors.remove(card);
     }
     for (const auto enemy: enemies) {
         registry.remove_all_components_of(enemy);
@@ -66,22 +67,58 @@ bool TDSystem::step(const float elapsed_ms) {
                 auto &shot_timer = registry.shotTimers.get(tower_entity);
                 shot_timer.time -= elapsed_ms;
 
-                if (shot_timer.time < 0) {
-                    registry.shotTimers.remove(tower_entity);
-                }
                 if (registry.archers.has(tower_entity)) {
                     const auto &bow_entity = registry.archers.get(tower_entity).bow;
-                    RenderRequest &render_request = registry.renderRequests.get(bow_entity);
+                    RenderRequest &render_request = registry.renderGameLayer.get(bow_entity);
                     if (shot_timer.time < 0) {
                         //change bow to empty
-                        render_request.used_texture = TEXTURE_ASSET_ID::BOW3;
+                        render_request.atlas_ids = {static_cast<unsigned int>(BOW_SPRITE::SHOOT)};
                     } else if (shot_timer.time < 150.) {
                         //change bow to drawn
-                        render_request.used_texture = TEXTURE_ASSET_ID::BOW2;
+                        render_request.atlas_ids = {static_cast<unsigned int>(BOW_SPRITE::DRAW)};
                     } else if (shot_timer.time < 500.) {
                         //change bow to loaded
-                        render_request.used_texture = TEXTURE_ASSET_ID::BOW1;
+                        render_request.atlas_ids = {static_cast<unsigned int>(BOW_SPRITE::LOAD)};
                     }
+                } else if (registry.knights.has(tower_entity)) {
+                    const auto &knight = registry.knights.get(tower_entity);
+                    const auto &knight_motion = registry.motions.get(tower_entity);
+                    const auto &sword_entity = knight.sword;
+                    auto &sword = registry.swords.get(sword_entity);
+                    auto &sword_motion = registry.motions.get(sword_entity);
+                    auto &tower_motion = registry.motions.get(tower_entity);
+                    RenderRequest &render_request = registry.renderGameLayer.get(sword_entity);
+                    if (shot_timer.time <= knight.swing_time && shot_timer.time >= 0) {
+                        if (sword_motion.use_direction_sprite) {
+                            sword_motion.use_direction_sprite = false;
+                        }
+                        render_request.atlas_ids = {static_cast<unsigned int>(SWORD_SPRITE::SWING)};
+                        sword.has_collision = true;
+                        const float pos_angle = tower_motion.angle - 2 * M_PI * shot_timer.time / knight.swing_time - M_PI_2;
+                        sword_motion.angle = pos_angle - M_PI_2 - M_PI_2 / 2;
+                        const float radius = 0.9 * TOWER_HEIGHT;
+                        sword_motion.position = tower_motion.position - radius * vec2(cos(pos_angle), sin(pos_angle)) + vec2(0, TOWER_HEIGHT * 0.25);
+                    }
+                    else {
+                        if (!sword_motion.use_direction_sprite) {
+                            sword_motion.use_direction_sprite = true;
+                        }
+                        sword.hit_entities.clear();
+                        sword.has_collision = false;
+                        sword_motion.angle = tower_motion.angle;
+                        sword_motion.position = tower_motion.position;
+                    }
+                    //keep angle within [-pi, pi]
+                    while (sword_motion.angle < -M_PI) {
+                        sword_motion.angle += 2 * M_PI;
+                    }
+                    while (sword_motion.angle > M_PI) {
+                        sword_motion.angle -= 2 * M_PI;
+                    }
+                }
+
+                if (shot_timer.time < 0) {
+                    registry.shotTimers.remove(tower_entity);
                 }
             }
             if (!td_map.enemies.empty()) {
@@ -125,6 +162,15 @@ bool TDSystem::step(const float elapsed_ms) {
         }
         case GamePhase::FIGHT_DONE: {
             current_phase = GamePhase::CHOOSE_REWARD;
+            // Add gathered food
+            auto& current_player = registry.players.get(player);
+            current_player.food += current_player.baseFoodGain;
+            for (const Entity card : cards) {
+                if (registry.towers.has(card)) {
+                    const auto& tower = registry.towers.get(card);
+                    current_player.food += tower.food_gain;
+                }
+            }
             // Setup next screen
             const Entity square = createBlackSquare(renderer, {window_width_px / 2, window_height_px / 2},
                                                         {window_width_px, window_height_px}, 0.5f);
@@ -162,7 +208,7 @@ bool TDSystem::step(const float elapsed_ms) {
 }
 
 std::vector<Entity> TDSystem::generate_combat(int difficulty) {
-    //TODO: create pools of enemy spawn times/amounts that can be concatenated depending on (map and) difficulty
+    //TODO: maybe remove entry from pool when selected, to increase variation
 
     //{enemy_type, amount, interval, speed}
     std::vector<vec4> combat_pool = {vec4(1, 1, 1000., 100.),
@@ -328,6 +374,13 @@ void TDSystem::restart_td_fight() {
     for (const Entity itemEntity: registry.items.entities) {
         createCardFromItem(renderer, itemEntity);
         cards.push_back(itemEntity);
+        if (registry.towers.has(itemEntity)) {
+            Tower& tower = registry.towers.get(itemEntity);
+            if (tower.food_cost > current_player.food) {
+                registry.cards.get(itemEntity).selectable = false;
+                registry.colors.insert(itemEntity, {0.5f, 0.5f, 0.5f, 1.f});
+            }
+        }
     }
 
     const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial");
@@ -340,11 +393,11 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
     if (registry.enemies.has(second) && registry.arrows.has(first)) {
         auto &enemy = registry.enemies.get(second);
         auto &arrow = registry.arrows.get(first);
-        enemy.health -= arrow.damage;
         if (arrow.hit_entities.contains(second)) {
             // Arrow has already hit that enemy
             return;
         }
+        enemy.health -= arrow.damage;
         arrow.hit_entities.emplace(second);
         if (enemy.health <= 0) {
             enemy.alive = false;
@@ -360,6 +413,30 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         // delete arrow if the amount of enemies has been reached
         if (arrow.max_hitcount <= arrow.hit_entities.size()) {
             registry.remove_all_components_of(first);
+        }
+    } else if (registry.enemies.has(second) && registry.swords.has(first)) {
+        auto &sword = registry.swords.get(first);
+        if (!sword.has_collision) {
+            //Sword is currently on cooldown
+            return;
+        }
+        if (sword.hit_entities.contains(second)) {
+            // Sword has already hit that enemy
+            return;
+        }
+        auto &enemy = registry.enemies.get(second);
+        enemy.health -= sword.damage;
+        sword.hit_entities.emplace(second);
+        if (enemy.health <= 0) {
+            enemy.alive = false;
+            // clear tower aiming
+            auto &aimingRegistry = registry.aimingAts;
+            for (const Entity &aiming: aimingRegistry.entities) {
+                if (aimingRegistry.get(aiming).aimed_entity == second) {
+                    aimingRegistry.remove(aiming);
+                }
+            }
+            registry.remove_all_components_of(second);
         }
     } else if (registry.towers.has(first) && registry.enemies.has(second)) {
         auto &tower = registry.towers.get(first);
@@ -397,7 +474,17 @@ void TDSystem::handle_aiming() {
             auto &tower_motion = registry.motions.get(tower_entity);
             auto &enemy_motion = registry.motions.get(enemy_entity);
             auto d_p = tower_motion.position - enemy_motion.position;
+            TowerType towerType;
             if (registry.archers.has(tower_entity)) {
+                towerType = TowerType::ARCHER;
+            } else if (registry.knights.has(tower_entity)) {
+                towerType = TowerType::KNIGHT;
+            } else {
+                towerType = TowerType::TOWER_TYPE_COUNT;
+                assert(false && "Tower type not found");
+            }
+
+            if (towerType == TowerType::ARCHER) {
                 Enemy &enemy = registry.enemies.get(enemy_entity);
                 const Archer &archer = registry.archers.get(tower_entity);
                 const Map &map = registry.maps.get(this->map);
@@ -408,21 +495,28 @@ void TDSystem::handle_aiming() {
             }
             const float angle = atan2(d_p.y, d_p.x);
             tower_motion.angle = angle;
-            if (registry.archers.has(tower_entity)) {
+            if (towerType == TowerType::ARCHER) {
                 auto &bow = registry.archers.get(tower_entity).bow;
                 auto &bow_motion = registry.motions.get(bow);
                 bow_motion.angle = angle - M_PI_2 - M_PI_2 / 2; //+ (2 * M_PI) - (M_PI_2/2);
-                if (bow_motion.angle < M_PI) {
-                    //keep angle within [-pi, pi]
+                //keep angle within [-pi, pi]
+                while (bow_motion.angle < -M_PI) {
                     bow_motion.angle += 2 * M_PI;
+                }
+                while (bow_motion.angle > M_PI) {
+                    bow_motion.angle -= 2 * M_PI;
                 }
             }
 
             if (!registry.shotTimers.has(tower_entity)) {
-                const auto &archer = registry.archers.get(tower_entity);
-                registry.shotTimers.emplace(tower_entity);
-                if (registry.archers.has(tower_entity)) {
+                if (towerType == TowerType::ARCHER) {
+                    const auto &archer = registry.archers.get(tower_entity);
+                    registry.shotTimers.emplace(tower_entity);
                     createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
+                } else if (towerType == TowerType::KNIGHT) {
+                    const auto &knight = registry.knights.get(tower_entity);
+                    ShotTimer &swing_timer = registry.shotTimers.emplace(tower_entity);
+                    swing_timer.time = knight.cooldown;
                 }
             }
         }
@@ -492,7 +586,7 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
             //if(selected_card_id<card_count) {
             for (std::size_t i = 0; i < card_count; ++i) {
                 Entity card_entity = cardRegistry.entities[i];
-                if (i == selected_card_id) {
+                if (i == selected_card_id && registry.cards.get(card_entity).selectable) {
                     registry.stationaries.get(card_entity).scale = vec2(1.3 * CARD_WIDTH, 1.3 * CARD_HEIGHT);
                     cardRegistry.components[i].selected = true;
                 } else {
@@ -557,8 +651,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
 
                 // block placement on other towers
                 bool place_occupied = false;
-                constexpr float tower_blocked_radius = ARCHER_BB_HEIGHT;
-                //abs(distance(vec2(0, 0), vec2(ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT)));
+                constexpr float tower_blocked_radius = TOWER_HEIGHT;
+                //abs(distance(vec2(0, 0), vec2(TOWER_WIDTH, TOWER_HEIGHT)));
                 for (std::size_t tower_index = 0; tower_index < registry.towers.size(); ++tower_index) {
                     if (!registry.towers.components[tower_index].placed) {
                         continue;
@@ -608,6 +702,20 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     createTowerFromCard(renderer, dragged_entity);
                     auto tower_motion = registry.motions.get(dragged_entity);
                     towers.emplace_back(dragged_entity);
+                    // subtract food cost
+                    auto& current_player = registry.players.get(player);
+                    current_player.food -= registry.towers.get(dragged_entity).food_cost;
+                    // recalculate cards that can be placed
+                    for (const Entity card : cards) {
+                        if (registry.towers.has(card)) {
+                            auto& tower = registry.towers.get(card);
+                            auto& card_comp = registry.cards.get(card);
+                            if (card_comp.selectable && tower.food_cost > current_player.food) {
+                                card_comp.selectable = false;
+                                registry.colors.insert(card, {0.5f, 0.5f, 0.5f, 1.f});
+                            }
+                        }
+                    }
                 }
                 realignCards();
             }
@@ -619,7 +727,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         registry.cards.components[i].dragged = true;
                         dragged_entity = registry.cards.entities[i];
                         dragging = true;
-                        printf("z:%f\n", registry.renderRequests.get(dragged_entity).z_position);
+                        printf("z:%f\n", registry.renderForeground.get(dragged_entity).z_position);
                     }
                 }
             }

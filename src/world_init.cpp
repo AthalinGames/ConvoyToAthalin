@@ -15,13 +15,18 @@ Entity createItem(const ItemType item) {
 	registry.items.emplace(entity);
 
 	std::visit(overloaded{
-		[entity] (const TowerType tower) {
-			registry.towers.emplace(entity);
-			switch (tower) {
+		[entity] (const TowerType towerType) {
+            auto &tower = registry.towers.emplace(entity);
+			switch (towerType) {
 				case TowerType::ARCHER: {
 					registry.archers.emplace(entity);
+                    tower.range = 400.0f; //TODO: save range somewhere in components?
 					break;
 				}
+                case TowerType::KNIGHT: {
+                    registry.knights.emplace(entity);
+                    break;
+                }
 				case TowerType::TOWER_TYPE_COUNT: {
 					assert(false && "Invalid Tower type");
 				}
@@ -57,14 +62,18 @@ Entity createRandomItem(std::default_random_engine& rng) {
 void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
 	const auto bow = Entity();
 
-	motion.angle = M_PI;
+	motion.angle = -M_PI_2;
 	motion.use_direction_sprite = true;
-	motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+	motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     vec2 motion_pos = motion.position;
 
-	RenderRequest& request = registry.renderRequests.get(card);
-	request.z_position = Z_MIDDLE;
-	request.used_texture = TEXTURE_ASSET_ID::ARCHER;
+	RenderRequest request = registry.renderForeground.get(card);
+    request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
+    request.z_position = Z_MIDDLE;
+    request.used_texture = TEXTURE_ASSET_ID::ARCHER;
+    request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+	registry.renderForeground.remove(card);
+	registry.renderGameLayer.emplace(card, request);
 
 	registry.bows.emplace(bow);
 	registry.weapons.emplace(bow);
@@ -75,18 +84,58 @@ void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& mot
 
 	Motion& bow_motion = registry.motions.emplace(bow);
 	bow_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
-	bow_motion.angle = M_PI/2;
+	bow_motion.angle = M_PI_2;
 	bow_motion.velocity = vec2(0, 0);
-	bow_motion.scale = vec2({ARCHER_BB_WIDTH, ARCHER_BB_HEIGHT});
+	bow_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
     printf("%f|%f\n", motion.position.x, motion.position.y);
-	registry.renderRequests.insert(bow, {
+	registry.renderGameLayer.insert(bow, {
 		{Stationary{}},
-		{0},
-		Z_MIDDLE,
-		TEXTURE_ASSET_ID::BOW1,
-		EFFECT_ASSET_ID::TEXTURED,
+        {static_cast<unsigned int>(BOW_SPRITE::LOAD)},
+		Z_FOREGROUND,
+		TEXTURE_ASSET_ID::BOW,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
+}
+
+void createKnightFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
+    const auto sword = Entity();
+
+    motion.angle = -M_PI_2;
+    motion.use_direction_sprite = true;
+    motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+    vec2 motion_pos = motion.position;
+
+    RenderRequest request = registry.renderForeground.get(card);
+    request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
+    request.z_position = Z_MIDDLE;
+    request.used_texture = TEXTURE_ASSET_ID::KNIGHT;
+    request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+    registry.renderForeground.remove(card);
+    registry.renderGameLayer.emplace(card, request);
+
+    registry.swords.emplace(sword);
+    registry.weapons.emplace(sword);
+    registry.knights.get(card).sword = sword;
+
+    Mesh& sword_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+    registry.meshPtrs.emplace(sword, &sword_mesh);
+
+    Motion& sword_motion = registry.motions.emplace(sword);
+    sword_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
+    sword_motion.angle = -M_PI_2;
+    sword_motion.use_direction_sprite = true;
+    sword_motion.velocity = vec2(0, 0);
+    sword_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+    printf("%f|%f\n", motion.position.x, motion.position.y);
+    registry.renderGameLayer.insert(sword, {
+            {Stationary{}},
+            {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
+            Z_BACKGROUND,
+            TEXTURE_ASSET_ID::SWORD,
+            EFFECT_ASSET_ID::TEXTURED_ATLAS,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
 }
 
 void createTowerFromCard(RenderSystem* renderer, const Entity card) {
@@ -102,7 +151,10 @@ void createTowerFromCard(RenderSystem* renderer, const Entity card) {
         printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
 		createArcherFromCard(renderer, card, tower_motion);
         printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
-	} else {
+	} else if (registry.knights.has(card)) {
+        createKnightFromCard(renderer, card, tower_motion);
+    }
+    else {
 		assert(false && "Invalid Tower type for tower creation");
 	}
 }
@@ -112,14 +164,24 @@ void returnArcherToItem(const Entity tower) {
 	registry.remove_all_components_of(bow);
 }
 
+void returnKnightToItem(const Entity tower) {
+    const Entity sword = registry.knights.get(tower).sword;
+    registry.remove_all_components_of(sword);
+}
+
 void returnTowerToItem(const Entity tower) {
 	assert(registry.items.has(tower));
 	registry.motions.remove(tower);
 	registry.meshPtrs.remove(tower);
-	registry.renderRequests.remove(tower);
+	registry.renderGameLayer.remove(tower);
 
 	if (registry.items.has(tower)) {
-		returnArcherToItem(tower);
+        if (registry.archers.has(tower)) {
+            returnArcherToItem(tower);
+        }
+        else if (registry.knights.has(tower)) {
+            returnKnightToItem(tower);
+        }
 	} else {
 		assert(false && "Invalid Tower type for returning to Item");
 	}
@@ -136,16 +198,16 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity,
 	motion.position = pos;
 	motion.angle = static_cast<float>(atan2(dir.y, dir.x)) + (M_PI_2/2) + M_PI;
 	motion.velocity = -velocity * normalize(dir);
-	motion.scale = vec2({ARROW_BB_WIDTH, ARROW_BB_HEIGHT});
+	motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
 
     registry.arrows.emplace(entity);
 
-	registry.renderRequests.insert(entity, {
+	registry.renderGameLayer.insert(entity, {
 		{Stationary{}},
-		{0},
+        {static_cast<unsigned int>(BOW_SPRITE::ARROW)},
 		Z_MIDDLE,
-		TEXTURE_ASSET_ID::ARROW,
-		EFFECT_ASSET_ID::TEXTURED,
+		TEXTURE_ASSET_ID::BOW,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
 
@@ -169,7 +231,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
     registry.slimes.emplace(entity);
     registry.invisibles.emplace(entity);
 
-	registry.renderRequests.insert(entity, {
+	registry.renderGameLayer.insert(entity, {
 		{Stationary{}},
 		{},
 		Z_MIDDLE,
@@ -213,15 +275,26 @@ void createCardFromItem(RenderSystem *renderer, const Entity item) {
     card_texture.scale = vec2({CARD_WIDTH, CARD_HEIGHT});
 
     realignCards();
+    if (registry.archers.has(item)) {
+        registry.renderForeground.insert(item, {
+                {Stationary{}},
+                {0},
+                Z_FOREGROUND,
+                TEXTURE_ASSET_ID::ARCHER_CARD,
+                EFFECT_ASSET_ID::TEXTURED,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+    } else if (registry.knights.has(item)) {
+        registry.renderForeground.insert(item, {
+                {Stationary{}},
+                {0},
+                Z_FOREGROUND,
+                TEXTURE_ASSET_ID::KNIGHT_CARD,
+                EFFECT_ASSET_ID::TEXTURED,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+    }
 
-    registry.renderRequests.insert(item, {
-    	{Stationary{}},
-    	{0},
-    	Z_FOREGROUND,
-        TEXTURE_ASSET_ID::ARCHER_CARD,
-    	EFFECT_ASSET_ID::TEXTURED,
-    	GEOMETRY_BUFFER_ID::SPRITE,
-    });
 }
 
 void returnCardToItem(const Entity card) {
@@ -230,7 +303,7 @@ void returnCardToItem(const Entity card) {
 	registry.meshPtrs.remove(card);
 	registry.cards.remove(card);
 	registry.stationaries.remove(card);
-	registry.renderRequests.remove(card);
+	registry.renderForeground.remove(card);
 }
 
 
@@ -260,10 +333,10 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints, T
 	}
 	map_attributes.path_length = path_length;
 
-    registry.renderRequests.insert(entity, {
+    registry.renderBackground.insert(entity, {
     	{Stationary{}},
     	{0},
-    	Z_BACKGROUND,
+    	Z_MIDDLE,
     	map_sprite,
     	EFFECT_ASSET_ID::TEXTURED,
     	GEOMETRY_BUFFER_ID::SPRITE,
@@ -282,7 +355,7 @@ Entity createGameOver(RenderSystem *renderer) {
 	gameover_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
 	gameover_texture.position = vec2({window_width_px/2, window_height_px/2});
 
-	registry.renderRequests.insert(entity, {
+	registry.renderForeground.insert(entity, {
 		{Stationary{}},
 		{0},
 		Z_FOREGROUND,
@@ -305,7 +378,7 @@ Entity createOverviewMap(RenderSystem *renderer) {
 	overview_texture.position = vec2({window_width_px/2, window_height_px/2});
 	overview_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
 
-	registry.renderRequests.insert(entity, {
+	registry.renderBackground.insert(entity, {
 		{Stationary{}},
 		{},
 		Z_BACKGROUND,
@@ -331,10 +404,10 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 	properties.active = true;
 	properties.overview_selection = createOverviewSelection(renderer, pos);
 
-	registry.renderRequests.insert(entity, {
+	registry.renderBackground.insert(entity, {
 		{Stationary{}},
 		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::FIGHT)},
-		Z_MIDDLE,
+		Z_BACKGROUND / 2,
 		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
 		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -355,10 +428,10 @@ Entity createStartIcon(RenderSystem *renderer) {
 
 	registry.overviewMapLocations.emplace(entity);
 
-	registry.renderRequests.insert(entity, {
+	registry.renderBackground.insert(entity, {
 		{Stationary{}},
 		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::START)},
-		Z_MIDDLE,
+		Z_BACKGROUND / 2,
 		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
 		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -379,10 +452,10 @@ Entity createGoalIcon(RenderSystem *renderer) {
 
 	registry.overviewMapLocations.emplace(entity);
 
-	registry.renderRequests.insert(entity, {
+	registry.renderBackground.insert(entity, {
 		{Stationary{}},
 		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::END)},
-		Z_MIDDLE,
+		Z_BACKGROUND / 2,
 		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
 		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -404,10 +477,10 @@ Entity createOverviewLine(RenderSystem *renderer, const vec2 firstPos, const vec
 	line_texture.angle = atan2(dp.y, dp.x) + M_PI_2;
 	line_texture.scale = vec2({LINE_WIDTH, 0.5f * length(dp)});
 
-	registry.renderRequests.insert(entity, {
+	registry.renderBackground.insert(entity, {
 		{Stationary{}},
 		{0},
-		Z_MIDDLE,
+		Z_BACKGROUND / 2,
 		TEXTURE_ASSET_ID::BLACK_PIXEL,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -428,10 +501,10 @@ Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
 
 	registry.invisibles.insert(entity, {});
 
-	registry.renderRequests.insert(entity, {
+	registry.renderBackground.insert(entity, {
 		{Stationary{}},
 		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::SELECTION)},
-		Z_MIDDLE,
+		Z_BACKGROUND - Z_BACKGROUND / 4,
 		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
 		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -444,7 +517,7 @@ Entity createLine(const vec2 position, const vec2 size) {
 	const auto entity = Entity();
 
 	// Store a reference to the potentially re-used mesh object (the value is stored in the resource cache)
-	registry.renderRequests.insert(
+	registry.renderForeground.insert(
 		entity, {
 			{Stationary{}},
 			{0},
@@ -471,7 +544,7 @@ Entity createText(RenderSystem* renderer, const vec2 pos, const vec2 scale, cons
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	registry.renderRequests.insert(entity, createTextRenderRequest(text, scale));
+	registry.renderForeground.insert(entity, createTextRenderRequest(text, scale));
 
 	// Create stationary
 	Stationary& stationary = registry.stationaries.emplace(entity);
@@ -499,10 +572,10 @@ Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size
 	color.b = 1.f;
 	color.a = alpha;
 
-	registry.renderRequests.insert(entity, {
+	registry.renderForeground.insert(entity, {
 		{Stationary{}},
 		{0},
-		Z_FOREGROUND,
+		Z_BACKGROUND,
 		TEXTURE_ASSET_ID::BLACK_PIXEL,
 		EFFECT_ASSET_ID::TEXTURED,
 		GEOMETRY_BUFFER_ID::SPRITE,
@@ -517,6 +590,7 @@ RenderRequest createTextRenderRequest(const std::string& text, const vec2 scale)
 	request.used_texture = TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS;
 	request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
 	request.used_geometry = GEOMETRY_BUFFER_ID::SPRITE;
+	request.z_position = Z_FOREGROUND;
 	vec2 current_pos = {};
 	for (const char character : text) {
 		switch (character) {

@@ -24,6 +24,8 @@ public:
 	ComponentContainer<Arrow> arrows;
     ComponentContainer<Bow> bows;
 	ComponentContainer<Archer> archers;
+    ComponentContainer<Knight> knights;
+    ComponentContainer<Sword> swords;
     ComponentContainer<Weapon> weapons;
     ComponentContainer<Stationary> stationaries;
     ComponentContainer<Map> maps;
@@ -32,7 +34,9 @@ public:
 	ComponentContainer<OverviewMapLocation> overviewMapLocations;
 	// TODO Think about deleting this or replace this for the collision polygons
 	ComponentContainer<Mesh*> meshPtrs;
-	ComponentContainer<RenderRequest> renderRequests;
+	ComponentContainer<RenderRequest> renderBackground;
+	ComponentContainer<RenderRequest> renderGameLayer;
+	ComponentContainer<RenderRequest> renderForeground;
 	ComponentContainer<ScreenState> screenStates;
 	ComponentContainer<DebugComponent> debugComponents;
 	ComponentContainer<vec4> colors;
@@ -56,6 +60,8 @@ public:
 		registry_list.push_back(&arrows);
         registry_list.push_back(&bows);
 		registry_list.push_back(&archers);
+        registry_list.push_back(&knights);
+        registry_list.push_back(&swords);
         registry_list.push_back(&weapons);
         registry_list.push_back(&stationaries);
         registry_list.push_back(&maps);
@@ -63,7 +69,9 @@ public:
         registry_list.push_back(&slimes);
 		registry_list.push_back(&overviewMapLocations);
 		registry_list.push_back(&meshPtrs);
-		registry_list.push_back(&renderRequests);
+		registry_list.push_back(&renderBackground);
+		registry_list.push_back(&renderGameLayer);
+		registry_list.push_back(&renderForeground);
 		registry_list.push_back(&screenStates);
 		registry_list.push_back(&debugComponents);
 		registry_list.push_back(&colors);

@@ -10,6 +10,8 @@ struct Player {
     int health = 100;
     int maxHealth = 100;
     int coins = 0;
+	int food = 10;
+	int baseFoodGain = 5;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
 };
@@ -34,6 +36,7 @@ struct Slime {
 // Items
 enum class TowerType {
 	ARCHER = 0,
+    KNIGHT,
 	TOWER_TYPE_COUNT
 };
 
@@ -57,15 +60,18 @@ enum class EnemyPriority {
 
 struct Tower {
 	bool placed = false;
-	float range = 50.0f;
+	float range = 50.0f; //TODO: is range scaled with window?
+	int food_cost = 5;
+	int food_gain = 10;
 	EnemyPriority priority = EnemyPriority::FIRST;
 	bool is_aiming = false;
 };
 
 // given to card representation of tower while off field
-struct Card{
+struct Card {
 	Entity item_entity;
     bool selected = false;
+	bool selectable = true;
     bool dragged = false; //TODO: follow mouse pointer when true
     // TODO: add int parameter for position from left to right on screen?
 };
@@ -94,6 +100,21 @@ struct Arrow {
 // Bow
 struct Bow {
 
+};
+
+// Knight
+struct Knight {
+    float swing_time = 800.0f; //time to complete a full swing
+    float cooldown = 1200.0f;
+    Entity sword;
+};
+
+// Sword
+struct Sword { //TODO: maybe outsource hitcound and hit list to Weapon and make Arrow Weapon, too.
+    int damage = 40;
+    bool has_collision = false; // activate collision when sword is swung
+    std::size_t max_hitcount = 1;
+    std::set<Entity> hit_entities{};
 };
 
 // Weapon

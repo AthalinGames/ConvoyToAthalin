@@ -13,11 +13,10 @@ out vec4 tex_offset;
 
 // Application data
 uniform mat3 projection;
-uniform float z_pos;
 
 void main() {
     texcoord = in_texcoord;
     tex_offset = in_instance_atlas_positions;
     vec3 pos = projection * in_instance_transforms * vec3(in_position.xy, 1.0);
-    gl_Position = vec4(pos.xy, z_pos, 1.0);
+    gl_Position = vec4(pos.xy, 0, 1.0);
 }
