@@ -25,7 +25,7 @@ Entity createItem(const ItemType item) {
 				}
                 case TowerType::KNIGHT: {
                     registry.knights.emplace(entity);
-                    tower.range = 0.9 * TOWER_WIDTH;
+                    tower.range = 1.4 * TOWER_WIDTH;
                     break;
                 }
 				case TowerType::TOWER_TYPE_COUNT: {

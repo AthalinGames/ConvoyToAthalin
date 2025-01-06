@@ -106,7 +106,7 @@ bool TDSystem::step(const float elapsed_ms) {
                         sword.has_collision = true;
                         const float pos_angle = tower_motion.angle - 2 * M_PI * shot_timer.time / knight.swing_time - M_PI_2;
                         sword_motion.angle = pos_angle - M_PI_2 - M_PI_2 / 2;
-                        const float radius = registry.towers.get(tower_entity).range;
+                        const float radius = registry.towers.get(tower_entity).range - 0.5f * TOWER_WIDTH;
                         sword_motion.position = tower_motion.position - radius * vec2(cos(pos_angle), sin(pos_angle)) + vec2(0, TOWER_HEIGHT * 0.25);
                     }
                     else {
