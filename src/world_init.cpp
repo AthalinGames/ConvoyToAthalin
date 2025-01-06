@@ -20,7 +20,7 @@ Entity createItem(const ItemType item) {
 			switch (towerType) {
 				case TowerType::ARCHER: {
 					registry.archers.emplace(entity);
-                    tower.range = 3.5*TOWER_WIDTH; //TODO: save range somewhere in components?
+                    tower.range = 3.5*TOWER_WIDTH; //TODO: save range somewhere in components? when trying #include "world_init.hpp" in game_components compilation fails
 					break;
 				}
                 case TowerType::KNIGHT: {
