@@ -360,6 +360,60 @@ void returnCardToItem(const Entity card) {
 	registry.renderForeground.remove(card);
 }
 
+std::vector<vec2> generateMapCheckpoints(std::default_random_engine &rng, const uint path_length) {
+	enum class Direction {
+		LEFT = 0, RIGHT, STRAIGHT
+	};
+	std::discrete_distribution<uint> section_length_dist({0, 0, 5, 4, 3, 2});
+	std::uniform_int_distribution<uint> x_coord_dist(1, MAP_COUNT_X - 1);
+	std::uniform_int_distribution<uint> y_coord_dist(1, MAP_COUNT_Y - 4); // Keep bottom space empty for cards
+	std::uniform_int_distribution<uint> direction_dist(0, 2);
+
+	std::vector<vec2> map_checkpoints{};
+	uint current_length = 0;
+
+	// first checkpoint
+	auto current_direction = static_cast<Direction>(direction_dist(rng));
+	vec2 current_checkpoint;
+	switch (current_direction) {
+		case Direction::LEFT: {
+			current_checkpoint = {0, y_coord_dist(rng)};
+			current_direction = Direction::RIGHT;
+			break;
+		}
+		case Direction::RIGHT: {
+			current_checkpoint = {MAP_COUNT_X - 1, y_coord_dist(rng)};
+			current_direction = Direction::LEFT;
+			break;
+		}
+		case Direction::STRAIGHT: {
+			current_checkpoint = {x_coord_dist(rng), 0};
+			break;
+		}
+	}
+	map_checkpoints.push_back(current_checkpoint);
+	while (current_length < path_length) {
+		const uint section_length = section_length_dist(rng);
+		current_length += section_length;
+
+		switch (current_direction) {
+			case Direction::LEFT: {
+				break;
+			}
+			case Direction::RIGHT: {
+				break;
+			}
+			case Direction::STRAIGHT: {
+				break;
+			}
+		}
+
+		current_direction = static_cast<Direction>(direction_dist(rng));
+	}
+
+	return map_checkpoints;
+}
+
 TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<vec2>& path, const TD_MAP_ATLAS_TEXTURES initial_tile) {
 	vec2 checkpoint = path[0];
 	bool top_left = false, top_right = false, bottom_left = false, bottom_right = false;
