@@ -347,6 +347,9 @@ void createCardFromItem(RenderSystem *renderer, const Entity item) {
 }
 
 void returnCardToItem(const Entity card) {
+    if (!registry.cards.has(card)){
+        printf("entity is not a card"); //TODO: if you stop dragging just when combat ends, Entity can lose card component before being erased from cards vector
+    }
 	assert(registry.cards.has(card));
 
 	registry.meshPtrs.remove(card);

@@ -18,7 +18,9 @@ TDSystem::TDSystem() {
 void TDSystem::cleanup_ecs() {
     // Remove all components related to a td fight that are still on map
     for (const auto card: cards) {
-        returnCardToItem(card);
+        if (registry.cards.has(card)){//TODO: if you stop dragging just when combat ends, Entity can lose card component before being erased from cards vector
+            returnCardToItem(card);
+        }
         registry.colors.remove(card);
     }
     for (const auto enemy: enemies) {
@@ -198,6 +200,16 @@ bool TDSystem::step(const float elapsed_ms) {
         }
         case GamePhase::FIGHT_DONE: {
             current_phase = GamePhase::CHOOSE_REWARD;
+
+            // reset dragged card
+            if (dragging) {
+                dragging = false;
+                registry.cards.get(dragged_entity).dragged = false;
+                registry.invisibles.remove(dragged_entity);
+                registry.invisibles.emplace(placement_marker);
+                realignCards();
+            }
+
             // Add gathered food
             auto& current_player = registry.players.get(player);
             current_player.food += current_player.baseFoodGain;
