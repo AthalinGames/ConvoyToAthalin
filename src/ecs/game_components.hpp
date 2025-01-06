@@ -62,7 +62,7 @@ enum class EnemyPriority {
 
 struct Tower {
 	bool placed = false;
-	float range = 50.0f; //TODO: is range scaled with window?
+	float range = 50.0f; //TODO: is range scaled with window? when trying #include "world_init.hpp" compilation fails
 	int food_cost = 5;
 	int food_gain = 10;
 	EnemyPriority priority = EnemyPriority::FIRST;
@@ -131,7 +131,7 @@ struct Consumable {
 
 struct Bomb {
     int damage = 100;
-    float range = 50;
+    float range = 100;
     bool exploding = false;
     std::set<Entity> hit_entities{};
 };

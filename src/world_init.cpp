@@ -20,11 +20,12 @@ Entity createItem(const ItemType item) {
 			switch (towerType) {
 				case TowerType::ARCHER: {
 					registry.archers.emplace(entity);
-                    tower.range = 400.0f; //TODO: save range somewhere in components?
+                    tower.range = 3.5*TOWER_WIDTH; //TODO: save range somewhere in components?
 					break;
 				}
                 case TowerType::KNIGHT: {
                     registry.knights.emplace(entity);
+                    tower.range = 0.9 * TOWER_WIDTH;
                     break;
                 }
 				case TowerType::TOWER_TYPE_COUNT: {
@@ -36,7 +37,8 @@ Entity createItem(const ItemType item) {
             registry.consumables.emplace(entity);
 			switch (consumableType) {
                 case ConsumableType::BOMB: {
-                    registry.bombs.emplace(entity);
+                    auto &bomb = registry.bombs.emplace(entity);
+                    bomb.range = TOWER_WIDTH;
                     break;
                 }
 				case ConsumableType::CONSUMABLE_TYPE_COUNT: {
@@ -612,7 +614,7 @@ Entity createPlacementMarker(RenderSystem *renderer) {
     registry.meshPtrs.emplace(entity, &mesh);
 
     Stationary& placement_marker = registry.stationaries.emplace(entity);
-    placement_marker.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+    placement_marker.scale = vec2({2*TOWER_WIDTH, 2*TOWER_HEIGHT});
 
     registry.renderForeground.insert(entity, {
             {Stationary{}},

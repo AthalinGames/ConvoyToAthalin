@@ -106,7 +106,7 @@ bool TDSystem::step(const float elapsed_ms) {
                         sword.has_collision = true;
                         const float pos_angle = tower_motion.angle - 2 * M_PI * shot_timer.time / knight.swing_time - M_PI_2;
                         sword_motion.angle = pos_angle - M_PI_2 - M_PI_2 / 2;
-                        const float radius = 0.9 * TOWER_HEIGHT;
+                        const float radius = registry.towers.get(tower_entity).range;
                         sword_motion.position = tower_motion.position - radius * vec2(cos(pos_angle), sin(pos_angle)) + vec2(0, TOWER_HEIGHT * 0.25);
                     }
                     else {
@@ -822,6 +822,13 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         printf("z:%f\n", registry.renderForeground.get(dragged_entity).z_position);
                         registry.invisibles.emplace(dragged_entity);
                         registry.stationaries.get(placement_marker).position = registry.stationaries.get(dragged_entity).position;
+                        float marker_scale = 2*TOWER_WIDTH;
+                        if (registry.towers.has(dragged_entity)) {
+                            marker_scale = 2*registry.towers.get(dragged_entity).range;
+                        } else if (registry.bombs.has(dragged_entity)) {
+                            marker_scale = 2*registry.bombs.get(dragged_entity).range;
+                        }
+                        registry.stationaries.get(placement_marker).scale = vec2(marker_scale, marker_scale);
                         registry.invisibles.remove(placement_marker);
                     }
                 }
