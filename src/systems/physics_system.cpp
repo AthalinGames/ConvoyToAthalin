@@ -107,15 +107,10 @@ void PhysicsSystem::step(float elapsed_ms)
 	}
 
     auto& map_container = registry.maps;
-    std::vector<Map> active_maps;
-    for(Map& map : map_container.components) {
-        if(map.active)
-            active_maps.push_back(map);
-    }
 	//printf("Active maps: %lu\n", active_maps.size());
 	//printf("Map count: %lu\n", map_container.size());
-    if (active_maps.size() == 1) {
-	    const Map& active_map = active_maps[0];
+    if (map_container.size() == 1) {
+	    const Map& active_map = map_container.components[0];
 
     	auto& enemy_container = registry.enemies;
     	for (uint i = 0; i < enemy_container.size(); i++) {

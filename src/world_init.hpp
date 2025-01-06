@@ -29,6 +29,10 @@ constexpr float CARD_AXIS_WIDTH = window_width_px;
 constexpr float MAP_WIDTH = static_cast<float>(window_width_px);
 constexpr float MAP_HEIGHT = static_cast<float>(window_height_px);
 
+// Gridsize for TD-Maptiles
+constexpr unsigned int MAP_COUNT_X = 17;
+constexpr unsigned int MAP_COUNT_Y = 10;
+
 // These are hard coded for each render layer
 constexpr float Z_BACKGROUND = -1;
 constexpr float Z_MIDDLE = 0;
@@ -51,7 +55,8 @@ void realignCards();
 void createCardFromItem(RenderSystem* renderer, Entity item);
 void returnCardToItem(Entity card);
 // the combat map
-Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints, TEXTURE_ASSET_ID map_sprite);
+Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints,
+                 std::default_random_engine rng, std::uniform_real_distribution<float> dist);
 // the overview map
 Entity createOverviewMap(RenderSystem* renderer);
 // location on the overview map
