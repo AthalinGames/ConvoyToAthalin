@@ -172,6 +172,16 @@ void RenderSystem::bindVBOandIBO(GEOMETRY_BUFFER_ID gid, std::vector<T> vertices
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 		sizeof(indices[0]) * indices.size(), indices.data(), drawType);
 	gl_has_errors();
+
+    glBindBuffer(GL_ARRAY_BUFFER, transform_buffers[static_cast<uint>(gid)]);
+    glBufferData(GL_ARRAY_BUFFER,
+                 sizeof(vertices[0]) * vertices.size(), vertices.data(), drawType);
+    gl_has_errors();
+
+    glBindBuffer(GL_ARRAY_BUFFER, atlas_position_buffers[static_cast<uint>(gid)]);
+    glBufferData(GL_ARRAY_BUFFER,
+                 sizeof(vertices[0]) * vertices.size(), vertices.data(), drawType);
+    gl_has_errors();
 }
 
 void RenderSystem::initializeGlMeshes()
@@ -198,6 +208,11 @@ void RenderSystem::initializeGlGeometryBuffers()
 	glGenBuffers(static_cast<GLsizei>(vertex_buffers.size()), vertex_buffers.data());
 	// Index Buffer creation.
 	glGenBuffers(static_cast<GLsizei>(index_buffers.size()), index_buffers.data());
+
+    // Transform Buffer creation.
+    glGenBuffers(static_cast<GLsizei>(transform_buffers.size()), transform_buffers.data());
+    // Atlas Position Buffer creation.
+    glGenBuffers(static_cast<GLsizei>(atlas_position_buffers.size()), atlas_position_buffers.data());
 
 	// Index and Vertex buffer data initialization.
 	initializeGlMeshes();
@@ -329,6 +344,8 @@ RenderSystem::~RenderSystem()
 	// but it's polite to clean after yourself.
 	glDeleteBuffers(static_cast<GLsizei>(vertex_buffers.size()), vertex_buffers.data());
 	glDeleteBuffers(static_cast<GLsizei>(index_buffers.size()), index_buffers.data());
+    glDeleteBuffers(static_cast<GLsizei>(transform_buffers.size()), transform_buffers.data());
+    glDeleteBuffers(static_cast<GLsizei>(atlas_position_buffers.size()), atlas_position_buffers.data());
 	glDeleteTextures(static_cast<GLsizei>(texture_gl_handles.size()), texture_gl_handles.data());
 	glDeleteTextures(1, &off_screen_render_buffer_color);
 	glDeleteRenderbuffers(1, &off_screen_render_buffer_depth);
@@ -342,8 +359,12 @@ RenderSystem::~RenderSystem()
 	gl_has_errors();
 
 	// remove all entities created by the render system
-	while (!registry.renderRequests.entities.empty())
-	    registry.remove_all_components_of(registry.renderRequests.entities.back());
+	while (!registry.renderBackground.entities.empty())
+	    registry.remove_all_components_of(registry.renderBackground.entities.back());
+	while (!registry.renderGameLayer.entities.empty())
+		registry.remove_all_components_of(registry.renderGameLayer.entities.back());
+	while (!registry.renderForeground.entities.empty())
+		registry.remove_all_components_of(registry.renderForeground.entities.back());
 
 	// Shutdown ImGui
 	ImGui_ImplOpenGL3_Shutdown();

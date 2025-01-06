@@ -29,16 +29,24 @@ bool collides(const Motion& motion1, const Motion& motion2)
 }
 
 bool pointInsidePoly(const vec2& point, const std::vector<vec2>& polygon) {
+    // only works if vertices saved in counterclockwise order!
 	for (std::size_t i = 0; i < polygon.size(); ++i) {
 		const vec2 p0 = polygon[i];
 		const vec2 p1 = polygon[(i + 1) % polygon.size()];
 		// Calculate if point is on the left of the line
-		if (const auto result = point.x * (p1.y - p0.y) + point.y * (p0.x - p1.x) + p0.x * (p1.y - p0.y) - p0.y * (p1.x - p0.y);
-			result <= 0) {
-			return true;
-		}
+		//if (const auto result = point.x * (p1.y - p0.y) + point.y * (p0.x - p1.x) + p0.x * (p1.y - p0.y) - p0.y * (p1.x - p0.y);
+		//	result <= 0) {
+		//	return true;
+		//}
+        const vec2 affine_segment = p1 - p0;
+        const vec2 affine_point = point - p0;
+        const float cosine_sign = affine_segment.x * affine_point.y - affine_segment.y * affine_point.x; //only works if vertices saved in counterclockwise order
+        if (cosine_sign > 0) { // true when point on right side
+            return false;
+        }
 	}
-	return false;
+	//return false;
+    return true;
 }
 
 // This assumes that both polys are convex
@@ -74,16 +82,33 @@ bool collidesPoly(const Motion& motion1, const Motion& motion2, const std::vecto
 	return false;
 }
 
-bool enemyInTowerRange(const Motion& tower_motion, const Tower& tower, const Motion& enemy_motion) {
+bool enemyInRange(const Motion& tower_motion, const float input_range, const Motion& enemy_motion) {
 	const vec2 d_p = tower_motion.position - enemy_motion.position;
 	const float dist_squared = dot(d_p, d_p);
 	const vec2 enemy_bounding_box = get_bounding_box(enemy_motion);
 	const float enemy_r_squared = dot(enemy_bounding_box, enemy_bounding_box);
-	const float tower_r_squared = tower.range * tower.range;
-	const float r_squared = max(enemy_r_squared, tower_r_squared);
+	const float input_r_squared = input_range * input_range;
+	const float r_squared = max(enemy_r_squared, input_r_squared);
 	if (dist_squared < r_squared)
 		return true;
 	return false;
+}
+
+bool enemyPolyInBombRange(const Motion& bomb_motion, const Bomb& bomb, const Motion& enemy_motion, const std::vector<vec2>& poly) {
+    Transform tf;
+    tf.translate(enemy_motion.position);
+    tf.rotate(enemy_motion.angle);
+    tf.scale(enemy_motion.scale);
+    auto polyTF = std::vector<vec2>(poly.size());
+    for (std::size_t i = 0; i < poly.size(); ++i) {
+        polyTF[i] = tf * poly[i];
+    }
+    for (const auto& poly_pos : polyTF) {
+        if (distance(poly_pos, bomb_motion.position) <= bomb.range) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void PhysicsSystem::step(float elapsed_ms)
@@ -99,15 +124,10 @@ void PhysicsSystem::step(float elapsed_ms)
 	}
 
     auto& map_container = registry.maps;
-    std::vector<Map> active_maps;
-    for(Map& map : map_container.components) {
-        if(map.active)
-            active_maps.push_back(map);
-    }
 	//printf("Active maps: %lu\n", active_maps.size());
 	//printf("Map count: %lu\n", map_container.size());
-    if (active_maps.size() == 1) {
-	    const Map& active_map = active_maps[0];
+    if (map_container.size() == 1) {
+	    const Map& active_map = map_container.components[0];
 
     	auto& enemy_container = registry.enemies;
     	for (uint i = 0; i < enemy_container.size(); i++) {
@@ -140,26 +160,39 @@ void PhysicsSystem::step(float elapsed_ms)
 			Entity entity_j = motion_container.entities[j];
 			if ((registry.towers.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j))){
                 if(registry.enemies.get(entity_j).spawned) {
-                    if (enemyInTowerRange(motion_i, registry.towers.get(entity_i), motion_j)) {
+                    if (enemyInRange(motion_i, registry.towers.get(entity_i).range, motion_j)) {
                         registry.collisions.emplace_with_duplicates(entity_i, entity_j);
                         registry.collisions.emplace_with_duplicates(entity_j, entity_i);
                     }
                 }
 			} else if (registry.towers.has(entity_j) && !registry.cards.has(entity_j) && registry.enemies.has(entity_i)) {
                 if(registry.enemies.get(entity_i).spawned) {
-                    if (enemyInTowerRange(motion_j, registry.towers.get(entity_j), motion_i)) {
+                    if (enemyInRange(motion_j, registry.towers.get(entity_j).range, motion_i)) {
                         registry.collisions.emplace_with_duplicates(entity_i, entity_j);
                         registry.collisions.emplace_with_duplicates(entity_j, entity_i);
                     }
                 }
-            } else if (collides(motion_i, motion_j)) {
+            } else if (registry.bombs.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j)) {
+                if(registry.enemies.get(entity_j).spawned) {
+                    if (enemyInRange(motion_i, registry.bombs.get(entity_i).range, motion_j)) {
+                        const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
+                        auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
+                        if (enemyPolyInBombRange(motion_i, registry.bombs.get(entity_i), motion_j, poly_j)) {
+                            registry.collisions.emplace_with_duplicates(entity_i, entity_j);
+                            registry.collisions.emplace_with_duplicates(entity_j, entity_i);
+                        }
+                    }
+                }
+            } else if (!(registry.enemies.has(entity_i) && registry.enemies.has(entity_j)) // ignore collision between enemies
+                        && !(registry.towers.has(entity_i) || registry.towers.has(entity_j)) // ignore collision with towers
+                        && collides(motion_i, motion_j)) {
             	// Check if coarse collision is an actual collision
             	// TODO Think about Entities with multiple render requests
-            	const RenderRequest& request_i = registry.renderRequests.get(entity_i);
-            	const RenderRequest& request_j = registry.renderRequests.get(entity_j);
+            	const RenderRequest& request_i = registry.renderGameLayer.get(entity_i);
+            	const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
             	auto& poly_i = getCollisionMeshOfTexture(request_i.used_texture);
             	auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
-            	if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
+                if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
             		// Create a collisions event
             		// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
             		registry.collisions.emplace_with_duplicates(entity_i, entity_j);

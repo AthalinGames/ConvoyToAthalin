@@ -43,8 +43,7 @@ private:
 
     // restart TD fight
     std::vector<Entity> generate_combat(int difficulty);
-    std::vector<vec2> grid_to_coordinates(std::vector<vec2> grid_coords);
-    Entity generate_map(int difficulty);
+    Entity generate_map(int difficulty) const;
     void restart_td_fight();
 
     enum class GamePhase {
@@ -59,10 +58,12 @@ private:
     // Game state
     RenderSystem* renderer;
     Entity player;
+    Entity placement_marker;
     float current_speed;
     bool dragging; // shows if mouse is currently dragging something
     Entity dragged_entity;
     std::vector<Entity> towers;
+    std::vector<Entity> consumables;
     std::vector<Entity> cards;
     std::set<Entity> enemies;
     Entity map;
@@ -88,5 +89,5 @@ You defend the camping fire and the enemies spawn at the opposite side of the pa
 
     // C++ random number generator
     std::default_random_engine rng;
-    std::uniform_real_distribution<float> uniform_dist;
+    std::uniform_real_distribution<float> uniform_dist = std::uniform_real_distribution<float>(0.0, 1.0);
 };

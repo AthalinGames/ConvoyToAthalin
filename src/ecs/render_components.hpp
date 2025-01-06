@@ -61,30 +61,24 @@ enum class TEXTURE_ASSET_ID {
 	FISH = 0,
 	TURTLE,
 	ARCHER,
-    ARCHER_L,
-    ARCHER_U,
-    ARCHER_R,
-    ARCHER_D,
+    KNIGHT,
+    BOMB,
     ARCHER_CARD,
-    BOW1,
-    BOW2,
-    BOW3,
-	ARROW,
+    KNIGHT_CARD,
+    BOMB_CARD,
+    BOW,
+    SWORD,
     SLIME,
     SLIME_L,
     SLIME_U,
     SLIME_R,
     SLIME_D,
-    MAP,
-    MAP2,
-    MAP3,
-    MAP4,
-    MAP5,
-    MAP6,
-    MAP7,
 	OVERVIEW_MAP,
 	BLACK_PIXEL,
+    PLACEMENT_MARKER,
 	GAME_OVER,
+	TD_MAP_DECORATION_ATLAS,
+    TD_MAP_ATLAS,
 	OVERVIEW_ICONS_ATLAS,
 	ASCII_CHAR_ATLAS,
 	TEXTURE_COUNT
@@ -95,30 +89,24 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::FISH: return "fish.png";
 		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
-        case TEXTURE_ASSET_ID::ARCHER_L: return "archer_perspective2.png";
-        case TEXTURE_ASSET_ID::ARCHER_U: return "archer_perspective1.png";
-        case TEXTURE_ASSET_ID::ARCHER_R: return "archer_perspective4.png";
-        case TEXTURE_ASSET_ID::ARCHER_D: return "archer_perspective3.png";
+        case TEXTURE_ASSET_ID::KNIGHT: return "knight.png";
+        case TEXTURE_ASSET_ID::BOMB: return "items/bomb.png";
         case TEXTURE_ASSET_ID::ARCHER_CARD: return "archerCard.png";
-        case TEXTURE_ASSET_ID::BOW1: return "bow_and_arrow1.png";
-        case TEXTURE_ASSET_ID::BOW2: return "bow_and_arrow2.png";
-        case TEXTURE_ASSET_ID::BOW3: return "bow_and_arrow3.png";
-		case TEXTURE_ASSET_ID::ARROW: return "arrow.png";
+        case TEXTURE_ASSET_ID::KNIGHT_CARD: return "knightCard.png";
+        case TEXTURE_ASSET_ID::BOMB_CARD: return "bombCard.png";
+        case TEXTURE_ASSET_ID::BOW: return "bow_and_arrow.png";
+        case TEXTURE_ASSET_ID::SWORD: return "sword.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
         case TEXTURE_ASSET_ID::SLIME_L: return "Slime4.png";
         case TEXTURE_ASSET_ID::SLIME_U: return "Slime1.png";
         case TEXTURE_ASSET_ID::SLIME_R: return "Slime2.png";
         case TEXTURE_ASSET_ID::SLIME_D: return "Slime3.png";
-        case TEXTURE_ASSET_ID::MAP: return "tdmap_tiled.png";
-        case TEXTURE_ASSET_ID::MAP2: return "tdmap_tiled2.png";
-        case TEXTURE_ASSET_ID::MAP3: return "tdmap_tiled3.png";
-        case TEXTURE_ASSET_ID::MAP4: return "tdmap_tiled4.png";
-        case TEXTURE_ASSET_ID::MAP5: return "tdmap_tiled5.png";
-        case TEXTURE_ASSET_ID::MAP6: return "tdmap_tiled6.png";
-        case TEXTURE_ASSET_ID::MAP7: return "tdmap_tiled7.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
+        case TEXTURE_ASSET_ID::PLACEMENT_MARKER: return "placement_marker.png";
 		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";
+		case TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS: return "TDMapDecorationAtlas.png";
+		case TEXTURE_ASSET_ID::TD_MAP_ATLAS: return "TDMapAtlas.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: return "overviewIconsAtlas.png";
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: return "charmap-oldschool_preview.png"; // Source: https://opengameart.org/content/ascii-bitmap-font-oldschool
 		default: {
@@ -141,6 +129,13 @@ struct AtlasTexture {
 const std::set texture_atlases = {
 	TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
 	TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS,
+    TEXTURE_ASSET_ID::ARCHER,
+    TEXTURE_ASSET_ID::BOW,
+    TEXTURE_ASSET_ID::KNIGHT,
+    TEXTURE_ASSET_ID::SWORD,
+    TEXTURE_ASSET_ID::BOMB,
+	TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
+	TEXTURE_ASSET_ID::TD_MAP_ATLAS,
 };
 
 enum class OVERVIEW_ICON_TEXTURES {
@@ -151,13 +146,80 @@ enum class OVERVIEW_ICON_TEXTURES {
 	COUNT
 };
 
+enum class TD_MAP_ATLAS_TEXTURES {
+	DIRT = 0,
+	DIRT_GRASS_BOTTOM,
+	DIRT_GRASS_CORNER_BOTTOM_RIGHT,
+	DIRT_GRASS_CORNER_BOTTOM_RIGHT_INVERTED,
+	DIRT_GRASS_CORNER_DOUBLE,
+	DIRT_GRASS_CORNER_TOP_RIGHT,
+	DIRT_GRASS_CORNER_TOP_RIGHT_INVERTED,
+	DIRT_GRASS_LEFT,
+	DIRT_GRASS_RIGHT,
+	DIRT_GRASS_TOP,
+	GRASS,
+	GRASS_FLOWER,
+	GRASS_FLOWER_2,
+	GRASS_STICK,
+	GRASS_STONE,
+	GRASS_2,
+	DIRT_GRASS_CORNER_BOTTOM_LEFT,
+	DIRT_GRASS_CORNER_BOTTOM_LEFT_INVERTED,
+	DIRT_GRASS_CORNER_TOP_LEFT,
+	DIRT_GRASS_CORNER_TOP_LEFT_INVERTED,
+	DIRT_GRASS_CORNER_DOUBLE_MIRRORED,
+};
+
+enum class TD_MAP_DECORATION_TEXTURES {
+	CAMPFIRE,
+	CAMPFIRE2,
+	TENT,
+	TENT2,
+	WAGON,
+	COUNT
+};
+
+enum class DIRECTION_SPRITE {
+    DOWN = 0,
+    LEFT,
+    UP,
+    RIGHT,
+    COUNT
+};
+
+enum class SWORD_SPRITE {
+    HOLD = static_cast<unsigned int>(DIRECTION_SPRITE::COUNT),
+    SWING,
+    COUNT
+};
+
+enum class BOW_SPRITE {
+    LOAD = 0,
+    DRAW,
+    SHOOT,
+    ARROW,
+    COUNT
+};
+
+enum class BOMB_SPRITE {
+    BOMB0 = 0,
+    BOMB1,
+    BOMB2,
+    BOMB3,
+    EXPLOSION1,
+    EXPLOSION2,
+    EXPLOSION3,
+    COUNT,
+};
+
+
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
 	// here the texture positions are defined
 	switch (atlas_id) {
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: {
 			constexpr unsigned int cols = 3, rows = 3, maxCount = cols * rows;
 			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-			constexpr unsigned int definedCount = static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::COUNT);
+			constexpr auto definedCount = static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::COUNT);
 			assert(definedCount <= maxCount); // Atlas cannot have more defined textures than available space
 			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
 			for (unsigned int i = 0; i < definedCount; i++) {
@@ -183,6 +245,116 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			}
 			break;
 		}
+		case TEXTURE_ASSET_ID::TD_MAP_ATLAS: {
+			constexpr unsigned int cols = 4, rows = 4, maxCount = cols * rows;
+			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+			// insert actual texture positions
+			for (unsigned int i = 0; i < maxCount; i++) {
+				const float x_start = (i % cols) * tex_width;
+				const float y_start = (i / cols) * tex_height;
+				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+				texDef.tex_pos = vec2(x_start, y_start);
+				texDef.tex_size = vec2(tex_width, tex_height);
+			}
+			// insert mirrored texture positions
+			AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+			texDef.tex_pos = vec2(3 * tex_width, 0);
+			texDef.tex_size = vec2(-tex_width, tex_height);
+			AtlasTexture& texDef2 = atlasLookup.at(atlas_id).emplace_back();
+			texDef2.tex_pos = vec2(4 * tex_width, 0);
+			texDef2.tex_size = vec2(-tex_width, tex_height);
+			AtlasTexture& texDef3 = atlasLookup.at(atlas_id).emplace_back();
+			texDef3.tex_pos = vec2(2 * tex_width, tex_height);
+			texDef3.tex_size = vec2(-tex_width, tex_height);
+			AtlasTexture& texDef4 = atlasLookup.at(atlas_id).emplace_back();
+			texDef4.tex_pos = vec2(3 * tex_width, tex_height);
+			texDef4.tex_size = vec2(-tex_width, tex_height);
+			AtlasTexture& texDef5 = atlasLookup.at(atlas_id).emplace_back();
+			texDef5.tex_pos = vec2(tex_width, tex_height);
+			texDef5.tex_size = vec2(-tex_width, tex_height);
+			break;
+		}
+		case TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS: {
+			constexpr unsigned int cols = 3, rows = 3, maxCount = cols * rows;
+			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+			constexpr auto definedCount = static_cast<unsigned int>(TD_MAP_DECORATION_TEXTURES::COUNT);
+			assert(definedCount <= maxCount); // Atlas cannot have more defined textures than available space
+			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+			for (unsigned int i = 0; i < definedCount; i++) {
+				const float x_start = (i % cols) * tex_width;
+				const float y_start = (i / cols) * tex_height;
+				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+				texDef.tex_pos = vec2(x_start, y_start);
+				texDef.tex_size = vec2(tex_width, tex_height);
+			}
+			break;
+		}
+        case TEXTURE_ASSET_ID::ARCHER: {
+            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
+        case TEXTURE_ASSET_ID::BOW: {
+            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
+        case TEXTURE_ASSET_ID::KNIGHT: {
+            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
+        case TEXTURE_ASSET_ID::SWORD: {
+            constexpr unsigned int cols = 2, rows = 3, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
+        case TEXTURE_ASSET_ID::BOMB: {
+            constexpr unsigned int cols = 4, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
 		default:
 			assert(false && "Texture atlas has no textures defined");
 	}
@@ -194,7 +366,7 @@ enum class EFFECT_ASSET_ID {
 	SALMON,
 	TEXTURED,
 	TEXTURED_ATLAS,
-	WATER, // TODO GROUND,
+	WATER,
     //CHARACTER_SPRITE,
 	EFFECT_COUNT
 };

@@ -194,12 +194,12 @@ bool WorldSystem::step(const float elapsed_ms) {
 		}
 	}
 
-	// Render Health display
+	// Render Health and Food display
 	ImGui::Begin("Health");
 	ImGui::SetWindowPos({window_width_px * 0.1, window_height_px * 0.03});
-	ImGui::SetWindowSize({window_width_px * 0.06, window_height_px * 0.06});
+	ImGui::SetWindowSize({window_width_px * 0.06, 65});
 	for (const auto & player : registry.players.components) {
-		ImGui::Text("HP: %d", player.health);
+		ImGui::Text("HP: %d\nFood: %d", player.health, player.food);
 	}
 	ImGui::End();
 
@@ -239,6 +239,9 @@ bool WorldSystem::step(const float elapsed_ms) {
 			location_props.selectable = true;
 		}
 		current_map_pos = next_map_pos;
+
+		registry.invisibles.remove(tutorial_hint);
+
 		// Finally get back to normal steps
 		td_fight_launched = false;
 	}
@@ -287,7 +290,10 @@ void WorldSystem::restart_game() {
 	// Setup initial Player Hand (Start with one archer)
     player = createPlayer();
 	createItem(TowerType::ARCHER);
+    createItem(TowerType::KNIGHT);
+    createItem(ConsumableType::BOMB);
 
+    registry.players.get(player).placement_marker = createPlacementMarker(renderer);
 
 	current_td_system.reset(new TDSystem());
 	overview_map = createOverviewMap(renderer);
@@ -370,7 +376,7 @@ void WorldSystem::restart_game() {
 		createOverviewLine(renderer, last_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
 	}
 
-	createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial");
+	tutorial_hint = createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial");
 }
 
 // Compute collisions between entities
@@ -514,6 +520,7 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 				if (registry.overviewMapLocations.has(entity)) {
 					current_td_system.reset( new TDSystem(rng()));
 					current_td_system->init(renderer, player);
+					registry.invisibles.emplace(tutorial_hint);
 					td_fight_launched = true;
 					next_map_pos = entity;
 				}

@@ -56,6 +56,9 @@ public:
 	// Inserting a component c associated to entity e
 	inline Component& insert(const Entity e, Component c, const bool check_for_duplicates = true)
 	{
+        if ((check_for_duplicates && has(e))) {
+            printf("insert error");
+        }
 		// Usually, every entity should only have one instance of each component type
 		assert(!(check_for_duplicates && has(e)) && "Entity already contained in ECS registry");
 
@@ -77,6 +80,9 @@ public:
 
 	// A wrapper to return the component of an entity
 	Component& get(const Entity e) {
+        if (!has(e)) {
+            printf("a");
+        }
 		assert(has(e) && "Entity not contained in ECS registry");
 		return components[map_entity_componentID[e]];
 	}
