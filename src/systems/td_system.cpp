@@ -265,29 +265,44 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
     //TODO: maybe remove entry from pool when selected, to increase variation
 
     //{enemy_type, amount, interval, speed}
-    std::vector<vec4> combat_pool = {vec4(1, 1, 1000., 100.),
-                                     vec4(1, 2, 1000., 100.),
-                                     vec4(1, 3, 1000., 100.),
-                                     vec4(1, 4, 1000., 100.),
-                                     vec4(1, 1, 500., 100.),
-                                     vec4(1, 2, 500., 100.),
-                                     vec4(1, 3, 500., 100.),
-                                     vec4(1, 4, 500., 100.)};
+    std::vector<vec4> combat_pool = {vec4(EnemyType::SLIME, 1, 1000., 100.),
+                                     vec4(EnemyType::SLIME, 2, 1000., 100.),
+                                     vec4(EnemyType::SLIME, 3, 1000., 100.),
+                                     vec4(EnemyType::SLIME, 4, 1000., 100.),
+                                     vec4(EnemyType::SLIME, 1, 500., 100.),
+                                     vec4(EnemyType::SLIME, 2, 500., 100.),
+                                     vec4(EnemyType::SLIME, 3, 500., 100.),
+                                     vec4(EnemyType::SLIME, 4, 500., 100.)};
     std::vector<Entity> enemy_list = {};
     uint wave_amount = 1 + int(std::floor(difficulty/2)); //TODO: better curve maybe some kind of sigmoid
     std::uniform_int_distribution<int> uniform_int_dist(0, combat_pool.size()-1);
 
     if (difficulty == 0) {
-        const auto debug_enemy = createEnemy(renderer, {0, 100});
+        const auto debug_enemy = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
+        const auto debug_enemy2 = createEnemy(renderer, {0, 100}, EnemyType::SLIME_BIG);
+        const auto spawned_enemy1 = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
+        const auto spawned_enemy2 = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
+        // when calling createEnemy later the enemy component values break
+
         enemies.emplace(debug_enemy);
-        Enemy &enemy = registry.enemies.get(debug_enemy);
+        auto &enemy = registry.enemies.get(debug_enemy);
         enemy.speed = 100.f;
 
-        const auto debug_enemy2 = createEnemy(renderer, {0, 100});
         enemies.emplace(debug_enemy2);
         Enemy &enemy2 = registry.enemies.get(debug_enemy2);
         enemy2.speed = 100.f;
         enemy2.spawn_time = 1000;
+
+
+        enemies.emplace(spawned_enemy1);
+        Enemy &spawn1 = registry.enemies.get(spawned_enemy1);
+        spawn1.speed = 100.f;
+        enemy2.spawns_enemies.push_back(spawned_enemy1);
+
+        enemies.emplace(spawned_enemy2);
+        Enemy &spawn2 = registry.enemies.get(spawned_enemy2);
+        spawn2.speed = 120.f;
+        enemy2.spawns_enemies.push_back(spawned_enemy2);
 
         return {debug_enemy, debug_enemy2};
     }
@@ -297,7 +312,7 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
             vec4 wave = combat_pool[uniform_int_dist(rng)];
             spawn_time += wave[2];
             for (int j = 0; j < wave[1]; ++j) {
-                const Entity new_enemy = createEnemy(renderer, {0, 100});
+                const Entity new_enemy = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
                 enemies.emplace(new_enemy);
                 Enemy& enemy = registry.enemies.get(new_enemy);
                 enemy.health += static_cast<int>(std::floor(difficulty/2) * 50);
@@ -310,7 +325,7 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
         }
     } else {
         for (int i = 0; i < difficulty+1; ++i) {
-            const Entity new_enemy = createEnemy(renderer, {0, 100});
+            const Entity new_enemy = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
             enemies.emplace(new_enemy);
             Enemy& enemy = registry.enemies.get(new_enemy);
             enemy.health += static_cast<int>(std::floor(difficulty/2) * 50);
@@ -438,6 +453,33 @@ void TDSystem::restart_td_fight() {
     registry.list_all_components();
 }
 
+void TDSystem::handle_enemy_death(const Entity enemy_entity, Enemy &enemy) {
+    assert(registry.enemies.has(enemy_entity) && "Entity not an enemy");
+    enemy.alive = false;
+    const auto enemy_motion = registry.motions.get(enemy_entity);
+    for (auto spawn_entity : enemy.spawns_enemies) {
+        auto &spawn_enemy = registry.enemies.get(spawn_entity);
+        auto &spawn_motion = registry.motions.get(spawn_entity);
+        if (registry.slimes.has(spawn_entity)) {
+            spawn_motion.position = enemy_motion.position;
+            spawn_motion.angle = enemy_motion.angle;
+            spawn_enemy.enemy_progress = enemy.enemy_progress;
+            spawn_enemy.next_checkpoint = enemy.next_checkpoint;
+            spawn_enemy.section_progress = enemy.section_progress;
+            spawn_enemy.spawned = true;
+            registry.invisibles.remove(spawn_entity);
+        }
+    }
+    // clear tower aiming
+    auto &aimingRegistry = registry.aimingAts;
+    for (const Entity &aiming: aimingRegistry.entities) {
+        if (aimingRegistry.get(aiming).aimed_entity == enemy_entity) {
+            aimingRegistry.remove(aiming);
+        }
+    }
+    registry.remove_all_components_of(enemy_entity);
+}
+
 void TDSystem::handle_collision(const Entity first, const Entity second) {
     if (registry.enemies.has(second) && registry.arrows.has(first)) {
         auto &enemy = registry.enemies.get(second);
@@ -449,15 +491,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         enemy.health -= arrow.damage;
         arrow.hit_entities.emplace(second);
         if (enemy.health <= 0) {
-            enemy.alive = false;
-            // clear tower aiming
-            auto &aimingRegistry = registry.aimingAts;
-            for (const Entity &aiming: aimingRegistry.entities) {
-                if (aimingRegistry.get(aiming).aimed_entity == second) {
-                    aimingRegistry.remove(aiming);
-                }
-            }
-            registry.remove_all_components_of(second);
+            handle_enemy_death(second, enemy);
         }
         // delete arrow if the amount of enemies has been reached
         if (arrow.max_hitcount <= arrow.hit_entities.size()) {
@@ -477,15 +511,8 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         enemy.health -= sword.damage;
         sword.hit_entities.emplace(second);
         if (enemy.health <= 0) {
-            enemy.alive = false;
-            // clear tower aiming
-            auto &aimingRegistry = registry.aimingAts;
-            for (const Entity &aiming: aimingRegistry.entities) {
-                if (aimingRegistry.get(aiming).aimed_entity == second) {
-                    aimingRegistry.remove(aiming);
-                }
-            }
-            registry.remove_all_components_of(second);
+            handle_enemy_death(second, enemy);
+
         }
     } else if (registry.towers.has(first) && registry.enemies.has(second)) {
         auto &tower = registry.towers.get(first);
@@ -518,15 +545,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
             auto &enemy = registry.enemies.get(second);
             enemy.health -= bomb.damage;
             if (enemy.health <= 0) {
-                enemy.alive = false;
-                // clear tower aiming
-                auto &aimingRegistry = registry.aimingAts;
-                for (const Entity &aiming: aimingRegistry.entities) {
-                    if (aimingRegistry.get(aiming).aimed_entity == second) {
-                        aimingRegistry.remove(aiming);
-                    }
-                }
-                registry.remove_all_components_of(second);
+                handle_enemy_death(second, enemy);
             } else {
                 bomb.hit_entities.emplace(second);
             }

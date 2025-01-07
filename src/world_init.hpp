@@ -51,7 +51,7 @@ void createConsumableFromCard(RenderSystem* renderer, Entity card);
 // the arrows
 Entity createArrow(RenderSystem* renderer, vec2 pos, float velocity, vec2 dir);
 // the enemy unit
-Entity createEnemy(RenderSystem* renderer, vec2 pos);
+Entity createEnemy(RenderSystem* renderer, vec2 pos, EnemyType enemyType);
 // the cards
 void realignCards();
 void createCardFromItem(RenderSystem* renderer, Entity item);

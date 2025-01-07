@@ -35,6 +35,7 @@ public:
     ComponentContainer<Map> maps;
 	ComponentContainer<Enemy> enemies;
     ComponentContainer<Slime> slimes;
+    ComponentContainer<SlimeBig> slimesBig;
 	ComponentContainer<OverviewMapLocation> overviewMapLocations;
 	// TODO Think about deleting this or replace this for the collision polygons
 	ComponentContainer<Mesh*> meshPtrs;
@@ -74,6 +75,7 @@ public:
         registry_list.push_back(&maps);
 		registry_list.push_back(&enemies);
         registry_list.push_back(&slimes);
+        registry_list.push_back(&slimesBig);
 		registry_list.push_back(&overviewMapLocations);
 		registry_list.push_back(&meshPtrs);
 		registry_list.push_back(&renderBackground);

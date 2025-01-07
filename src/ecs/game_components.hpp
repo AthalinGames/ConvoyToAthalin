@@ -18,6 +18,12 @@ struct Player {
 };
 
 // Enemy components
+enum class EnemyType {
+    SLIME = 0,
+    SLIME_BIG,
+    ENEMY_TYPE_COUNT
+};
+
 struct Enemy {
     int health = 100;
 	float enemy_progress = 0.0f;
@@ -28,10 +34,13 @@ struct Enemy {
     float section_progress = 0.f;
     bool alive = true;
 	int damage = 40;
+    std::vector<Entity> spawns_enemies; // spawns these enemies (eg. on death)
 };
 
 struct Slime {
+};
 
+struct SlimeBig {
 };
 
 // Items

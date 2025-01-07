@@ -255,7 +255,7 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity,
 	return entity;
 }
 
-Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
+Entity createEnemy(RenderSystem *renderer, const vec2 pos, EnemyType enemyType) {
 	const Entity entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
@@ -269,17 +269,34 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos) {
     motion.use_direction_sprite = true;
 
     registry.enemies.emplace(entity);
-    registry.slimes.emplace(entity);
+    switch (enemyType) {
+        case EnemyType::SLIME:
+            registry.slimes.emplace(entity);
+            registry.renderGameLayer.insert(entity, {
+                    {Stationary{}},
+                    {},
+                    Z_MIDDLE,
+                    TEXTURE_ASSET_ID::SLIME,
+                    EFFECT_ASSET_ID::TEXTURED,
+                    GEOMETRY_BUFFER_ID::SPRITE,
+            });
+            break;
+        case EnemyType::SLIME_BIG:
+            motion.scale = vec2({2*SLIME_WIDTH, 2*SLIME_HEIGHT});
+            registry.slimesBig.emplace(entity);
+            registry.renderGameLayer.insert(entity, {
+                    {Stationary{}},
+                    {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
+                    Z_MIDDLE,
+                    TEXTURE_ASSET_ID::SLIME_BIG,
+                    EFFECT_ASSET_ID::TEXTURED_ATLAS,
+                    GEOMETRY_BUFFER_ID::SPRITE,
+            });
+            break;
+        case EnemyType::ENEMY_TYPE_COUNT:
+            assert(false && "Invalid Enemy type");
+    }
     registry.invisibles.emplace(entity);
-
-	registry.renderGameLayer.insert(entity, {
-		{Stationary{}},
-		{},
-		Z_MIDDLE,
-		TEXTURE_ASSET_ID::SLIME,
-		EFFECT_ASSET_ID::TEXTURED,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
 
 	return entity;
 }
