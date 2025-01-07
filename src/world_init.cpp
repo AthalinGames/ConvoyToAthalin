@@ -360,12 +360,19 @@ void returnCardToItem(const Entity card) {
 	registry.renderForeground.remove(card);
 }
 
-std::vector<vec2> generateMapCheckpoints(std::default_random_engine &rng, const uint path_length) {
-	enum class Direction {
+int mod(int k, const int n) {
+    return ((k %= n) < 0) ? k+n : k;
+}
+
+std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const uint path_length) {
+	enum class DirectionChange {
 		LEFT = 0, RIGHT, STRAIGHT
 	};
-	std::discrete_distribution<uint> section_length_dist({0, 0, 5, 4, 3, 2});
-	std::uniform_int_distribution<uint> x_coord_dist(1, MAP_COUNT_X - 1);
+	enum class Direction {
+		UP = 0, RIGHT, DOWN, LEFT
+	};
+	std::discrete_distribution<int> section_length_dist({0, 0, 5, 5, 1, 1});
+	std::uniform_int_distribution<uint> x_coord_dist(1, MAP_COUNT_X - 3);
 	std::uniform_int_distribution<uint> y_coord_dist(1, MAP_COUNT_Y - 4); // Keep bottom space empty for cards
 	std::uniform_int_distribution<uint> direction_dist(0, 2);
 
@@ -373,42 +380,129 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine &rng, const 
 	uint current_length = 0;
 
 	// first checkpoint
-	auto current_direction = static_cast<Direction>(direction_dist(rng));
+	auto current_dir_change = static_cast<DirectionChange>(direction_dist(rng));
+	Direction current_dir;
 	vec2 current_checkpoint;
-	switch (current_direction) {
-		case Direction::LEFT: {
+	switch (current_dir_change) {
+		case DirectionChange::LEFT: {
 			current_checkpoint = {0, y_coord_dist(rng)};
-			current_direction = Direction::RIGHT;
+			current_dir = Direction::RIGHT;
+			current_dir_change = DirectionChange::STRAIGHT;
 			break;
 		}
-		case Direction::RIGHT: {
+		case DirectionChange::RIGHT: {
 			current_checkpoint = {MAP_COUNT_X - 1, y_coord_dist(rng)};
-			current_direction = Direction::LEFT;
+			current_dir = Direction::LEFT;
+			current_dir_change = DirectionChange::STRAIGHT;
 			break;
 		}
-		case Direction::STRAIGHT: {
+		case DirectionChange::STRAIGHT: {
 			current_checkpoint = {x_coord_dist(rng), 0};
+			current_dir = Direction::DOWN;
 			break;
 		}
 	}
 	map_checkpoints.push_back(current_checkpoint);
 	while (current_length < path_length) {
-		const uint section_length = section_length_dist(rng);
-		current_length += section_length;
+		const int section_length = section_length_dist(rng);
+		vec2 new_checkpoint;
 
-		switch (current_direction) {
-			case Direction::LEFT: {
+		Direction new_dir;
+		switch (current_dir_change) {
+			case DirectionChange::LEFT: {
+				int id = static_cast<int>(current_dir);
+				int new_id = mod(id - 1, 4);
+				new_dir = static_cast<Direction>(new_id);
 				break;
 			}
-			case Direction::RIGHT: {
+			case DirectionChange::RIGHT: {
+				int id = static_cast<int>(current_dir);
+				int new_id = mod(id + 1, 4);
+				new_dir = static_cast<Direction>(new_id);
 				break;
 			}
-			case Direction::STRAIGHT: {
+			case DirectionChange::STRAIGHT: {
+				new_dir = current_dir;
 				break;
 			}
 		}
 
-		current_direction = static_cast<Direction>(direction_dist(rng));
+		switch (new_dir) {
+			case Direction::LEFT: {
+				new_checkpoint = current_checkpoint + vec2{-section_length, 0};
+				break;
+			}
+			case Direction::RIGHT: {
+				new_checkpoint = current_checkpoint + vec2{section_length, 0};
+				break;
+			}
+			case Direction::DOWN: {
+				new_checkpoint = current_checkpoint + vec2{0, section_length};
+				break;
+			}
+			case Direction::UP: {
+				new_checkpoint = current_checkpoint + vec2{0, -section_length};
+				break;
+			}
+		}
+		current_dir_change = static_cast<DirectionChange>(direction_dist(rng));
+
+		// check if new point is valid
+		// check if point is within bounds
+		if (new_checkpoint.x < 1 || new_checkpoint.x > MAP_COUNT_X - 3) {
+			// checkpoint is too far right or left
+			printf("Checkpoint position out of bounds (left right) %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
+			continue; //TODO this just retries until it finds a fitting solution
+		}
+		if (new_checkpoint.y < 1 || new_checkpoint.y > MAP_COUNT_Y - 4) {
+			// checkpoint is too high or too low
+			printf("Checkpoint position out of bounds (top bottom) %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
+			continue;
+		}
+		// check if point is either on the existing line or has a one tile gap
+		vec2 last_checkpoint = map_checkpoints.front();
+		bool regenerate = false;
+		for (int i = 1; i < map_checkpoints.size(); ++i) {
+			const vec2 next_checkpoint = map_checkpoints.at(i);
+			const float manhatten_dist_section = abs(next_checkpoint.x - last_checkpoint.x) + abs(next_checkpoint.y - last_checkpoint.y);
+			const float manhattan_dist_last = abs(last_checkpoint.x - new_checkpoint.x) + abs(last_checkpoint.y - new_checkpoint.y);
+			const float manhatten_dist_next = abs(next_checkpoint.x - new_checkpoint.x) + abs(next_checkpoint.y - new_checkpoint.y);
+
+			if (manhattan_dist_last > manhatten_dist_section || manhatten_dist_next > manhattan_dist_last) {
+				const float small_dist = min(manhattan_dist_last, manhatten_dist_next);
+				if (small_dist <= 1) {
+					printf("Checkpoint too close to another checkpoint %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
+					regenerate = true;
+					break; // the section hit too close to a checkpoint
+				}
+			} else {
+				if (next_checkpoint.x - last_checkpoint.x == 0) {
+					// vertical section
+					if (abs(last_checkpoint.x - new_checkpoint.x) <= 1) {
+						printf("Checkpoint too close to vertical section %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
+						regenerate = true;
+						break;
+					}
+				} else if (next_checkpoint.y - last_checkpoint.y == 0) {
+					// horizontal section
+					if (abs(last_checkpoint.y - new_checkpoint.y) <= 1) {
+						printf("Checkpoint too close to horizontal section %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
+						regenerate = true;
+						break;
+					}
+				}
+			}
+
+			last_checkpoint = next_checkpoint;
+		}
+		if (regenerate) {
+			continue;
+		}
+
+		current_length += section_length;
+		map_checkpoints.push_back(new_checkpoint);
+		current_checkpoint = new_checkpoint;
+		current_dir = new_dir;
 	}
 
 	return map_checkpoints;

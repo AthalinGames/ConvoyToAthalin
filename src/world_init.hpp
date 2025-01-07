@@ -57,7 +57,7 @@ void realignCards();
 void createCardFromItem(RenderSystem* renderer, Entity item);
 void returnCardToItem(Entity card);
 // the combat map
-std::vector<vec2> generateMapCheckpoints(std::default_random_engine& rng, uint path_length);
+std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, uint path_length);
 Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints,
                  std::default_random_engine rng, std::uniform_real_distribution<float> dist);
 // marker to place cards on combat map
