@@ -274,10 +274,10 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos, EnemyType enemyType) 
             registry.slimes.emplace(entity);
             registry.renderGameLayer.insert(entity, {
                     {Stationary{}},
-                    {},
+                    {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
                     Z_MIDDLE,
                     TEXTURE_ASSET_ID::SLIME,
-                    EFFECT_ASSET_ID::TEXTURED,
+                    EFFECT_ASSET_ID::TEXTURED_ATLAS,
                     GEOMETRY_BUFFER_ID::SPRITE,
             });
             break;

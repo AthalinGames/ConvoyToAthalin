@@ -175,12 +175,13 @@ bool TDSystem::step(const float elapsed_ms) {
             }
             // Check if enemy completed Path
             for (std::size_t i = 0; i < registry.enemies.size(); ++i) {
-                const auto &enemy = registry.enemies.components[i];
+                auto &enemy = registry.enemies.components[i];
                 const Entity enemy_entity = registry.enemies.entities[i];
                 if (enemy.enemy_progress >= 1.0f && enemy.alive) {
                     for (Player &player: registry.players.components) {
                         player.health -= enemy.damage;
                     }
+                    handle_enemy_death(enemy_entity, enemy);
                     // Delete damaging entity
                     registry.remove_all_components_of(enemy_entity);
                     enemies.erase(enemy_entity);

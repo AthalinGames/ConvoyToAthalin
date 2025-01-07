@@ -69,10 +69,6 @@ enum class TEXTURE_ASSET_ID {
     BOW,
     SWORD,
     SLIME,
-    SLIME_L,
-    SLIME_U,
-    SLIME_R,
-    SLIME_D,
     SLIME_BIG,
 	OVERVIEW_MAP,
 	BLACK_PIXEL,
@@ -98,10 +94,6 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
         case TEXTURE_ASSET_ID::BOW: return "bow_and_arrow.png";
         case TEXTURE_ASSET_ID::SWORD: return "sword.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
-        case TEXTURE_ASSET_ID::SLIME_L: return "Slime4.png";
-        case TEXTURE_ASSET_ID::SLIME_U: return "Slime1.png";
-        case TEXTURE_ASSET_ID::SLIME_R: return "Slime2.png";
-        case TEXTURE_ASSET_ID::SLIME_D: return "Slime3.png";
         case TEXTURE_ASSET_ID::SLIME_BIG: return "slime_big.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_MAP: return "overview_map.png";
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
@@ -136,6 +128,7 @@ const std::set texture_atlases = {
     TEXTURE_ASSET_ID::KNIGHT,
     TEXTURE_ASSET_ID::SWORD,
     TEXTURE_ASSET_ID::BOMB,
+    TEXTURE_ASSET_ID::SLIME,
     TEXTURE_ASSET_ID::SLIME_BIG,
 	TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
 	TEXTURE_ASSET_ID::TD_MAP_ATLAS,
@@ -347,6 +340,19 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
         }
         case TEXTURE_ASSET_ID::BOMB: {
             constexpr unsigned int cols = 4, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
+        case TEXTURE_ASSET_ID::SLIME: {
+            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
             atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
             for (unsigned int i = 0; i < maxCount; i++) {

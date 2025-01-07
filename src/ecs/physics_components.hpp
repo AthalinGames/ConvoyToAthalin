@@ -52,14 +52,6 @@ inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID
     switch (id) {
         case TEXTURE_ASSET_ID::SLIME: //TODO: Slime poly currently not used, since other asset ids used for different textures
             return slime_collision_poly;
-        case TEXTURE_ASSET_ID::SLIME_D:
-            return slime_collision_poly;
-        case TEXTURE_ASSET_ID::SLIME_L:
-            return slime_collision_poly;
-        case TEXTURE_ASSET_ID::SLIME_U:
-            return slime_collision_poly;
-        case TEXTURE_ASSET_ID::SLIME_R:
-            return slime_collision_poly;
         case TEXTURE_ASSET_ID::BOW:
             return arrow_collision_poly;
         case TEXTURE_ASSET_ID::SWORD:
