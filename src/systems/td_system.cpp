@@ -266,14 +266,18 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
     //TODO: maybe remove entry from pool when selected, to increase variation
 
     //{enemy_type, amount, interval, speed}
-    std::vector<vec4> combat_pool = {vec4(EnemyType::SLIME, 1, 1000., 100.),
-                                     vec4(EnemyType::SLIME, 2, 1000., 100.),
-                                     vec4(EnemyType::SLIME, 3, 1000., 100.),
-                                     vec4(EnemyType::SLIME, 4, 1000., 100.),
-                                     vec4(EnemyType::SLIME, 1, 500., 100.),
-                                     vec4(EnemyType::SLIME, 2, 500., 100.),
-                                     vec4(EnemyType::SLIME, 3, 500., 100.),
-                                     vec4(EnemyType::SLIME, 4, 500., 100.)};
+    std::vector<vec4> combat_pool = {vec4(EnemyType::SLIME, 1, 1000., 120.),
+                                     vec4(EnemyType::SLIME, 2, 1000., 120.),
+                                     vec4(EnemyType::SLIME, 3, 1000., 120.),
+                                     vec4(EnemyType::SLIME, 4, 1000., 120.),
+                                     vec4(EnemyType::SLIME, 1, 500., 120.),
+                                     vec4(EnemyType::SLIME, 2, 500., 120.),
+                                     vec4(EnemyType::SLIME, 3, 500., 120.),
+                                     vec4(EnemyType::SLIME, 4, 500., 120.),
+                                     vec4(EnemyType::SLIME_BIG, 1, 1000., 100.),
+                                     vec4(EnemyType::SLIME_BIG, 2, 1000., 100.),
+                                     vec4(EnemyType::SLIME_BIG, 1, 500., 100.),
+                                     vec4(EnemyType::SLIME_BIG, 2, 500., 100.),};
     std::vector<Entity> enemy_list = {};
     uint wave_amount = 1 + int(std::floor(difficulty/2)); //TODO: better curve maybe some kind of sigmoid
     std::uniform_int_distribution<int> uniform_int_dist(0, combat_pool.size()-1);
@@ -313,12 +317,29 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
             vec4 wave = combat_pool[uniform_int_dist(rng)];
             spawn_time += wave[2];
             for (int j = 0; j < wave[1]; ++j) {
-                const Entity new_enemy = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
+                const Entity new_enemy = createEnemy(renderer, {0, 100}, static_cast<EnemyType>(wave[0]));
+                std::vector<Entity> spawns_enemies = {};
+                if (static_cast<EnemyType>(wave[0]) == EnemyType::SLIME_BIG) {
+                    const auto spawned_enemy1 = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
+                    const auto spawned_enemy2 = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
+                    enemies.emplace(spawned_enemy1);
+                    Enemy &spawn1 = registry.enemies.get(spawned_enemy1);
+                    spawn1.speed = 100.f;
+                    spawns_enemies.push_back(spawned_enemy1);
+                    enemies.emplace(spawned_enemy2);
+                    Enemy &spawn2 = registry.enemies.get(spawned_enemy2);
+                    spawn2.speed = 120.f;
+                    spawns_enemies.push_back(spawned_enemy2);
+                }
                 enemies.emplace(new_enemy);
                 Enemy& enemy = registry.enemies.get(new_enemy);
                 enemy.health += static_cast<int>(std::floor(difficulty/2) * 50);
                 enemy.speed = wave[3] + wave[3] * (difficulty / 10);
                 enemy.spawn_time = spawn_time;
+                for (auto spawn_entity : spawns_enemies) {
+                    enemy.spawns_enemies.push_back(spawn_entity);
+                }
+
                 enemy_list.push_back(new_enemy);
 
                 spawn_time += wave[2];
