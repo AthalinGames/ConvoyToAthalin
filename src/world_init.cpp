@@ -403,7 +403,14 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 		}
 	}
 	map_checkpoints.push_back(current_checkpoint);
+	uint iteration_count = 0;
+	bool restart = false;
 	while (current_length < path_length) {
+		++iteration_count;
+		if (iteration_count > 1000) {
+			restart = true;
+			break;
+		}
 		const int section_length = section_length_dist(rng);
 		vec2 new_checkpoint;
 
@@ -470,7 +477,7 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 
 			if (manhattan_dist_last > manhatten_dist_section || manhatten_dist_next > manhattan_dist_last) {
 				const float small_dist = min(manhattan_dist_last, manhatten_dist_next);
-				if (small_dist <= 1) {
+				if (small_dist < 2) {
 					printf("Checkpoint too close to another checkpoint %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
 					regenerate = true;
 					break; // the section hit too close to a checkpoint
@@ -478,14 +485,14 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 			} else {
 				if (next_checkpoint.x - last_checkpoint.x == 0) {
 					// vertical section
-					if (abs(last_checkpoint.x - new_checkpoint.x) <= 1) {
+					if (abs(last_checkpoint.x - new_checkpoint.x) < 2) {
 						printf("Checkpoint too close to vertical section %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
 						regenerate = true;
 						break;
 					}
 				} else if (next_checkpoint.y - last_checkpoint.y == 0) {
 					// horizontal section
-					if (abs(last_checkpoint.y - new_checkpoint.y) <= 1) {
+					if (abs(last_checkpoint.y - new_checkpoint.y) < 2) {
 						printf("Checkpoint too close to horizontal section %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
 						regenerate = true;
 						break;
@@ -503,6 +510,10 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 		map_checkpoints.push_back(new_checkpoint);
 		current_checkpoint = new_checkpoint;
 		current_dir = new_dir;
+	}
+	if (restart) {
+		// the current generation was probably impossible, thus we restart the generation
+		return generateMapCheckpoints(rng, path_length);
 	}
 
 	return map_checkpoints;
