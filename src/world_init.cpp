@@ -458,12 +458,10 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 		// check if point is within bounds
 		if (new_checkpoint.x < 1 || new_checkpoint.x > MAP_COUNT_X - 3) {
 			// checkpoint is too far right or left
-			printf("Checkpoint position out of bounds (left right) %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
-			continue; //TODO this just retries until it finds a fitting solution
+			continue; // this just retries until it finds a fitting solution
 		}
 		if (new_checkpoint.y < 1 || new_checkpoint.y > MAP_COUNT_Y - 4) {
 			// checkpoint is too high or too low
-			printf("Checkpoint position out of bounds (top bottom) %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
 			continue;
 		}
 		// check if point is either on the existing line or has a one tile gap
@@ -471,18 +469,20 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 		bool regenerate = false;
 		for (int i = 1; i < map_checkpoints.size(); ++i) {
 			const vec2 next_checkpoint = map_checkpoints.at(i);
-			const float manhatten_dist_section = abs(next_checkpoint.x - last_checkpoint.x) + abs(next_checkpoint.y - last_checkpoint.y);
+			const float manhattan_dist_section = abs(next_checkpoint.x - last_checkpoint.x) + abs(next_checkpoint.y - last_checkpoint.y);
 			const float manhattan_dist_last = abs(last_checkpoint.x - new_checkpoint.x) + abs(last_checkpoint.y - new_checkpoint.y);
-			const float manhatten_dist_next = abs(next_checkpoint.x - new_checkpoint.x) + abs(next_checkpoint.y - new_checkpoint.y);
+			const float manhattan_dist_next = abs(next_checkpoint.x - new_checkpoint.x) + abs(next_checkpoint.y - new_checkpoint.y);
 
-			if (manhattan_dist_last > manhatten_dist_section || manhatten_dist_next > manhattan_dist_last) {
-				const float small_dist = min(manhattan_dist_last, manhatten_dist_next);
+			if (manhattan_dist_last > manhattan_dist_section || manhattan_dist_next > manhattan_dist_section) {
+				printf("Checking checkpoints\n");
+				const float small_dist = min(manhattan_dist_last, manhattan_dist_next);
 				if (small_dist < 2) {
 					printf("Checkpoint too close to another checkpoint %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
 					regenerate = true;
 					break; // the section hit too close to a checkpoint
 				}
 			} else {
+				printf("Checking sections\n");
 				if (next_checkpoint.x - last_checkpoint.x == 0) {
 					// vertical section
 					if (abs(last_checkpoint.x - new_checkpoint.x) < 2) {
@@ -500,6 +500,13 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 				}
 			}
 
+			printf("(%f, %f) -> (%f, %f) (%f, %f)\n", new_checkpoint.x, new_checkpoint.y, last_checkpoint.x, last_checkpoint.y, next_checkpoint.x, next_checkpoint.y);
+			printf("         | CP Dist: %f\n", manhattan_dist_section);
+			printf("         | LS Dist: %f\n", manhattan_dist_last);
+			printf("         | LN Dist: %f\n", manhattan_dist_next);
+			printf("         | VT Dist: %f\n", abs(last_checkpoint.x - new_checkpoint.x));
+			printf("         | HZ DIST: %f\n", abs(last_checkpoint.y - new_checkpoint.y));
+
 			last_checkpoint = next_checkpoint;
 		}
 		if (regenerate) {
@@ -513,6 +520,18 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 	}
 	if (restart) {
 		// the current generation was probably impossible, thus we restart the generation
+		return generateMapCheckpoints(rng, path_length);
+	}
+	// check that no corner of the final checkpoint is hit
+	for (int i = 0; i < map_checkpoints.size() - 1; ++i) {
+		float dist = length(map_checkpoints.at(i) - map_checkpoints.back());
+		if (dist < 2) {
+			restart = true;
+			break;
+		}
+	}
+	if (restart) {
+		// regenerate path to fix issue
 		return generateMapCheckpoints(rng, path_length);
 	}
 

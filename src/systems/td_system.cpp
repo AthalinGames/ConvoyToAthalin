@@ -323,14 +323,14 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
     return enemy_list;
 }
 
-static std::vector<vec2> generated_path{};
-
 Entity TDSystem::generate_map(const int difficulty) const {
     //TODO: maps accessible for different difficulty levels some maps more likely for difficulty to be in pool,
     // maybe do normal distr curve around difficulty?
+    const auto difficulty_to_path_length = std::vector({20, 18, 16, 14, 12, 10, 8, 6});
 
-    Entity new_map;
-    switch (difficulty) {
+    const auto generated_path = generateMapCheckpoints(rng, difficulty_to_path_length.at(difficulty));
+    const Entity new_map = createMap(renderer, generated_path, rng, uniform_dist);
+    /*switch (difficulty) {
         case 0: {
             const std::vector<vec2> path_coords = {
                 {0, 2}, {7, 2}, {7, 5}, {13, 5}
@@ -391,7 +391,7 @@ Entity TDSystem::generate_map(const int difficulty) const {
             new_map = createMap(renderer, path_coords, rng, uniform_dist);
             break;
         }
-    }
+    }*/
     return  new_map;
 }
 
