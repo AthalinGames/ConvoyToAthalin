@@ -541,6 +541,11 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<vec2>& path, const TD_MAP_ATLAS_TEXTURES initial_tile) {
 	vec2 checkpoint = path[0];
 	bool top_left = false, top_right = false, bottom_left = false, bottom_right = false;
+	if (tile_pos.y == 0) {
+		bottom_left = true;
+		bottom_right = true;
+	}
+	// TODO fix path coming from the top
 	if (checkpoint == tile_pos) {
 		top_right = true;
 	} else if (checkpoint + vec2{0, 1} == tile_pos) {
