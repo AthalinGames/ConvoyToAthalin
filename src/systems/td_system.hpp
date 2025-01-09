@@ -81,12 +81,17 @@ private:
     Entity tutorial_background;
     static constexpr std::string_view tutorial_string = R"(
 This is the tower defence screen, here you do the actual fighting against enemies.
-On the bottom there are some cards that represent your towers, to place a tower
-you can drag and drop a card onto the desired location.
-(Think about the range of the tower, that is currently not displayed)
+On the bottom there are some cards that represent your towers (grey) and consumables (yellow),
+to place a tower you can drag and drop a card with left-clock onto the desired location.
+If you decide against placing a tower you are currently dragging you can either press right-click or
+let go left-click at the bottom of the screen.
+Placing a tower consumes 5 food (visible in the upper-left corner below HP).
+If you don't have enough food the tower cannot be placed.
 To start the round you need to press 'c'.
-WARNING: After the round started you cannot place any towers
-You defend the camping fire and the enemies spawn at the opposite side of the path
+You defend the campfire and the enemies spawn at the opposite side of the path.
+When the combat ends you gain 5 food and additionally 10 food for each tower card (grey),
+that was not placed.
+Then you can select 1 of 3 cards to add to your collection of available cards.
 )";
     static constexpr auto tutorial_pos = vec2(100, 100);
 

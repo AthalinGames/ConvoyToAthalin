@@ -657,7 +657,7 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
         }
         case GLFW_KEY_T: {
             if (action == GLFW_PRESS) {
-                tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{405, 75}, {820, 140}, 0.75f);
+                tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{495, 130}, {1020, 255}, 0.75f);
                 tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data());
                 cleanup_entities.push_back(tutorial_text);
                 cleanup_entities.push_back(tutorial_background);
