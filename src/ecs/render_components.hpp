@@ -33,6 +33,11 @@ struct Mesh
 	std::vector<uint16_t> vertex_indices;
 };
 
+// Walk animation timers
+struct SlimeWalkTimer{ // timer for Slime and SlimeBig
+    float time = 1000;
+};
+
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture

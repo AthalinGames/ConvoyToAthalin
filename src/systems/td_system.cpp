@@ -336,6 +336,20 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
         }
         //return enemy_list;
     }
+
+    //TODO: add animation timer for every different enemy speed in enemies to player entity
+    //std::set<float> enemy_speeds;
+    auto &current_player = registry.players.get(player);
+    for (const auto enemy_entity : enemies) {
+        const auto enemy = registry.enemies.get(enemy_entity);
+        if (!current_player.animation_timers.contains(enemy.speed)) {
+            const Entity timer_entity = Entity();
+            auto timer = registry.slimeWalkTimers.emplace(timer_entity);
+            timer.time = 1000.f * 100.f / enemy.speed;
+            registry.players.get(player).animation_timers.emplace(enemy.speed, timer_entity);
+        }
+    }
+
     return enemy_list;
 }
 

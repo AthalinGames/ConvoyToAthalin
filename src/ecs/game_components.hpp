@@ -4,6 +4,7 @@
 
 #include "common.hpp"
 #include <vector>
+#include <map>
 
 // Player component
 struct Player {
@@ -15,6 +16,7 @@ struct Player {
     std::vector<Entity> owned_cards;
     int won_battles = 0;
     Entity placement_marker;
+    std::map<float, Entity> animation_timers; // TODO: map movement speed to animation timer
 };
 
 // Enemy components
