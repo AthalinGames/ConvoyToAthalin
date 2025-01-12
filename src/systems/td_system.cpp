@@ -778,6 +778,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         continue;
                     }
                     const Entity tower_entity = registry.towers.entities[tower_index];
+                    printf("dist to tower %f", distance(registry.motions.get(tower_entity).position, card_pos));
                     if (abs(distance(registry.motions.get(tower_entity).position, card_pos)) < tower_blocked_radius) {
                         place_occupied = true;
                     }
@@ -831,11 +832,13 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     std::erase(cards, dragged_entity); // C++20 is nice
                     if (registry.towers.has(dragged_entity)) {
                         createTowerFromCard(renderer, dragged_entity);
+                        auto &dragged_tower = registry.towers.get(dragged_entity);
                         auto tower_motion = registry.motions.get(dragged_entity);
                         towers.emplace_back(dragged_entity);
+                        dragged_tower.placed = true;
                         // subtract food cost
                         auto &current_player = registry.players.get(player);
-                        current_player.food -= registry.towers.get(dragged_entity).food_cost;
+                        current_player.food -= dragged_tower.food_cost;
                         // recalculate cards that can be placed
                         for (const Entity card: cards) {
                             if (registry.towers.has(card)) {

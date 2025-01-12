@@ -70,7 +70,7 @@ enum class EnemyPriority {
 };
 
 struct Tower {
-	bool placed = false;
+	bool placed = false; //TODO: placed even necessary? other towers are cards next to which towers cant be placed either
 	float range = 50.0f; //TODO: is range scaled with window? when trying #include "world_init.hpp" compilation fails
 	int food_cost = 5;
 	int food_gain = 10;

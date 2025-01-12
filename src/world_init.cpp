@@ -217,6 +217,7 @@ void returnTowerToItem(const Entity tower) {
 	registry.renderGameLayer.remove(tower);
 
 	if (registry.items.has(tower)) {
+        registry.towers.get(tower).placed = false;
         if (registry.archers.has(tower)) {
             returnArcherToItem(tower);
         }
