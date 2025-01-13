@@ -657,7 +657,7 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
         }
         case GLFW_KEY_T: {
             if (action == GLFW_PRESS) {
-                tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{405, 75}, {820, 140}, 0.75f);
+                tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{495, 130}, {1020, 255}, 0.75f);
                 tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data());
                 cleanup_entities.push_back(tutorial_text);
                 cleanup_entities.push_back(tutorial_background);
@@ -778,6 +778,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         continue;
                     }
                     const Entity tower_entity = registry.towers.entities[tower_index];
+                    printf("dist to tower %f", distance(registry.motions.get(tower_entity).position, card_pos));
                     if (abs(distance(registry.motions.get(tower_entity).position, card_pos)) < tower_blocked_radius) {
                         place_occupied = true;
                     }
@@ -831,11 +832,13 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     std::erase(cards, dragged_entity); // C++20 is nice
                     if (registry.towers.has(dragged_entity)) {
                         createTowerFromCard(renderer, dragged_entity);
+                        auto &dragged_tower = registry.towers.get(dragged_entity);
                         auto tower_motion = registry.motions.get(dragged_entity);
                         towers.emplace_back(dragged_entity);
+                        dragged_tower.placed = true;
                         // subtract food cost
                         auto &current_player = registry.players.get(player);
-                        current_player.food -= registry.towers.get(dragged_entity).food_cost;
+                        current_player.food -= dragged_tower.food_cost;
                         // recalculate cards that can be placed
                         for (const Entity card: cards) {
                             if (registry.towers.has(card)) {
