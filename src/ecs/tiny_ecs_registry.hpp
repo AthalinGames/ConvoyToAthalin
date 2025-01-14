@@ -39,7 +39,7 @@ public:
 	ComponentContainer<OverviewMapLocation> overviewMapLocations;
 	// TODO Think about deleting this or replace this for the collision polygons
 	ComponentContainer<Mesh*> meshPtrs;
-    ComponentContainer<SlimeWalkTimer> slimeWalkTimers;
+    ComponentContainer<EnemyWalkTimer> enemyWalkTimers;
 	ComponentContainer<RenderRequest> renderBackground;
 	ComponentContainer<RenderRequest> renderGameLayer;
 	ComponentContainer<RenderRequest> renderForeground;
@@ -79,7 +79,7 @@ public:
         registry_list.push_back(&slimesBig);
 		registry_list.push_back(&overviewMapLocations);
 		registry_list.push_back(&meshPtrs);
-        registry_list.push_back(&slimeWalkTimers);
+        registry_list.push_back(&enemyWalkTimers);
 		registry_list.push_back(&renderBackground);
 		registry_list.push_back(&renderGameLayer);
 		registry_list.push_back(&renderForeground);

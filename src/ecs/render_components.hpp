@@ -34,8 +34,9 @@ struct Mesh
 };
 
 // Walk animation timers
-struct SlimeWalkTimer{ // timer for Slime and SlimeBig
-    float time = 1000;
+struct EnemyWalkTimer{ // timer for Slime and SlimeBig
+    float time = 0.f;
+    float start_time = 700.f;
 };
 
 /**
@@ -213,6 +214,13 @@ enum class BOMB_SPRITE {
     COUNT,
 };
 
+enum class SLIME_WALK_FRAME {
+    FRAME0 = 0,
+    FRAME1,
+    FRAME2,
+    COUNT,
+};
+
 
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
 	// here the texture positions are defined
@@ -357,7 +365,7 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
             break;
         }
         case TEXTURE_ASSET_ID::SLIME: {
-            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr unsigned int cols = 3, rows = 4, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
             atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
             for (unsigned int i = 0; i < maxCount; i++) {
