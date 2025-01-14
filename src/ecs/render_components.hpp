@@ -378,7 +378,7 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
             break;
         }
         case TEXTURE_ASSET_ID::SLIME_BIG: {
-            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr unsigned int cols = 3, rows = 4, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
             atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
             for (unsigned int i = 0; i < maxCount; i++) {

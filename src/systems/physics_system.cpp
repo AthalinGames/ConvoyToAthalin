@@ -220,7 +220,7 @@ vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, Entity enemy_entity, 
     float walk_speed = 0;
     const float walk_interval = walk_timer.start_time / (static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT) * 2 - 1);
     if (walk_timer.time > walk_interval) {
-        const float move_time = walk_timer.start_time - walk_interval;
+        const float move_time = walk_timer.start_time - walk_interval; // time duration when enemy is moving
         walk_speed = (1.f - pow(abs(walk_timer.time - move_time/2)/move_time/2, 2.f)) * enemy.speed * 1.2f;
     }
 	enemy_progress += (walk_speed * seconds) / current_map.path_length;

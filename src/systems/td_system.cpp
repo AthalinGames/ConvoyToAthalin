@@ -183,6 +183,9 @@ bool TDSystem::step(const float elapsed_ms) {
                     enemy_motion.angle = angle;
                     registry.invisibles.remove(td_map.enemies[0]);
                     auto &walk_timer = registry.enemyWalkTimers.emplace(td_map.enemies[0]);
+                    if (registry.slimesBig.has(td_map.enemies[0])) {
+                        walk_timer.start_time *= 1.7f;
+                    }
                     walk_timer.time = walk_timer.start_time * 100.f / next_enemy.speed; // scale original time of walkTimer to enemy speed
                     td_map.enemies.erase(td_map.enemies.begin());
                 }
@@ -201,6 +204,12 @@ bool TDSystem::step(const float elapsed_ms) {
                     enemies.erase(enemy_entity);
                 }
             }
+
+            // Check if round is won
+            if (registry.enemies.components.empty() && registry.maps.get(map).enemies.empty()) {
+                current_phase = GamePhase::FIGHT_DONE;
+            }
+
             // Check if player still has health
             for (std::size_t i = 0; i < registry.players.size(); ++i) {
                 const auto &player = registry.players.components[i];
@@ -209,10 +218,6 @@ bool TDSystem::step(const float elapsed_ms) {
                 }
             }
 
-            // Check if round is won
-            if (registry.enemies.components.empty() && registry.maps.get(map).enemies.empty()) {
-                current_phase = GamePhase::FIGHT_DONE;
-            }
             break;
         }
         case GamePhase::FIGHT_DONE: {

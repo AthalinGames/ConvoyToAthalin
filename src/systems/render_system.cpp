@@ -42,7 +42,7 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
         //        render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
         //    }
         //} else 
-        if(registry.archers.has(entity) || registry.knights.has(entity) || registry.swords.has(entity) || registry.slimesBig.has(entity)) {
+        if(registry.archers.has(entity) || registry.knights.has(entity) || registry.swords.has(entity)) {
             float angle_by_pi = pos.angle / M_PI;
             if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
                 //look left
@@ -60,7 +60,7 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
                     render_request.z_position = Z_BACKGROUND;
                 }
             }
-        } else if (registry.slimes.has(entity)) {
+        } else if (registry.enemies.has(entity)) {
             auto atlas_id = 0;
             //for (auto i = static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT); i > 0; --i) {
             //    if (walk_timer.time < walk_interval * i) {
@@ -85,9 +85,6 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
                 //look down
                 //render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
                 atlas_id = static_cast<unsigned int>(DIRECTION_SPRITE::DOWN);
-                if (registry.swords.has(entity)) {
-                    render_request.z_position = Z_BACKGROUND;
-                }
             }
             atlas_id *= static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT);
             const auto walk_timer = registry.enemyWalkTimers.get(entity);
@@ -104,7 +101,7 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
                 atlas_id += static_cast<unsigned int>(SLIME_WALK_FRAME::FRAME0);
             }
 
-            printf("slime atlas id: %d, walk_timer: %f\n", atlas_id, walk_timer.time);
+            //printf("slime atlas id: %d, walk_timer: %f\n", atlas_id, walk_timer.time);
             render_request.atlas_ids = {static_cast<unsigned int>(atlas_id)};
         }
     }
