@@ -27,7 +27,7 @@ public:
     void cleanup_ecs();
 
     // Handle an enemy dying
-    void handle_enemy_death(Entity enemy_entity, Enemy &enemy);
+    static void handle_enemy_death(Entity enemy_entity, Enemy &enemy);
 
     // Check for collisions
     void handle_collision(Entity first, Entity second);

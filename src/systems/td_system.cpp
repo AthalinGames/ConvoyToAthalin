@@ -247,6 +247,7 @@ bool TDSystem::step(const float elapsed_ms) {
             stationary2.position = {2 * (window_width_px / 3), window_height_px / 2};
             new_cards.push_back(random_item2);
             for (const auto card : cards) {
+                registry.colors.remove(card);
                 returnCardToItem(card);
             }
             cards.clear();
@@ -475,6 +476,9 @@ void TDSystem::restart_td_fight() {
     const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial", FontType::SQUARE);
     cleanup_entities.push_back(text);
 
+    const Entity card_background = createBlackSquare(renderer, {window_width_px / 2, CARD_AXIS_HEIGHT}, {window_width_px, CARD_HEIGHT}, 0.75);
+    cleanup_entities.push_back(card_background);
+
     registry.list_all_components();
 }
 
@@ -482,7 +486,7 @@ void TDSystem::handle_enemy_death(const Entity enemy_entity, Enemy &enemy) {
     assert(registry.enemies.has(enemy_entity) && "Entity not an enemy");
     enemy.alive = false;
     const auto enemy_motion = registry.motions.get(enemy_entity);
-    for (auto spawn_entity : enemy.spawns_enemies) {
+    for (const auto spawn_entity : enemy.spawns_enemies) {
         auto &spawn_enemy = registry.enemies.get(spawn_entity);
         auto &spawn_motion = registry.motions.get(spawn_entity);
         if (registry.slimes.has(spawn_entity)) {

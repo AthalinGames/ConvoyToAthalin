@@ -83,5 +83,7 @@ Entity createGameOver(RenderSystem* renderer);
 
 Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alpha);
 
+Entity createStatusBar();
+
 /// scale defines the scale of each character
 RenderRequest createTextRenderRequest(const std::string& text, vec2 scale, FontType font);
