@@ -176,7 +176,7 @@ void PhysicsSystem::step(float elapsed_ms)
                 if(registry.enemies.get(entity_j).spawned) {
                     if (enemyInRange(motion_i, registry.bombs.get(entity_i).range, motion_j)) {
                         const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
-                        auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
+                        auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture, request_j.atlas_ids[0]);
                         if (enemyPolyInBombRange(motion_i, registry.bombs.get(entity_i), motion_j, poly_j)) {
                             registry.collisions.emplace_with_duplicates(entity_i, entity_j);
                             registry.collisions.emplace_with_duplicates(entity_j, entity_i);
@@ -190,8 +190,8 @@ void PhysicsSystem::step(float elapsed_ms)
             	// TODO Think about Entities with multiple render requests
             	const RenderRequest& request_i = registry.renderGameLayer.get(entity_i);
             	const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
-            	auto& poly_i = getCollisionMeshOfTexture(request_i.used_texture);
-            	auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
+            	auto& poly_i = getCollisionMeshOfTexture(request_i.used_texture, request_i.atlas_ids[0]);
+            	auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture, request_j.atlas_ids[0]);
                 if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
             		// Create a collisions event
             		// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
