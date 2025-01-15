@@ -376,7 +376,7 @@ void WorldSystem::restart_game() {
 		createOverviewLine(renderer, last_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
 	}
 
-	tutorial_hint = createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial");
+	tutorial_hint = createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial", FontType::SQUARE);
 }
 
 // Compute collisions between entities
@@ -437,7 +437,7 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 		}
 		case GLFW_KEY_T: {
 			if (action == GLFW_PRESS) {
-				tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data());
+				tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data(), FontType::SQUARE);
 			} else if (action == GLFW_RELEASE) {
 				registry.remove_all_components_of(tutorial_text);
 			}

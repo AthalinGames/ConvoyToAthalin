@@ -77,11 +77,11 @@ Entity createStartIcon(RenderSystem* renderer);
 
 Entity createOverviewSelection(RenderSystem* renderer, vec2 pos);
 
-Entity createText(RenderSystem* renderer, vec2 pos, vec2 scale, const std::string &text);
+Entity createText(RenderSystem* renderer, vec2 pos, vec2 scale, const std::string &text, FontType font);
 
 Entity createGameOver(RenderSystem* renderer);
 
 Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alpha);
 
 /// scale defines the scale of each character
-RenderRequest createTextRenderRequest(const std::string& text, vec2 scale);
+RenderRequest createTextRenderRequest(const std::string& text, vec2 scale, FontType font);

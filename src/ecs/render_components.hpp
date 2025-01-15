@@ -78,6 +78,7 @@ enum class TEXTURE_ASSET_ID {
     TD_MAP_ATLAS,
 	OVERVIEW_ICONS_ATLAS,
 	ASCII_CHAR_ATLAS,
+	SLIM_ASCII_CHAR_ATLAS,
 	TEXTURE_COUNT
 };
 
@@ -103,6 +104,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::TD_MAP_ATLAS: return "TDMapAtlas.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: return "overviewIconsAtlas.png";
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: return "charmap-oldschool_preview.png"; // Source: https://opengameart.org/content/ascii-bitmap-font-oldschool
+		case TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS: return "font.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
@@ -132,6 +134,12 @@ const std::set texture_atlases = {
     TEXTURE_ASSET_ID::SLIME_BIG,
 	TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
 	TEXTURE_ASSET_ID::TD_MAP_ATLAS,
+	TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS,
+};
+
+enum class FontType {
+	SQUARE = static_cast<int>(TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS),
+	SLIM = static_cast<int>(TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS),
 };
 
 enum class OVERVIEW_ICON_TEXTURES {
@@ -208,7 +216,6 @@ enum class BOMB_SPRITE {
     COUNT,
 };
 
-
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
 	// here the texture positions are defined
 	switch (atlas_id) {
@@ -227,6 +234,8 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			}
 			break;
 		}
+		// TODO think about a collective font system
+		case TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS:
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: {
 			// TODO remember that the char offset is 0x20, so to get the correct char you need to subtract 0x20
 			constexpr unsigned int cols = 18, rows = 7, maxCount = cols * rows;

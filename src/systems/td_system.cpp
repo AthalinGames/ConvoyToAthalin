@@ -226,7 +226,7 @@ bool TDSystem::step(const float elapsed_ms) {
             const Entity square = createBlackSquare(renderer, {window_width_px / 2, window_height_px / 2},
                                                         {window_width_px, window_height_px}, 0.5f);
             cleanup_entities.push_back(square);
-            const Entity text = createText(renderer, {window_width_px * 0.35, window_height_px * 0.2}, {20, 20},  "Choose a new Card:");
+            const Entity text = createText(renderer, {window_width_px * 0.35, window_height_px * 0.2}, {20, 20},  "Choose a new Card:", FontType::SQUARE);
             cleanup_entities.push_back(text);
             // Create random Items
             // TODO think about amount of items
@@ -472,7 +472,7 @@ void TDSystem::restart_td_fight() {
         }
     }
 
-    const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial");
+    const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial", FontType::SQUARE);
     cleanup_entities.push_back(text);
 
     registry.list_all_components();
@@ -658,7 +658,7 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
         case GLFW_KEY_T: {
             if (action == GLFW_PRESS) {
                 tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{495, 130}, {1020, 255}, 0.75f);
-                tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data());
+                tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data(), FontType::SQUARE);
                 cleanup_entities.push_back(tutorial_text);
                 cleanup_entities.push_back(tutorial_background);
             } else if (action == GLFW_RELEASE) {

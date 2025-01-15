@@ -1024,13 +1024,13 @@ Entity createLine(const vec2 position, const vec2 size) {
 	return entity;
 }
 
-Entity createText(RenderSystem* renderer, const vec2 pos, const vec2 scale, const std::string &text) {
+Entity createText(RenderSystem* renderer, const vec2 pos, const vec2 scale, const std::string &text, const FontType font) {
 	const auto entity = Entity();
 
 	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	registry.renderForeground.insert(entity, createTextRenderRequest(text, scale));
+	registry.renderForeground.insert(entity, createTextRenderRequest(text, scale, font));
 
 	// Create stationary
 	Stationary& stationary = registry.stationaries.emplace(entity);
@@ -1071,9 +1071,9 @@ Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size
 }
 
 
-RenderRequest createTextRenderRequest(const std::string& text, const vec2 scale) {
+RenderRequest createTextRenderRequest(const std::string& text, const vec2 scale, const FontType font) {
 	RenderRequest request{};
-	request.used_texture = TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS;
+	request.used_texture = static_cast<TEXTURE_ASSET_ID>(font);
 	request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
 	request.used_geometry = GEOMETRY_BUFFER_ID::SPRITE;
 	request.z_position = Z_FOREGROUND;
