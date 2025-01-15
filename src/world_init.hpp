@@ -32,6 +32,8 @@ constexpr float MAP_HEIGHT = static_cast<float>(window_height_px);
 // Gridsize for TD-Maptiles
 constexpr unsigned int MAP_COUNT_X = 17;
 constexpr unsigned int MAP_COUNT_Y = 10;
+constexpr float TILE_HEIGHT = window_height_px / (MAP_COUNT_Y - 1);
+constexpr float TILE_WIDTH = window_width_px / (MAP_COUNT_X - 1);
 
 // These are hard coded for each render layer
 constexpr float Z_BACKGROUND = -1;
@@ -39,7 +41,7 @@ constexpr float Z_MIDDLE = 0;
 constexpr float Z_FOREGROUND = 1;
 
 // the player
-Entity createPlayer();
+Entity createPlayer(RenderSystem *renderer);
 // item
 Entity createItem(ItemType item);
 Entity createRandomItem(std::default_random_engine& rng);
@@ -82,8 +84,6 @@ Entity createText(RenderSystem* renderer, vec2 pos, vec2 scale, const std::strin
 Entity createGameOver(RenderSystem* renderer);
 
 Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alpha);
-
-Entity createStatusBar();
 
 /// scale defines the scale of each character
 RenderRequest createTextRenderRequest(const std::string& text, vec2 scale, FontType font);

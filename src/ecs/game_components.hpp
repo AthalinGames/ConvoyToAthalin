@@ -14,7 +14,13 @@ struct Player {
 	int baseFoodGain = 5;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
+	std::vector<Entity> status_bar_entities;
+	std::function<void()> status_bar_cleanup_func = []{};
     Entity placement_marker;
+
+	~Player() {
+		status_bar_cleanup_func();
+	}
 };
 
 // Enemy components

@@ -235,7 +235,20 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			break;
 		}
 		// TODO think about a collective font system
-		case TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS:
+		case TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS: {
+			// TODO remember that the char offset is 0x20, so to get the correct char you need to subtract 0x20
+			constexpr unsigned int cols = 18, rows = 6, maxCount = cols * rows;
+			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+			for (unsigned int i = 0; i < maxCount; i++) {
+				const float x_start = (i % cols) * tex_width;
+				const float y_start = (i / cols) * tex_height;
+				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+				texDef.tex_pos = vec2(x_start, y_start);
+				texDef.tex_size = vec2(tex_width, tex_height);
+			}
+			break;
+		}
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: {
 			// TODO remember that the char offset is 0x20, so to get the correct char you need to subtract 0x20
 			constexpr unsigned int cols = 18, rows = 7, maxCount = cols * rows;

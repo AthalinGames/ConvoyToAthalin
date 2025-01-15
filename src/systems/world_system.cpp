@@ -288,7 +288,7 @@ void WorldSystem::restart_game() {
 
 	td_fight_launched = false;
 	// Setup initial Player Hand (Start with one archer)
-    player = createPlayer();
+    player = createPlayer(renderer);
 	createItem(TowerType::ARCHER);
     createItem(TowerType::KNIGHT);
     createItem(ConsumableType::BOMB);
