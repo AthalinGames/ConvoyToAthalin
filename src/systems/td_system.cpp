@@ -285,14 +285,18 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
     //TODO: maybe remove entry from pool when selected, to increase variation
 
     //{enemy_type, amount, interval, speed}
-    std::vector<vec4> combat_pool = {vec4(EnemyType::SLIME, 1, 1000., 100.),
-                                     vec4(EnemyType::SLIME, 2, 1000., 100.),
-                                     vec4(EnemyType::SLIME, 3, 1000., 100.),
-                                     vec4(EnemyType::SLIME, 4, 1000., 100.),
-                                     vec4(EnemyType::SLIME, 1, 500., 100.),
-                                     vec4(EnemyType::SLIME, 2, 500., 100.),
-                                     vec4(EnemyType::SLIME, 3, 500., 100.),
-                                     vec4(EnemyType::SLIME, 4, 500., 100.)};
+    std::vector<vec4> combat_pool = {vec4(EnemyType::SLIME, 1, 1000., 120.),
+                                     vec4(EnemyType::SLIME, 2, 1000., 120.),
+                                     vec4(EnemyType::SLIME, 3, 1000., 120.),
+                                     vec4(EnemyType::SLIME, 4, 1000., 120.),
+                                     vec4(EnemyType::SLIME, 1, 500., 120.),
+                                     vec4(EnemyType::SLIME, 2, 500., 120.),
+                                     vec4(EnemyType::SLIME, 3, 500., 120.),
+                                     vec4(EnemyType::SLIME, 4, 500., 120.),
+                                     vec4(EnemyType::SLIME_BIG, 1, 1000., 100.),
+                                     vec4(EnemyType::SLIME_BIG, 2, 1000., 100.),
+                                     vec4(EnemyType::SLIME_BIG, 1, 500., 100.),
+                                     vec4(EnemyType::SLIME_BIG, 2, 500., 100.),};
     std::vector<Entity> enemy_list = {};
     uint wave_amount = 1 + int(std::floor(difficulty/2)); //TODO: better curve maybe some kind of sigmoid
     std::uniform_int_distribution<int> uniform_int_dist(0, combat_pool.size()-1);
@@ -332,12 +336,29 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
             vec4 wave = combat_pool[uniform_int_dist(rng)];
             spawn_time += wave[2];
             for (int j = 0; j < wave[1]; ++j) {
-                const Entity new_enemy = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
+                const Entity new_enemy = createEnemy(renderer, {0, 100}, static_cast<EnemyType>(wave[0]));
+                std::vector<Entity> spawns_enemies = {};
+                if (static_cast<EnemyType>(wave[0]) == EnemyType::SLIME_BIG) {
+                    const auto spawned_enemy1 = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
+                    const auto spawned_enemy2 = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
+                    enemies.emplace(spawned_enemy1);
+                    Enemy &spawn1 = registry.enemies.get(spawned_enemy1);
+                    spawn1.speed = 100.f;
+                    spawns_enemies.push_back(spawned_enemy1);
+                    enemies.emplace(spawned_enemy2);
+                    Enemy &spawn2 = registry.enemies.get(spawned_enemy2);
+                    spawn2.speed = 120.f;
+                    spawns_enemies.push_back(spawned_enemy2);
+                }
                 enemies.emplace(new_enemy);
                 Enemy& enemy = registry.enemies.get(new_enemy);
                 enemy.health += static_cast<int>(std::floor(difficulty/2) * 50);
                 enemy.speed = wave[3] + wave[3] * (difficulty / 10);
                 enemy.spawn_time = spawn_time;
+                for (auto spawn_entity : spawns_enemies) {
+                    enemy.spawns_enemies.push_back(spawn_entity);
+                }
+
                 enemy_list.push_back(new_enemy);
 
                 spawn_time += wave[2];
@@ -671,7 +692,7 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
         }
         case GLFW_KEY_T: {
             if (action == GLFW_PRESS) {
-                tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{405, 75}, {820, 140}, 0.75f);
+                tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{495, 130}, {1020, 255}, 0.75f);
                 tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data());
                 cleanup_entities.push_back(tutorial_text);
                 cleanup_entities.push_back(tutorial_background);
@@ -792,6 +813,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         continue;
                     }
                     const Entity tower_entity = registry.towers.entities[tower_index];
+                    printf("dist to tower %f", distance(registry.motions.get(tower_entity).position, card_pos));
                     if (abs(distance(registry.motions.get(tower_entity).position, card_pos)) < tower_blocked_radius) {
                         place_occupied = true;
                     }
@@ -845,11 +867,13 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     std::erase(cards, dragged_entity); // C++20 is nice
                     if (registry.towers.has(dragged_entity)) {
                         createTowerFromCard(renderer, dragged_entity);
+                        auto &dragged_tower = registry.towers.get(dragged_entity);
                         auto tower_motion = registry.motions.get(dragged_entity);
                         towers.emplace_back(dragged_entity);
+                        dragged_tower.placed = true;
                         // subtract food cost
                         auto &current_player = registry.players.get(player);
-                        current_player.food -= registry.towers.get(dragged_entity).food_cost;
+                        current_player.food -= dragged_tower.food_cost;
                         // recalculate cards that can be placed
                         for (const Entity card: cards) {
                             if (registry.towers.has(card)) {
