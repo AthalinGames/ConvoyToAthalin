@@ -34,11 +34,16 @@ Entity createItem(const ItemType item) {
 			}
 		},
 		[entity] (const ConsumableType consumableType) {
-            registry.consumables.emplace(entity);
+            auto &consumable = registry.consumables.emplace(entity);
 			switch (consumableType) {
                 case ConsumableType::BOMB: {
-                    auto &bomb = registry.bombs.emplace(entity);
-                    bomb.range = TOWER_WIDTH;
+                    registry.bombs.emplace(entity);
+                    consumable.range = TOWER_WIDTH;
+                    break;
+                }
+                case ConsumableType::SPIKES: {
+                    registry.spikes.emplace(entity);
+                    consumable.range = 0.5f * TOWER_WIDTH;
                     break;
                 }
 				case ConsumableType::CONSUMABLE_TYPE_COUNT: {
@@ -167,8 +172,6 @@ void createTowerFromCard(RenderSystem* renderer, const Entity card) {
 
 void createBombFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
 
-    motion.angle = -M_PI_2;
-    motion.use_direction_sprite = true;
     motion.scale = vec2({2*TOWER_WIDTH, 2*TOWER_HEIGHT});
     vec2 motion_pos = motion.position;
 
@@ -183,6 +186,53 @@ void createBombFromCard(RenderSystem* renderer, const Entity card, Motion& motio
     registry.bombTimers.emplace(card);
 }
 
+void createSpikesFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
+
+    motion.angle = 0;
+    motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+    vec2 motion_pos = motion.position;
+    float angle = motion.angle;
+    vec2 scale = motion.scale;
+
+
+    // convert card entity to left spike on map
+    RenderRequest request = registry.renderForeground.get(card);
+    request.atlas_ids = {static_cast<unsigned int>(SPIKES_SPRITE::SPIKE_LEFT)};
+    request.z_position = Z_FOREGROUND;
+    request.used_texture = TEXTURE_ASSET_ID::SPIKES;
+    request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+    registry.renderForeground.remove(card);
+    registry.renderGameLayer.emplace(card, request);
+
+    //TODO: create new entities for rest of spikes
+    const auto spike_middle_entity = Entity();
+    auto &spike_middle_motion = registry.motions.emplace(spike_middle_entity);
+    printf("angle: %f\n", motion.angle);
+    spike_middle_motion.angle = angle;
+    spike_middle_motion.position = motion_pos;
+    spike_middle_motion.scale = scale;
+
+    request.atlas_ids = {static_cast<unsigned int>(SPIKES_SPRITE::SPIKE_MIDDLE)};
+    registry.renderGameLayer.emplace(spike_middle_entity, request);
+
+    registry.consumables.emplace(spike_middle_entity);
+    registry.spikes.emplace(spike_middle_entity);
+
+    const auto spike_right_entity = Entity();
+    auto &spike_right_motion = registry.motions.emplace(spike_right_entity);
+    printf("angle: %f\n", motion.angle);
+    spike_right_motion.angle = angle;
+    spike_right_motion.position = motion_pos;
+    spike_right_motion.scale = scale;
+
+    request.atlas_ids = {static_cast<unsigned int>(SPIKES_SPRITE::SPIKE_RIGHT)};
+    registry.renderGameLayer.emplace(spike_right_entity, request);
+
+    registry.consumables.emplace(spike_right_entity);
+    registry.spikes.emplace(spike_right_entity);
+
+}
+
 void createConsumableFromCard(RenderSystem* renderer, const Entity card) {
     assert(registry.cards.has(card));
     registry.cards.remove(card);
@@ -194,6 +244,8 @@ void createConsumableFromCard(RenderSystem* renderer, const Entity card) {
 
     if (registry.bombs.has(card)) {
         createBombFromCard(renderer, card, consumable_motion);
+    } else if (registry.spikes.has(card)) {
+        createSpikesFromCard(renderer, card, consumable_motion);
     }
     else {
         assert(false && "Invalid Consumable type for consumable creation");
@@ -359,6 +411,15 @@ void createCardFromItem(RenderSystem *renderer, const Entity item) {
                 {0},
                 Z_FOREGROUND,
                 TEXTURE_ASSET_ID::BOMB_CARD,
+                EFFECT_ASSET_ID::TEXTURED,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+    } else if (registry.spikes.has(item)) {
+        registry.renderForeground.insert(item, {
+                {Stationary{}},
+                {0},
+                Z_FOREGROUND,
+                TEXTURE_ASSET_ID::SPIKES_CARD,
                 EFFECT_ASSET_ID::TEXTURED,
                 GEOMETRY_BUFFER_ID::SPRITE,
         });

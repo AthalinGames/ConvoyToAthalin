@@ -297,6 +297,7 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
         Enemy &enemy2 = registry.enemies.get(debug_enemy2);
         enemy2.speed = 100.f;
         enemy2.spawn_time = 1000;
+        enemy2.health = 120;
 
 
         enemies.emplace(spawned_enemy1);
@@ -569,6 +570,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
             }
             auto &enemy = registry.enemies.get(second);
             enemy.health -= bomb.damage;
+            printf("health: %d\n", enemy.health);
             if (enemy.health <= 0) {
                 handle_enemy_death(second, enemy);
             } else {
@@ -872,8 +874,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         float marker_scale = 2*TOWER_WIDTH;
                         if (registry.towers.has(dragged_entity)) {
                             marker_scale = 2*registry.towers.get(dragged_entity).range;
-                        } else if (registry.bombs.has(dragged_entity)) {
-                            marker_scale = 2*registry.bombs.get(dragged_entity).range;
+                        } else if (registry.consumables.has(dragged_entity)) {
+                            marker_scale = 2*registry.consumables.get(dragged_entity).range;
                         }
                         registry.stationaries.get(placement_marker).scale = vec2(marker_scale, marker_scale);
                         registry.invisibles.remove(placement_marker);

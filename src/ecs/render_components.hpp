@@ -63,9 +63,11 @@ enum class TEXTURE_ASSET_ID {
 	ARCHER,
     KNIGHT,
     BOMB,
+    SPIKES,
     ARCHER_CARD,
     KNIGHT_CARD,
     BOMB_CARD,
+    SPIKES_CARD,
     BOW,
     SWORD,
     SLIME,
@@ -88,9 +90,11 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
         case TEXTURE_ASSET_ID::KNIGHT: return "knight.png";
         case TEXTURE_ASSET_ID::BOMB: return "items/bomb.png";
+        case TEXTURE_ASSET_ID::SPIKES: return "items/spikes.png";
         case TEXTURE_ASSET_ID::ARCHER_CARD: return "archerCard.png";
         case TEXTURE_ASSET_ID::KNIGHT_CARD: return "knightCard.png";
         case TEXTURE_ASSET_ID::BOMB_CARD: return "bombCard.png";
+        case TEXTURE_ASSET_ID::SPIKES_CARD: return "spikesCard.png";
         case TEXTURE_ASSET_ID::BOW: return "bow_and_arrow.png";
         case TEXTURE_ASSET_ID::SWORD: return "sword.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
@@ -128,6 +132,7 @@ const std::set texture_atlases = {
     TEXTURE_ASSET_ID::KNIGHT,
     TEXTURE_ASSET_ID::SWORD,
     TEXTURE_ASSET_ID::BOMB,
+    TEXTURE_ASSET_ID::SPIKES,
     TEXTURE_ASSET_ID::SLIME,
     TEXTURE_ASSET_ID::SLIME_BIG,
 	TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
@@ -205,6 +210,13 @@ enum class BOMB_SPRITE {
     EXPLOSION1,
     EXPLOSION2,
     EXPLOSION3,
+    COUNT,
+};
+
+enum class SPIKES_SPRITE {
+    SPIKE_LEFT = 0,
+    SPIKE_MIDDLE,
+    SPIKE_RIGHT,
     COUNT,
 };
 
@@ -340,6 +352,19 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
         }
         case TEXTURE_ASSET_ID::BOMB: {
             constexpr unsigned int cols = 4, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
+        case TEXTURE_ASSET_ID::SPIKES: {
+            constexpr unsigned int cols = 3, rows = 1, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
             atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
             for (unsigned int i = 0; i < maxCount; i++) {

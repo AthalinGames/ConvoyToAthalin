@@ -52,6 +52,7 @@ enum class TowerType {
 
 enum class ConsumableType {
     BOMB = 0,
+    SPIKES,
 	CONSUMABLE_TYPE_COUNT
 };
 
@@ -136,11 +137,12 @@ struct Weapon { //TODO: give to bows, swords or any other future weapon types
 //Consumable components
 struct Consumable {
     bool placed = false;
+    float range = 100;
 };
 
 struct Bomb {
-    int damage = 100;
-    float range = 100;
+    int damage = 9999;
+    //float range = 100;
     bool exploding = false;
     std::set<Entity> hit_entities{};
 };
@@ -148,6 +150,10 @@ struct Bomb {
 struct BombTimer {
     float time = 3300.0f;
     float explosion_time = 300.0f; //explodes when timer below this
+};
+
+struct Spike {
+    int damage = 200;
 };
 
 // All data relevant to the shape and motion of entities

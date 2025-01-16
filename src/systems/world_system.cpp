@@ -292,6 +292,7 @@ void WorldSystem::restart_game() {
 	createItem(TowerType::ARCHER);
     createItem(TowerType::KNIGHT);
     createItem(ConsumableType::BOMB);
+    createItem(ConsumableType::SPIKES);
 
     registry.players.get(player).placement_marker = createPlacementMarker(renderer);
 
@@ -382,15 +383,24 @@ void WorldSystem::restart_game() {
 // Compute collisions between entities
 void WorldSystem::handle_collisions() {
 	// Loop over all collisions detected by the physics system
-	const auto& collisionsRegistry = registry.collisions;
-	for (uint i = 0; i < collisionsRegistry.components.size(); i++) {
+	auto& collisionsRegistry = registry.collisions;
+	//for (uint i = 0; i < collisionsRegistry.components.size(); i++) {
+    size_t collision_count = collisionsRegistry.size();
+    while (!collisionsRegistry.components.empty()) {
 		// The entity and its collider
-		const Entity entity = collisionsRegistry.entities[i];
-		const Entity entity_other = collisionsRegistry.components[i].other_entity;
+		const Entity entity = collisionsRegistry.entities.back();
+		const Entity entity_other = collisionsRegistry.components.back().other_entity;
 
 		// If td fight is running handle its collisions
 		if (!current_td_system->is_over()) {
 			current_td_system->handle_collision(entity, entity_other);
+            if (collision_count == collisionsRegistry.size()) {
+                collisionsRegistry.components.pop_back();
+                collisionsRegistry.entities.pop_back();
+            } else {
+                collision_count = collisionsRegistry.size();
+            }
+
 		}
 	}
 

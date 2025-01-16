@@ -30,6 +30,7 @@ public:
     ComponentContainer<Weapon> weapons;
     ComponentContainer<Bomb> bombs;
     ComponentContainer<BombTimer> bombTimers;
+    ComponentContainer<Spike> spikes;
     ComponentContainer<Stationary> stationaries;
     ComponentContainer<PlacementMarker> placementMarkers;
     ComponentContainer<Map> maps;

@@ -94,7 +94,7 @@ bool enemyInRange(const Motion& tower_motion, const float input_range, const Mot
 	return false;
 }
 
-bool enemyPolyInBombRange(const Motion& bomb_motion, const Bomb& bomb, const Motion& enemy_motion, const std::vector<vec2>& poly) {
+bool enemyPolyInBombRange(const Motion& bomb_motion, const float range, const Motion& enemy_motion, const std::vector<vec2>& poly) {
     Transform tf;
     tf.translate(enemy_motion.position);
     tf.rotate(enemy_motion.angle);
@@ -104,7 +104,7 @@ bool enemyPolyInBombRange(const Motion& bomb_motion, const Bomb& bomb, const Mot
         polyTF[i] = tf * poly[i];
     }
     for (const auto& poly_pos : polyTF) {
-        if (distance(poly_pos, bomb_motion.position) <= bomb.range) {
+        if (distance(poly_pos, bomb_motion.position) <= range) {
             return true;
         }
     }
@@ -158,7 +158,14 @@ void PhysicsSystem::step(float elapsed_ms)
 		{
 			Motion& motion_j = motion_container.components[j];
 			Entity entity_j = motion_container.entities[j];
-			if ((registry.towers.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j))){
+
+            if (registry.bombs.has(entity_i)) {
+                if (registry.bombs.get(entity_i).exploding) {
+                    printf("");
+                }
+            }
+
+            if ((registry.towers.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j))){
                 if(registry.enemies.get(entity_j).spawned) {
                     if (enemyInRange(motion_i, registry.towers.get(entity_i).range, motion_j)) {
                         registry.collisions.emplace_with_duplicates(entity_i, entity_j);
@@ -174,10 +181,10 @@ void PhysicsSystem::step(float elapsed_ms)
                 }
             } else if (registry.bombs.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j)) {
                 if(registry.enemies.get(entity_j).spawned) {
-                    if (enemyInRange(motion_i, registry.bombs.get(entity_i).range, motion_j)) {
+                    if (enemyInRange(motion_i, registry.consumables.get(entity_i).range, motion_j)) {
                         const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
                         auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
-                        if (enemyPolyInBombRange(motion_i, registry.bombs.get(entity_i), motion_j, poly_j)) {
+                        if (enemyPolyInBombRange(motion_i, registry.consumables.get(entity_i).range, motion_j, poly_j)) {
                             registry.collisions.emplace_with_duplicates(entity_i, entity_j);
                             registry.collisions.emplace_with_duplicates(entity_j, entity_i);
                         }
