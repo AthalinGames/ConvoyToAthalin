@@ -480,6 +480,10 @@ void TDSystem::restart_td_fight() {
     const Entity card_background = createBlackSquare(renderer, {window_width_px / 2, CARD_AXIS_HEIGHT}, {window_width_px, CARD_HEIGHT}, 0.75);
     cleanup_entities.push_back(card_background);
 
+    const Entity button = createRoundStartButton(renderer, {TILE_WIDTH * (MAP_COUNT_X - 1) - TILE_WIDTH / 4, TILE_HEIGHT / 4});
+    cleanup_entities.push_back(button);
+    start_button = button;
+
     registry.list_all_components();
 }
 
@@ -583,7 +587,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
     }
 }
 
-void TDSystem::handle_aiming() {
+void TDSystem::handle_aiming() const {
     if (current_phase != GamePhase::RUNNING)
         return;
     const auto &aimingRegistry = registry.aimingAts;
@@ -688,6 +692,19 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
 void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
     // TODO fight specific mouse handling
 
+    if (current_phase == GamePhase::SETUP) {
+        registry.clickables.clear();
+        const auto& card_pos = registry.stationaries.get(start_button);
+        const vec2 dp = card_pos.position - pos;
+        const float dist_squared = dot(dp, dp);
+        vec2 bounding_box = {abs(card_pos.scale.x), abs(card_pos.scale.y)};
+        bounding_box *= 0.3f;
+        const float start_squared = dot(bounding_box, bounding_box);
+        if (dist_squared < start_squared) {
+            registry.clickables.emplace(start_button);
+        }
+    }
+
     if (current_phase == GamePhase::SETUP || current_phase == GamePhase::RUNNING) {
         if (dragging) {
             if (registry.cards.has(dragged_entity)) {
@@ -746,6 +763,23 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
 
 void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *window) {
     printf("mouse button\n");
+
+    if (current_phase == GamePhase::SETUP) {
+        if (registry.clickables.has(start_button) && action == GLFW_PRESS) {
+            printf("Button Clicked!\n");
+            registry.renderForeground.get(start_button).atlas_ids = {static_cast<uint>(BUTTONS::START_DOWN)};
+        } else if (action == GLFW_RELEASE) {
+            auto& buttonRenderRequest = registry.renderForeground.get(start_button);
+            if (buttonRenderRequest.atlas_ids.at(0) == static_cast<uint>(BUTTONS::START_DOWN)) {
+                buttonRenderRequest.atlas_ids = {static_cast<uint>(BUTTONS::START_UP)};
+            }
+            if (registry.clickables.has(start_button)) {
+                current_phase = GamePhase::RUNNING;
+                registry.colors.insert(start_button, {0.5f, 0.5f, 0.5f, 1.0f});
+            }
+        }
+    }
+
     if (current_phase == GamePhase::SETUP || current_phase == GamePhase::RUNNING) {
         if (dragging) { //TODO: combat ending when card is being dragged destroys a lot
             //double mouse_x;

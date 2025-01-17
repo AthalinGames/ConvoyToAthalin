@@ -79,6 +79,8 @@ Entity createStartIcon(RenderSystem* renderer);
 
 Entity createOverviewSelection(RenderSystem* renderer, vec2 pos);
 
+Entity createRoundStartButton(RenderSystem* renderer, vec2 pos);
+
 Entity createText(RenderSystem* renderer, vec2 pos, vec2 scale, const std::string &text, FontType font);
 void updateText(Entity text_entity, const std::string &new_text);
 

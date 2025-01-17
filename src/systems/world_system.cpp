@@ -195,13 +195,13 @@ bool WorldSystem::step(const float elapsed_ms) {
 	}
 
 	// Render Health and Food display
-	ImGui::Begin("Health");
-	ImGui::SetWindowPos({window_width_px * 0.1, window_height_px * 0.03});
-	ImGui::SetWindowSize({window_width_px * 0.06, 65});
-	for (const auto & player : registry.players.components) {
-		ImGui::Text("HP: %d\nFood: %d", player.health, player.food);
-	}
-	ImGui::End();
+	//ImGui::Begin("Health");
+	//ImGui::SetWindowPos({window_width_px * 0.1, window_height_px * 0.03});
+	//ImGui::SetWindowSize({window_width_px * 0.06, 65});
+	//for (const auto & player : registry.players.components) {
+	//	ImGui::Text("HP: %d\nFood: %d", player.health, player.food);
+	//}
+	//ImGui::End();
 
 	// If td system is running, run also its step
 	if (!current_td_system->is_over()) {

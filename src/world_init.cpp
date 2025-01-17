@@ -1034,6 +1034,28 @@ Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
 	return entity;
 }
 
+Entity createRoundStartButton(RenderSystem* renderer, const vec2 pos) {
+	const auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary &button = registry.stationaries.emplace(entity);
+	button.position = pos;
+	button.scale = vec2({TILE_WIDTH / 2, TILE_HEIGHT / 2});
+
+	registry.renderForeground.insert(entity, {
+		{Stationary{}},
+		{static_cast<uint>(BUTTONS::START_UP)},
+		Z_FOREGROUND,
+		TEXTURE_ASSET_ID::BUTTONS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
 Entity createLine(const vec2 position, const vec2 size) {
 	const auto entity = Entity();
 
