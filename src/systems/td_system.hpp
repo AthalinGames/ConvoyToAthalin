@@ -27,13 +27,13 @@ public:
     void cleanup_ecs();
 
     // Handle an enemy dying
-    void handle_enemy_death(Entity enemy_entity, Enemy &enemy);
+    static void handle_enemy_death(Entity enemy_entity, Enemy &enemy);
 
     // Check for collisions
     void handle_collision(Entity first, Entity second);
 
     // Aim all towers at their current enemy
-    void handle_aiming();
+    void handle_aiming() const;
 
     // Should the td fight be over?
     bool is_over() const;
@@ -70,6 +70,7 @@ private:
     std::vector<Entity> cards;
     std::set<Entity> enemies;
     Entity map;
+    Entity start_button;
     // Post game state
     std::vector<Entity> new_cards;
 

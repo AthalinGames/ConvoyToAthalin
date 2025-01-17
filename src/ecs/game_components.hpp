@@ -9,13 +9,31 @@
 // Player component
 struct Player {
     int health = 100;
+	std::function<void(int new_hp)> health_update_callback = [](int _){};
     int maxHealth = 100;
     int coins = 0;
 	int food = 10;
+	std::function<void(int new_food)> food_update_callback = [](int _){};
 	int baseFoodGain = 5;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
+	std::vector<Entity> status_bar_entities;
+	std::function<void()> status_bar_cleanup_func = []{};
     Entity placement_marker;
+
+	void updateHealth(const int new_hp) {
+		health = new_hp;
+		health_update_callback(new_hp);
+	}
+
+	void updateFood(const int new_food) {
+		food = new_food;
+		food_update_callback(new_food);
+	}
+
+	~Player() {
+		status_bar_cleanup_func();
+	}
     //std::map<float, Entity> animation_timers; // TODO: map movement speed to animation timer
 };
 
@@ -236,11 +254,4 @@ struct DebugComponent
 struct DeathTimer
 {
 	float timer_ms = 3000.f;
-};
-
-// Text line that is rendered at a specific position and scale
-struct Text {
-	std::string text;
-	vec2 position;
-	float size;
 };

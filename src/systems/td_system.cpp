@@ -196,7 +196,7 @@ bool TDSystem::step(const float elapsed_ms) {
                 const Entity enemy_entity = registry.enemies.entities[i];
                 if (enemy.enemy_progress >= 1.0f && enemy.alive) {
                     for (Player &player: registry.players.components) {
-                        player.health -= enemy.damage;
+                        player.updateHealth(player.health - enemy.damage);
                     }
                     handle_enemy_death(enemy_entity, enemy);
                     // Delete damaging entity
@@ -234,18 +234,19 @@ bool TDSystem::step(const float elapsed_ms) {
 
             // Add gathered food
             auto& current_player = registry.players.get(player);
-            current_player.food += current_player.baseFoodGain;
+            int food_gain = current_player.baseFoodGain;
             for (const Entity card : cards) {
                 if (registry.towers.has(card)) {
                     const auto& tower = registry.towers.get(card);
-                    current_player.food += tower.food_gain;
+                    food_gain += tower.food_gain;
                 }
             }
+            current_player.updateFood(food_gain + current_player.food);
             // Setup next screen
             const Entity square = createBlackSquare(renderer, {window_width_px / 2, window_height_px / 2},
                                                         {window_width_px, window_height_px}, 0.5f);
             cleanup_entities.push_back(square);
-            const Entity text = createText(renderer, {window_width_px * 0.35, window_height_px * 0.2}, {20, 20},  "Choose a new Card:");
+            const Entity text = createText(renderer, {window_width_px * 0.35, window_height_px * 0.2}, {20, 20},  "Choose a new Card:", FontType::SQUARE);
             cleanup_entities.push_back(text);
             // Create random Items
             // TODO think about amount of items
@@ -266,6 +267,7 @@ bool TDSystem::step(const float elapsed_ms) {
             stationary2.position = {2 * (window_width_px / 3), window_height_px / 2};
             new_cards.push_back(random_item2);
             for (const auto card : cards) {
+                registry.colors.remove(card);
                 returnCardToItem(card);
             }
             cards.clear();
@@ -505,8 +507,15 @@ void TDSystem::restart_td_fight() {
         }
     }
 
-    const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial");
+    const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial", FontType::SQUARE);
     cleanup_entities.push_back(text);
+
+    const Entity card_background = createBlackSquare(renderer, {window_width_px / 2, CARD_AXIS_HEIGHT}, {window_width_px, CARD_HEIGHT}, 0.75);
+    cleanup_entities.push_back(card_background);
+
+    const Entity button = createRoundStartButton(renderer, {TILE_WIDTH * (MAP_COUNT_X - 1) - TILE_WIDTH / 4, TILE_HEIGHT / 4});
+    cleanup_entities.push_back(button);
+    start_button = button;
 
     registry.list_all_components();
 }
@@ -515,7 +524,7 @@ void TDSystem::handle_enemy_death(const Entity enemy_entity, Enemy &enemy) {
     assert(registry.enemies.has(enemy_entity) && "Entity not an enemy");
     enemy.alive = false;
     const auto enemy_motion = registry.motions.get(enemy_entity);
-    for (auto spawn_entity : enemy.spawns_enemies) {
+    for (const auto spawn_entity : enemy.spawns_enemies) {
         auto &spawn_enemy = registry.enemies.get(spawn_entity);
         auto &spawn_motion = registry.motions.get(spawn_entity);
         if (registry.slimes.has(spawn_entity)) {
@@ -613,7 +622,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
     }
 }
 
-void TDSystem::handle_aiming() {
+void TDSystem::handle_aiming() const {
     if (current_phase != GamePhase::RUNNING)
         return;
     const auto &aimingRegistry = registry.aimingAts;
@@ -693,7 +702,7 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
         case GLFW_KEY_T: {
             if (action == GLFW_PRESS) {
                 tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{495, 130}, {1020, 255}, 0.75f);
-                tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data());
+                tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data(), FontType::SQUARE);
                 cleanup_entities.push_back(tutorial_text);
                 cleanup_entities.push_back(tutorial_background);
             } else if (action == GLFW_RELEASE) {
@@ -717,6 +726,19 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
 
 void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
     // TODO fight specific mouse handling
+
+    if (current_phase == GamePhase::SETUP) {
+        registry.clickables.clear();
+        const auto& card_pos = registry.stationaries.get(start_button);
+        const vec2 dp = card_pos.position - pos;
+        const float dist_squared = dot(dp, dp);
+        vec2 bounding_box = {abs(card_pos.scale.x), abs(card_pos.scale.y)};
+        bounding_box *= 0.3f;
+        const float start_squared = dot(bounding_box, bounding_box);
+        if (dist_squared < start_squared) {
+            registry.clickables.emplace(start_button);
+        }
+    }
 
     if (current_phase == GamePhase::SETUP || current_phase == GamePhase::RUNNING) {
         if (dragging) {
@@ -776,6 +798,23 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
 
 void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *window) {
     printf("mouse button\n");
+
+    if (current_phase == GamePhase::SETUP) {
+        if (registry.clickables.has(start_button) && action == GLFW_PRESS) {
+            printf("Button Clicked!\n");
+            registry.renderForeground.get(start_button).atlas_ids = {static_cast<uint>(BUTTONS::START_DOWN)};
+        } else if (action == GLFW_RELEASE) {
+            auto& buttonRenderRequest = registry.renderForeground.get(start_button);
+            if (buttonRenderRequest.atlas_ids.at(0) == static_cast<uint>(BUTTONS::START_DOWN)) {
+                buttonRenderRequest.atlas_ids = {static_cast<uint>(BUTTONS::START_UP)};
+            }
+            if (registry.clickables.has(start_button)) {
+                current_phase = GamePhase::RUNNING;
+                registry.colors.insert(start_button, {0.5f, 0.5f, 0.5f, 1.0f});
+            }
+        }
+    }
+
     if (current_phase == GamePhase::SETUP || current_phase == GamePhase::RUNNING) {
         if (dragging) { //TODO: combat ending when card is being dragged destroys a lot
             //double mouse_x;
@@ -868,12 +907,12 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     if (registry.towers.has(dragged_entity)) {
                         createTowerFromCard(renderer, dragged_entity);
                         auto &dragged_tower = registry.towers.get(dragged_entity);
-                        auto tower_motion = registry.motions.get(dragged_entity);
+                        //auto tower_motion = registry.motions.get(dragged_entity);
                         towers.emplace_back(dragged_entity);
                         dragged_tower.placed = true;
                         // subtract food cost
                         auto &current_player = registry.players.get(player);
-                        current_player.food -= dragged_tower.food_cost;
+                        current_player.updateFood(current_player.food - dragged_tower.food_cost);
                         // recalculate cards that can be placed
                         for (const Entity card: cards) {
                             if (registry.towers.has(card)) {
