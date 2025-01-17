@@ -1,10 +1,41 @@
 #include "world_init.hpp"
 #include "ecs/tiny_ecs_registry.hpp"
 
-Entity createPlayer() {
+Entity createPlayer(RenderSystem *renderer) {
 	const auto entity = Entity();
 
-	registry.players.emplace(entity);
+	Player &player = registry.players.emplace(entity);
+
+	player.status_bar_cleanup_func = [&] {
+		for (const auto status_bar_entity: player.status_bar_entities) {
+			registry.remove_all_components_of(status_bar_entity);
+		}
+	};
+
+	const auto status_background = createBlackSquare(renderer, {window_width_px / 2, TILE_HEIGHT / 4},
+													 {window_width_px, TILE_HEIGHT / 2}, 0.75);
+	player.status_bar_entities.push_back(status_background);
+
+	constexpr vec2 text_scale = {TILE_WIDTH / 6, TILE_HEIGHT / 3};
+
+	const auto hp_text = createText(renderer, {TILE_WIDTH / 4, TILE_HEIGHT / 4}, text_scale,
+											"Hp:", FontType::SLIM);
+	player.status_bar_entities.push_back(hp_text);
+
+	const auto hp_number = createText(renderer, {TILE_WIDTH, TILE_HEIGHT / 4}, text_scale, std::to_string(player.health), FontType::SLIM);
+	player.status_bar_entities.push_back(hp_number);
+	player.health_update_callback = [hp_number](const int new_hp) {
+		updateText(hp_number, std::to_string(new_hp));
+	};
+
+	const auto food_text = createText(renderer, {TILE_WIDTH * 2 - TILE_WIDTH / 8, TILE_HEIGHT / 4}, text_scale, "Food:", FontType::SLIM);
+	player.status_bar_entities.push_back(food_text);
+
+	const auto food_number = createText(renderer, {TILE_WIDTH * 3, TILE_HEIGHT / 4}, text_scale, std::to_string(player.food), FontType::SLIM);
+	player.status_bar_entities.push_back(food_number);
+	player.food_update_callback = [food_number](const int new_food) {
+		updateText(food_number, std::to_string(new_food));
+	};
 
 	return entity;
 }
@@ -56,7 +87,7 @@ Entity createItem(const ItemType item) {
 	return entity;
 }
 
-Entity createRandomItem(std::default_random_engine& rng) {
+Entity createRandomItem(std::default_random_engine &rng) {
 	std::uniform_int_distribution<unsigned int> distribution(0, item_type_count - 1);
 	const unsigned int item_id = distribution(rng);
 	if (item_id < tower_type_count) {
@@ -65,24 +96,24 @@ Entity createRandomItem(std::default_random_engine& rng) {
 		return createItem(static_cast<ConsumableType>(item_id - tower_type_count));
 	} else {
 		assert(false && "Invalid item type");
-        return Entity();
+		return Entity();
 	}
 }
 
 
-void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
+void createArcherFromCard(RenderSystem *renderer, const Entity card, Motion &motion) {
 	const auto bow = Entity();
 
 	motion.angle = -M_PI_2;
 	motion.use_direction_sprite = true;
 	motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
-    vec2 motion_pos = motion.position;
+	vec2 motion_pos = motion.position;
 
 	RenderRequest request = registry.renderForeground.get(card);
-    request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
-    request.z_position = Z_MIDDLE;
-    request.used_texture = TEXTURE_ASSET_ID::ARCHER;
-    request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+	request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
+	request.z_position = Z_MIDDLE;
+	request.used_texture = TEXTURE_ASSET_ID::ARCHER;
+	request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
 	registry.renderForeground.remove(card);
 	registry.renderGameLayer.emplace(card, request);
 
@@ -90,100 +121,101 @@ void createArcherFromCard(RenderSystem* renderer, const Entity card, Motion& mot
 	registry.weapons.emplace(bow);
 	registry.archers.get(card).bow = bow;
 
-	Mesh& bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(bow, &bow_mesh);
 
-	Motion& bow_motion = registry.motions.emplace(bow);
-	bow_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
+	Motion &bow_motion = registry.motions.emplace(bow);
+	bow_motion.position = motion_pos;
+	//TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
 	bow_motion.angle = M_PI_2;
 	bow_motion.velocity = vec2(0, 0);
 	bow_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
-    printf("%f|%f\n", motion.position.x, motion.position.y);
+	printf("%f|%f\n", motion.position.x, motion.position.y);
 	registry.renderGameLayer.insert(bow, {
-		{Stationary{}},
-        {static_cast<unsigned int>(BOW_SPRITE::LOAD)},
-		Z_FOREGROUND,
-		TEXTURE_ASSET_ID::BOW,
-		EFFECT_ASSET_ID::TEXTURED_ATLAS,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                {Stationary{}},
+		                                {static_cast<unsigned int>(BOW_SPRITE::LOAD)},
+		                                Z_FOREGROUND,
+		                                TEXTURE_ASSET_ID::BOW,
+		                                EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		                                GEOMETRY_BUFFER_ID::SPRITE,
+	                                });
 }
 
-void createKnightFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
-    const auto sword = Entity();
+void createKnightFromCard(RenderSystem *renderer, const Entity card, Motion &motion) {
+	const auto sword = Entity();
 
-    motion.angle = -M_PI_2;
-    motion.use_direction_sprite = true;
-    motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
-    vec2 motion_pos = motion.position;
+	motion.angle = -M_PI_2;
+	motion.use_direction_sprite = true;
+	motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+	vec2 motion_pos = motion.position;
 
-    RenderRequest request = registry.renderForeground.get(card);
-    request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
-    request.z_position = Z_MIDDLE;
-    request.used_texture = TEXTURE_ASSET_ID::KNIGHT;
-    request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
-    registry.renderForeground.remove(card);
-    registry.renderGameLayer.emplace(card, request);
+	RenderRequest request = registry.renderForeground.get(card);
+	request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
+	request.z_position = Z_MIDDLE;
+	request.used_texture = TEXTURE_ASSET_ID::KNIGHT;
+	request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+	registry.renderForeground.remove(card);
+	registry.renderGameLayer.emplace(card, request);
 
-    registry.swords.emplace(sword);
-    registry.weapons.emplace(sword);
-    registry.knights.get(card).sword = sword;
+	registry.swords.emplace(sword);
+	registry.weapons.emplace(sword);
+	registry.knights.get(card).sword = sword;
 
-    Mesh& sword_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-    registry.meshPtrs.emplace(sword, &sword_mesh);
+	Mesh &sword_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(sword, &sword_mesh);
 
-    Motion& sword_motion = registry.motions.emplace(sword);
-    sword_motion.position = motion_pos; //TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
-    sword_motion.angle = -M_PI_2;
-    sword_motion.use_direction_sprite = true;
-    sword_motion.velocity = vec2(0, 0);
-    sword_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
-    printf("%f|%f\n", motion.position.x, motion.position.y);
-    registry.renderGameLayer.insert(sword, {
-            {Stationary{}},
-            {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
-            Z_BACKGROUND,
-            TEXTURE_ASSET_ID::SWORD,
-            EFFECT_ASSET_ID::TEXTURED_ATLAS,
-            GEOMETRY_BUFFER_ID::SPRITE,
-    });
+	Motion &sword_motion = registry.motions.emplace(sword);
+	sword_motion.position = motion_pos;
+	//TODO: for some reason motion.position changes to some weird uninitialized from here until we are back in on_mouse_button
+	sword_motion.angle = -M_PI_2;
+	sword_motion.use_direction_sprite = true;
+	sword_motion.velocity = vec2(0, 0);
+	sword_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+	printf("%f|%f\n", motion.position.x, motion.position.y);
+	registry.renderGameLayer.insert(sword, {
+		                                {Stationary{}},
+		                                {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
+		                                Z_BACKGROUND,
+		                                TEXTURE_ASSET_ID::SWORD,
+		                                EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		                                GEOMETRY_BUFFER_ID::SPRITE,
+	                                });
 }
 
-void createTowerFromCard(RenderSystem* renderer, const Entity card) {
+void createTowerFromCard(RenderSystem *renderer, const Entity card) {
 	assert(registry.cards.has(card));
 	registry.cards.remove(card);
-	const Stationary& card_pos = registry.stationaries.get(card);
-	Motion& tower_motion = registry.motions.emplace(card);
+	const Stationary &card_pos = registry.stationaries.get(card);
+	Motion &tower_motion = registry.motions.emplace(card);
 	tower_motion.position = card_pos.position;
 	tower_motion.velocity = vec2(0, 0);
-    registry.stationaries.remove(card);
+	registry.stationaries.remove(card);
 
 	if (registry.archers.has(card)) {
-        printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
+		printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
 		createArcherFromCard(renderer, card, tower_motion);
-        printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
+		printf("%f|%f\n", tower_motion.position.x, tower_motion.position.y);
 	} else if (registry.knights.has(card)) {
-        createKnightFromCard(renderer, card, tower_motion);
-    }
-    else {
+		createKnightFromCard(renderer, card, tower_motion);
+	} else {
 		assert(false && "Invalid Tower type for tower creation");
 	}
 }
 
-void createBombFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
+void createBombFromCard(RenderSystem* renderer, const Entity card, Motion &motion) {
 
     motion.scale = vec2({2*TOWER_WIDTH, 2*TOWER_HEIGHT});
     vec2 motion_pos = motion.position;
 
-    RenderRequest request = registry.renderForeground.get(card);
-    request.atlas_ids = {static_cast<unsigned int>(BOMB_SPRITE::BOMB0)};
-    request.z_position = Z_FOREGROUND;
-    request.used_texture = TEXTURE_ASSET_ID::BOMB;
-    request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
-    registry.renderForeground.remove(card);
-    registry.renderGameLayer.emplace(card, request);
+	RenderRequest request = registry.renderForeground.get(card);
+	request.atlas_ids = {static_cast<unsigned int>(BOMB_SPRITE::BOMB0)};
+	request.z_position = Z_FOREGROUND;
+	request.used_texture = TEXTURE_ASSET_ID::BOMB;
+	request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+	registry.renderForeground.remove(card);
+	registry.renderGameLayer.emplace(card, request);
 
-    registry.bombTimers.emplace(card);
+	registry.bombTimers.emplace(card);
 }
 
 void createSpikesFromCard(RenderSystem* renderer, const Entity card, Motion& motion, std::vector<Entity> &placed_consumables) {
@@ -235,6 +267,7 @@ void createSpikesFromCard(RenderSystem* renderer, const Entity card, Motion& mot
 
 }
 
+
 void createConsumableFromCard(RenderSystem* renderer, const Entity card, std::vector<Entity> &placed_consumables) {
     //TODO: return created entities for case, that multiple were created or take consumable vector as input var
     assert(registry.cards.has(card));
@@ -261,8 +294,8 @@ void returnArcherToItem(const Entity tower) {
 }
 
 void returnKnightToItem(const Entity tower) {
-    const Entity sword = registry.knights.get(tower).sword;
-    registry.remove_all_components_of(sword);
+	const Entity sword = registry.knights.get(tower).sword;
+	registry.remove_all_components_of(sword);
 }
 
 void returnTowerToItem(const Entity tower) {
@@ -272,13 +305,12 @@ void returnTowerToItem(const Entity tower) {
 	registry.renderGameLayer.remove(tower);
 
 	if (registry.items.has(tower)) {
-        registry.towers.get(tower).placed = false;
-        if (registry.archers.has(tower)) {
-            returnArcherToItem(tower);
-        }
-        else if (registry.knights.has(tower)) {
-            returnKnightToItem(tower);
-        }
+		registry.towers.get(tower).placed = false;
+		if (registry.archers.has(tower)) {
+			returnArcherToItem(tower);
+		} else if (registry.knights.has(tower)) {
+			returnKnightToItem(tower);
+		}
 	} else {
 		assert(false && "Invalid Tower type for returning to Item");
 	}
@@ -288,25 +320,25 @@ void returnTowerToItem(const Entity tower) {
 Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity, const vec2 dir) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Motion& motion = registry.motions.emplace(entity);
+	Motion &motion = registry.motions.emplace(entity);
 	motion.position = pos;
-	motion.angle = static_cast<float>(atan2(dir.y, dir.x)) + (M_PI_2/2) + M_PI;
+	motion.angle = static_cast<float>(atan2(dir.y, dir.x)) + (M_PI_2 / 2) + M_PI;
 	motion.velocity = -velocity * normalize(dir);
 	motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
 
-    registry.arrows.emplace(entity);
+	registry.arrows.emplace(entity);
 
 	registry.renderGameLayer.insert(entity, {
-		{Stationary{}},
-        {static_cast<unsigned int>(BOW_SPRITE::ARROW)},
-		Z_MIDDLE,
-		TEXTURE_ASSET_ID::BOW,
-		EFFECT_ASSET_ID::TEXTURED_ATLAS,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                {Stationary{}},
+		                                {static_cast<unsigned int>(BOW_SPRITE::ARROW)},
+		                                Z_MIDDLE,
+		                                TEXTURE_ASSET_ID::BOW,
+		                                EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		                                GEOMETRY_BUFFER_ID::SPRITE,
+	                                });
 
 	return entity;
 }
@@ -314,126 +346,123 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity,
 Entity createEnemy(RenderSystem *renderer, const vec2 pos, EnemyType enemyType) {
 	const Entity entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Motion& motion = registry.motions.emplace(entity);
+	Motion &motion = registry.motions.emplace(entity);
 	motion.position = pos;
 	motion.angle = 0.0f;
 	motion.velocity = vec2(0, 0);
 	motion.scale = vec2({SLIME_WIDTH, SLIME_HEIGHT});
-    motion.use_direction_sprite = true;
+	motion.use_direction_sprite = true;
 
-    registry.enemies.emplace(entity);
-    switch (enemyType) {
-        case EnemyType::SLIME:
-            registry.slimes.emplace(entity);
-            registry.renderGameLayer.insert(entity, {
-                    {Stationary{}},
-                    {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
-                    Z_MIDDLE,
-                    TEXTURE_ASSET_ID::SLIME,
-                    EFFECT_ASSET_ID::TEXTURED_ATLAS,
-                    GEOMETRY_BUFFER_ID::SPRITE,
-            });
-            break;
-        case EnemyType::SLIME_BIG:
-            motion.scale = vec2({2*SLIME_WIDTH, 2*SLIME_HEIGHT});
-            registry.slimesBig.emplace(entity);
-            registry.renderGameLayer.insert(entity, {
-                    {Stationary{}},
-                    {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
-                    Z_MIDDLE,
-                    TEXTURE_ASSET_ID::SLIME_BIG,
-                    EFFECT_ASSET_ID::TEXTURED_ATLAS,
-                    GEOMETRY_BUFFER_ID::SPRITE,
-            });
-            break;
-        case EnemyType::ENEMY_TYPE_COUNT:
-            assert(false && "Invalid Enemy type");
-    }
-    registry.invisibles.emplace(entity);
+	registry.enemies.emplace(entity);
+	switch (enemyType) {
+		case EnemyType::SLIME:
+			registry.slimes.emplace(entity);
+			registry.renderGameLayer.insert(entity, {
+				                                {Stationary{}},
+				                                {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
+				                                Z_MIDDLE,
+				                                TEXTURE_ASSET_ID::SLIME,
+				                                EFFECT_ASSET_ID::TEXTURED_ATLAS,
+				                                GEOMETRY_BUFFER_ID::SPRITE,
+			                                });
+			break;
+		case EnemyType::SLIME_BIG:
+			motion.scale = vec2({2 * SLIME_WIDTH, 2 * SLIME_HEIGHT});
+			registry.slimesBig.emplace(entity);
+			registry.renderGameLayer.insert(entity, {
+				                                {Stationary{}},
+				                                {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
+				                                Z_MIDDLE,
+				                                TEXTURE_ASSET_ID::SLIME_BIG,
+				                                EFFECT_ASSET_ID::TEXTURED_ATLAS,
+				                                GEOMETRY_BUFFER_ID::SPRITE,
+			                                });
+			break;
+		case EnemyType::ENEMY_TYPE_COUNT:
+			assert(false && "Invalid Enemy type");
+	}
+	registry.invisibles.emplace(entity);
 
 	return entity;
 }
 
-void realignCards(){
-    auto& current_cards = registry.cards.entities;
-    if(!current_cards.empty()) {
-        float card_offset = CARD_AXIS_WIDTH/(static_cast<float>(current_cards.size())+1);
-        auto& first_card = registry.stationaries.get(registry.cards.entities[0]);
-        first_card.position = vec2(card_offset,
-                                   CARD_AXIS_HEIGHT);
-        first_card.scale = vec2(CARD_WIDTH, CARD_HEIGHT);
-        for (uint i = 1; i < current_cards.size(); i++) {
-            Entity& current_card = current_cards[i];
-            Entity& prev_card = current_cards[i-1];
-            auto& stationary = registry.stationaries.get(current_card);
-            auto& prev_stationary = registry.stationaries.get(prev_card);
-            stationary.position = vec2(prev_stationary.position[0]+card_offset,
-                                       CARD_AXIS_HEIGHT);
-            stationary.scale = vec2(CARD_WIDTH, CARD_HEIGHT);
-        }
-    }
-
+void realignCards() {
+	auto &current_cards = registry.cards.entities;
+	if (!current_cards.empty()) {
+		float card_offset = CARD_AXIS_WIDTH / (static_cast<float>(current_cards.size()) + 1);
+		auto &first_card = registry.stationaries.get(registry.cards.entities[0]);
+		first_card.position = vec2(card_offset,
+		                           CARD_AXIS_HEIGHT);
+		first_card.scale = vec2(CARD_WIDTH, CARD_HEIGHT);
+		for (uint i = 1; i < current_cards.size(); i++) {
+			Entity &current_card = current_cards[i];
+			Entity &prev_card = current_cards[i - 1];
+			auto &stationary = registry.stationaries.get(current_card);
+			auto &prev_stationary = registry.stationaries.get(prev_card);
+			stationary.position = vec2(prev_stationary.position[0] + card_offset,
+			                           CARD_AXIS_HEIGHT);
+			stationary.scale = vec2(CARD_WIDTH, CARD_HEIGHT);
+		}
+	}
 }
 
 void createCardFromItem(RenderSystem *renderer, const Entity item) {
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(item, &mesh);
 
-    Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-    registry.meshPtrs.emplace(item, &mesh);
+	registry.cards.emplace(item);
 
-    registry.cards.emplace(item);
+	Stationary &card_texture = registry.stationaries.emplace(item);
+	card_texture.scale = vec2({CARD_WIDTH, CARD_HEIGHT});
 
-    Stationary& card_texture = registry.stationaries.emplace(item);
-    card_texture.scale = vec2({CARD_WIDTH, CARD_HEIGHT});
-
-    realignCards();
-    //TODO: do this with switch, like createItem
-    if (registry.archers.has(item)) {
-        registry.renderForeground.insert(item, {
-                {Stationary{}},
-                {0},
-                Z_FOREGROUND,
-                TEXTURE_ASSET_ID::ARCHER_CARD,
-                EFFECT_ASSET_ID::TEXTURED,
-                GEOMETRY_BUFFER_ID::SPRITE,
-        });
-    } else if (registry.knights.has(item)) {
-        registry.renderForeground.insert(item, {
-                {Stationary{}},
-                {0},
-                Z_FOREGROUND,
-                TEXTURE_ASSET_ID::KNIGHT_CARD,
-                EFFECT_ASSET_ID::TEXTURED,
-                GEOMETRY_BUFFER_ID::SPRITE,
-        });
-    } else if (registry.bombs.has(item)) {
-        registry.renderForeground.insert(item, {
-                {Stationary{}},
-                {0},
-                Z_FOREGROUND,
-                TEXTURE_ASSET_ID::BOMB_CARD,
-                EFFECT_ASSET_ID::TEXTURED,
-                GEOMETRY_BUFFER_ID::SPRITE,
-        });
+	realignCards();
+	//TODO: do this with switch, like createItem
+	if (registry.archers.has(item)) {
+		registry.renderForeground.insert(item, {
+			                                 {Stationary{}},
+			                                 {0},
+			                                 Z_FOREGROUND,
+			                                 TEXTURE_ASSET_ID::ARCHER_CARD,
+			                                 EFFECT_ASSET_ID::TEXTURED,
+			                                 GEOMETRY_BUFFER_ID::SPRITE,
+		                                 });
+	} else if (registry.knights.has(item)) {
+		registry.renderForeground.insert(item, {
+			                                 {Stationary{}},
+			                                 {0},
+			                                 Z_FOREGROUND,
+			                                 TEXTURE_ASSET_ID::KNIGHT_CARD,
+			                                 EFFECT_ASSET_ID::TEXTURED,
+			                                 GEOMETRY_BUFFER_ID::SPRITE,
+		                                 });
+	} else if (registry.bombs.has(item)) {
+		registry.renderForeground.insert(item, {
+			                                 {Stationary{}},
+			                                 {0},
+			                                 Z_FOREGROUND,
+			                                 TEXTURE_ASSET_ID::BOMB_CARD,
+			                                 EFFECT_ASSET_ID::TEXTURED,
+			                                 GEOMETRY_BUFFER_ID::SPRITE,
+		                                 });
     } else if (registry.spikes.has(item)) {
         registry.renderForeground.insert(item, {
-                {Stationary{}},
-                {0},
-                Z_FOREGROUND,
-                TEXTURE_ASSET_ID::SPIKES_CARD,
-                EFFECT_ASSET_ID::TEXTURED,
-                GEOMETRY_BUFFER_ID::SPRITE,
-        });
+                                             {Stationary{}},
+                                             {0},
+                                             Z_FOREGROUND,
+                                             TEXTURE_ASSET_ID::SPIKES_CARD,
+                                             EFFECT_ASSET_ID::TEXTURED,
+                                             GEOMETRY_BUFFER_ID::SPRITE,
+                                          });
     }
-
 }
 
 void returnCardToItem(const Entity card) {
-    if (!registry.cards.has(card)){
-        printf("entity is not a card"); //TODO: if you stop dragging just when combat ends, Entity can lose card component before being erased from cards vector
-    }
+	if (!registry.cards.has(card)) {
+		printf("entity is not a card");
+	}
 	assert(registry.cards.has(card));
 
 	registry.meshPtrs.remove(card);
@@ -443,7 +472,7 @@ void returnCardToItem(const Entity card) {
 }
 
 int mod(int k, const int n) {
-    return ((k %= n) < 0) ? k+n : k;
+	return ((k %= n) < 0) ? k + n : k;
 }
 
 std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const uint path_length) {
@@ -455,7 +484,7 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 	};
 	std::discrete_distribution<int> section_length_dist({0, 0, 5, 5, 1, 1});
 	std::uniform_int_distribution<uint> x_coord_dist(1, MAP_COUNT_X - 3);
-	std::uniform_int_distribution<uint> y_coord_dist(1, MAP_COUNT_Y - 4); // Keep bottom space empty for cards
+	std::uniform_int_distribution<uint> y_coord_dist(2, MAP_COUNT_Y - 4); // Keep bottom space empty for cards
 	std::uniform_int_distribution<uint> direction_dist(0, 2);
 
 	std::vector<vec2> map_checkpoints{};
@@ -551,15 +580,19 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 		bool regenerate = false;
 		for (int i = 1; i < map_checkpoints.size(); ++i) {
 			const vec2 next_checkpoint = map_checkpoints.at(i);
-			const float manhattan_dist_section = abs(next_checkpoint.x - last_checkpoint.x) + abs(next_checkpoint.y - last_checkpoint.y);
-			const float manhattan_dist_last = abs(last_checkpoint.x - new_checkpoint.x) + abs(last_checkpoint.y - new_checkpoint.y);
-			const float manhattan_dist_next = abs(next_checkpoint.x - new_checkpoint.x) + abs(next_checkpoint.y - new_checkpoint.y);
+			const float manhattan_dist_section = abs(next_checkpoint.x - last_checkpoint.x) + abs(
+				                                     next_checkpoint.y - last_checkpoint.y);
+			const float manhattan_dist_last = abs(last_checkpoint.x - new_checkpoint.x) + abs(
+				                                  last_checkpoint.y - new_checkpoint.y);
+			const float manhattan_dist_next = abs(next_checkpoint.x - new_checkpoint.x) + abs(
+				                                  next_checkpoint.y - new_checkpoint.y);
 
 			if (manhattan_dist_last > manhattan_dist_section || manhattan_dist_next > manhattan_dist_section) {
 				printf("Checking checkpoints\n");
 				const float small_dist = min(manhattan_dist_last, manhattan_dist_next);
 				if (small_dist < 2) {
-					printf("Checkpoint too close to another checkpoint %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
+					printf("Checkpoint too close to another checkpoint %f,\t%f\t%d\n", new_checkpoint.x,
+					       new_checkpoint.y, section_length);
 					regenerate = true;
 					break; // the section hit too close to a checkpoint
 				}
@@ -568,21 +601,24 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 				if (next_checkpoint.x - last_checkpoint.x == 0) {
 					// vertical section
 					if (abs(last_checkpoint.x - new_checkpoint.x) < 2) {
-						printf("Checkpoint too close to vertical section %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
+						printf("Checkpoint too close to vertical section %f,\t%f\t%d\n", new_checkpoint.x,
+						       new_checkpoint.y, section_length);
 						regenerate = true;
 						break;
 					}
 				} else if (next_checkpoint.y - last_checkpoint.y == 0) {
 					// horizontal section
 					if (abs(last_checkpoint.y - new_checkpoint.y) < 2) {
-						printf("Checkpoint too close to horizontal section %f,\t%f\t%d\n", new_checkpoint.x, new_checkpoint.y, section_length);
+						printf("Checkpoint too close to horizontal section %f,\t%f\t%d\n", new_checkpoint.x,
+						       new_checkpoint.y, section_length);
 						regenerate = true;
 						break;
 					}
 				}
 			}
 
-			printf("(%f, %f) -> (%f, %f) (%f, %f)\n", new_checkpoint.x, new_checkpoint.y, last_checkpoint.x, last_checkpoint.y, next_checkpoint.x, next_checkpoint.y);
+			printf("(%f, %f) -> (%f, %f) (%f, %f)\n", new_checkpoint.x, new_checkpoint.y, last_checkpoint.x,
+			       last_checkpoint.y, next_checkpoint.x, next_checkpoint.y);
 			printf("         | CP Dist: %f\n", manhattan_dist_section);
 			printf("         | LS Dist: %f\n", manhattan_dist_last);
 			printf("         | LN Dist: %f\n", manhattan_dist_next);
@@ -620,7 +656,8 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 	return map_checkpoints;
 }
 
-TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<vec2>& path, const TD_MAP_ATLAS_TEXTURES initial_tile) {
+TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<vec2> &path,
+                                         const TD_MAP_ATLAS_TEXTURES initial_tile) {
 	vec2 checkpoint = path[0];
 	bool top_left = false, top_right = false, bottom_left = false, bottom_right = false;
 	if (tile_pos.y == 0) {
@@ -639,7 +676,7 @@ TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<
 		if (checkpoint.y == second_checkpoint.y) {
 			// this section is horizontal
 			if ((checkpoint.x <= tile_pos.x && second_checkpoint.x >= tile_pos.x) ||
-				(checkpoint.x >= tile_pos.x && second_checkpoint.x <= tile_pos.x)) {
+			    (checkpoint.x >= tile_pos.x && second_checkpoint.x <= tile_pos.x)) {
 				// left side of the square is on the line
 				if (checkpoint.y == tile_pos.y) {
 					top_left = true;
@@ -648,7 +685,7 @@ TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<
 				}
 			}
 			if ((checkpoint.x + 1 <= tile_pos.x && second_checkpoint.x + 1 >= tile_pos.x) ||
-				(checkpoint.x + 1 >= tile_pos.x && second_checkpoint.x + 1 <= tile_pos.x)) {
+			    (checkpoint.x + 1 >= tile_pos.x && second_checkpoint.x + 1 <= tile_pos.x)) {
 				// right side of the square is on the line
 				if (checkpoint.y == tile_pos.y) {
 					top_right = true;
@@ -659,7 +696,7 @@ TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<
 		} else if (checkpoint.x == second_checkpoint.x) {
 			// this section is vertical
 			if ((checkpoint.y <= tile_pos.y && second_checkpoint.y >= tile_pos.y) ||
-				(checkpoint.y >= tile_pos.y && second_checkpoint.y <= tile_pos.y)) {
+			    (checkpoint.y >= tile_pos.y && second_checkpoint.y <= tile_pos.y)) {
 				// top side of the square is on the line
 				if (checkpoint.x == tile_pos.x) {
 					top_left = true;
@@ -669,7 +706,7 @@ TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<
 				}
 			}
 			if ((checkpoint.y + 1 <= tile_pos.y && second_checkpoint.y + 1 >= tile_pos.y) ||
-				(checkpoint.y + 1 >= tile_pos.y && second_checkpoint.y + 1 <= tile_pos.y)) {
+			    (checkpoint.y + 1 >= tile_pos.y && second_checkpoint.y + 1 <= tile_pos.y)) {
 				// bottom side of the square is on the line
 				if (checkpoint.x == tile_pos.x) {
 					bottom_left = true;
@@ -736,11 +773,11 @@ TD_MAP_ATLAS_TEXTURES tileAdjacentToPath(const vec2 tile_pos, const std::vector<
 
 std::vector<vec2> grid_to_coordinates(const std::vector<vec2> &grid_coords) {
 	std::vector<vec2> map_coordinates = {};
-	constexpr float width_step = window_width_px/(MAP_COUNT_X - 1);
-	constexpr float height_step = window_height_px/(MAP_COUNT_Y - 1);
-	constexpr float width_step_center = width_step/2;
-	constexpr float height_step_center = height_step/2;
-	for (const auto grid_coord : grid_coords) {
+	constexpr float width_step = window_width_px / (MAP_COUNT_X - 1);
+	constexpr float height_step = window_height_px / (MAP_COUNT_Y - 1);
+	constexpr float width_step_center = width_step / 2;
+	constexpr float height_step_center = height_step / 2;
+	for (const auto grid_coord: grid_coords) {
 		float x = grid_coord.x * width_step + width_step_center;
 		float y = grid_coord.y * height_step + height_step_center;
 		map_coordinates.emplace_back(x, y);
@@ -748,19 +785,20 @@ std::vector<vec2> grid_to_coordinates(const std::vector<vec2> &grid_coords) {
 	return map_coordinates;
 }
 
-Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints,
-	             std::default_random_engine rng, std::uniform_real_distribution<float> dist) { //is & for checkpoint necessary? yes, we don't need to copy that value
+Entity createMap(RenderSystem *renderer, const std::vector<vec2> &checkpoints,
+                 std::default_random_engine rng, std::uniform_real_distribution<float> dist) {
+	//is & for checkpoint necessary? yes, we don't need to copy that value
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Stationary& map_texture = registry.stationaries.emplace(entity);
+	Stationary &map_texture = registry.stationaries.emplace(entity);
 	//map_texture.position = vec2({window_width_px/2, window_height_px/2});
 	//map_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
 	map_texture.position = vec2(0, 0);
 
-	Map& map_attributes = registry.maps.emplace(entity);
+	Map &map_attributes = registry.maps.emplace(entity);
 	const std::vector<vec2> map_coordinates = grid_to_coordinates(checkpoints);
 	map_attributes.checkpoints = map_coordinates;
 
@@ -768,20 +806,18 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints,
 	float path_length = 0;
 	if (map_coordinates.size() > 1) {
 		path_length += abs(distance(map_coordinates[0], map_coordinates[1]));
-        map_attributes.section_lengths.push_back(path_length);
+		map_attributes.section_lengths.push_back(path_length);
 		for (uint i = 2; i < map_coordinates.size(); ++i) {
-            const float section_length = abs(distance(map_coordinates[i-1], map_coordinates[i]));
-            map_attributes.section_lengths.push_back(section_length);
+			const float section_length = abs(distance(map_coordinates[i - 1], map_coordinates[i]));
+			map_attributes.section_lengths.push_back(section_length);
 			path_length += section_length;
 		}
 	}
 	map_attributes.path_length = path_length;
 
 	// build map
-	constexpr float tile_height = window_height_px / (MAP_COUNT_Y - 1);
-	constexpr float tile_width = window_width_px / (MAP_COUNT_X - 1);
 
-	map_texture.scale = vec2(tile_width, tile_height);
+	map_texture.scale = vec2(TILE_WIDTH, TILE_HEIGHT);
 
 	std::vector<Stationary> stationaries(MAP_COUNT_X * MAP_COUNT_Y);
 	std::vector<uint> atlas_ids(MAP_COUNT_X * MAP_COUNT_Y);
@@ -790,13 +826,13 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints,
 			const uint index = y + x * MAP_COUNT_Y;
 			const float selection = dist(rng);
 			stationaries[index] = {
-					.position = {
-						x * tile_width,
-						y * tile_height,
-					},
-					.use_direction_sprite = false,
-					.scale = {1, 1}
-				};
+				.position = {
+					x * TILE_WIDTH,
+					y * TILE_HEIGHT,
+				},
+				.use_direction_sprite = false,
+				.scale = {1, 1}
+			};
 			TD_MAP_ATLAS_TEXTURES selected_tile;
 			if (selection < 0.4) {
 				selected_tile = TD_MAP_ATLAS_TEXTURES::GRASS;
@@ -815,14 +851,14 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints,
 		}
 	}
 
-    registry.renderBackground.insert(entity, {
-    	std::move(stationaries),
-    	std::move(atlas_ids),
-    	Z_MIDDLE,
-    	TEXTURE_ASSET_ID::TD_MAP_ATLAS,
-    	EFFECT_ASSET_ID::TEXTURED_ATLAS,
-    	GEOMETRY_BUFFER_ID::SPRITE,
-    });
+	registry.renderBackground.insert(entity, {
+		                                 std::move(stationaries),
+		                                 std::move(atlas_ids),
+		                                 Z_MIDDLE,
+		                                 TEXTURE_ASSET_ID::TD_MAP_ATLAS,
+		                                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
 	const auto map_decoration = Entity();
 	map_attributes.map_decoration = map_decoration;
@@ -830,89 +866,89 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2>& checkpoints,
 		registry.remove_all_components_of(map_decoration);
 	};
 
-	Stationary& deco_pos = registry.stationaries.emplace(map_decoration);
-	deco_pos.position = map_coordinates.back() - vec2(0, tile_height * 0.3);
+	Stationary &deco_pos = registry.stationaries.emplace(map_decoration);
+	deco_pos.position = map_coordinates.back() - vec2(0, TILE_HEIGHT * 0.3);
 	deco_pos.use_direction_sprite = false;
-	deco_pos.scale = vec2(1.4 * tile_width, 1.4 * tile_height);
+	deco_pos.scale = vec2(1.4 * TILE_WIDTH, 1.4 * TILE_HEIGHT);
 
 	registry.renderBackground.insert(map_decoration, {
-		{
-			Stationary{},
-			{
-				0.8f * vec2{tile_width, -tile_height},
-				0,
-				false,
-				{1, 1}
-			},
-			{
-				0.8f * vec2{tile_width, tile_height},
-				0,
-				false,
-				{1, 1}
-			},
-			{
-				0.8f * vec2{-tile_width, -tile_height},
-				0,
-				false,
-				{1, 1}
-			}
-		},
-		{
-			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::CAMPFIRE2),
-			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::TENT),
-			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::TENT2),
-			static_cast<uint>(TD_MAP_DECORATION_TEXTURES::WAGON),
-		},
-		Z_FOREGROUND,
-		TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
-		EFFECT_ASSET_ID::TEXTURED_ATLAS,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                 {
+			                                 Stationary{},
+			                                 {
+				                                 0.8f * vec2{TILE_WIDTH, -TILE_HEIGHT},
+				                                 0,
+				                                 false,
+				                                 {1, 1}
+			                                 },
+			                                 {
+				                                 0.8f * vec2{TILE_WIDTH, TILE_HEIGHT},
+				                                 0,
+				                                 false,
+				                                 {1, 1}
+			                                 },
+			                                 {
+				                                 0.8f * vec2{-TILE_WIDTH, -TILE_HEIGHT},
+				                                 0,
+				                                 false,
+				                                 {1, 1}
+			                                 }
+		                                 },
+		                                 {
+			                                 static_cast<uint>(TD_MAP_DECORATION_TEXTURES::CAMPFIRE2),
+			                                 static_cast<uint>(TD_MAP_DECORATION_TEXTURES::TENT),
+			                                 static_cast<uint>(TD_MAP_DECORATION_TEXTURES::TENT2),
+			                                 static_cast<uint>(TD_MAP_DECORATION_TEXTURES::WAGON),
+		                                 },
+		                                 Z_FOREGROUND,
+		                                 TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
+		                                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
-    return entity;
+	return entity;
 }
 
 Entity createPlacementMarker(RenderSystem *renderer) {
-    const auto entity = Entity();
-    registry.placementMarkers.emplace(entity);
-    Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-    registry.meshPtrs.emplace(entity, &mesh);
+	const auto entity = Entity();
+	registry.placementMarkers.emplace(entity);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
 
-    Stationary& placement_marker = registry.stationaries.emplace(entity);
-    placement_marker.scale = vec2({2*TOWER_WIDTH, 2*TOWER_HEIGHT});
+	Stationary &placement_marker = registry.stationaries.emplace(entity);
+	placement_marker.scale = vec2({2 * TOWER_WIDTH, 2 * TOWER_HEIGHT});
 
-    registry.renderForeground.insert(entity, {
-            {Stationary{}},
-            {0},
-            Z_FOREGROUND,
-            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
-            EFFECT_ASSET_ID::TEXTURED,
-            GEOMETRY_BUFFER_ID::SPRITE,
-    });
+	registry.renderForeground.insert(entity, {
+		                                 {Stationary{}},
+		                                 {0},
+		                                 Z_FOREGROUND,
+		                                 TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+		                                 EFFECT_ASSET_ID::TEXTURED,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
-    registry.invisibles.emplace(entity);
+	registry.invisibles.emplace(entity);
 
-    return entity;
+	return entity;
 }
 
 Entity createGameOver(RenderSystem *renderer) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Stationary& gameover_texture = registry.stationaries.emplace(entity);
+	Stationary &gameover_texture = registry.stationaries.emplace(entity);
 	gameover_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
-	gameover_texture.position = vec2({window_width_px/2, window_height_px/2});
+	gameover_texture.position = vec2({window_width_px / 2, window_height_px / 2});
 
 	registry.renderForeground.insert(entity, {
-		{Stationary{}},
-		{0},
-		Z_FOREGROUND,
-		TEXTURE_ASSET_ID::GAME_OVER,
-		EFFECT_ASSET_ID::TEXTURED,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                 {Stationary{}},
+		                                 {0},
+		                                 Z_FOREGROUND,
+		                                 TEXTURE_ASSET_ID::GAME_OVER,
+		                                 EFFECT_ASSET_ID::TEXTURED,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
 	return entity;
 }
@@ -921,21 +957,21 @@ Entity createGameOver(RenderSystem *renderer) {
 Entity createOverviewMap(RenderSystem *renderer) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Stationary& overview_texture = registry.stationaries.emplace(entity);
-	overview_texture.position = vec2({window_width_px/2, window_height_px/2});
+	Stationary &overview_texture = registry.stationaries.emplace(entity);
+	overview_texture.position = vec2({window_width_px / 2, window_height_px / 2});
 	overview_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
 
 	registry.renderBackground.insert(entity, {
-		{Stationary{}},
-		{},
-		Z_BACKGROUND,
-		TEXTURE_ASSET_ID::OVERVIEW_MAP,
-		EFFECT_ASSET_ID::TEXTURED,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                 {Stationary{}},
+		                                 {},
+		                                 Z_BACKGROUND,
+		                                 TEXTURE_ASSET_ID::OVERVIEW_MAP,
+		                                 EFFECT_ASSET_ID::TEXTURED,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
 	return entity;
 }
@@ -943,10 +979,10 @@ Entity createOverviewMap(RenderSystem *renderer) {
 Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Stationary& fight_location_pos = registry.stationaries.emplace(entity);
+	Stationary &fight_location_pos = registry.stationaries.emplace(entity);
 	fight_location_pos.position = pos;
 	fight_location_pos.scale = vec2({0.6 * OVERVIEW_ICON_WIDTH, 0.6 * OVERVIEW_ICON_HEIGHT});
 
@@ -955,13 +991,13 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 	properties.overview_selection = createOverviewSelection(renderer, pos);
 
 	registry.renderBackground.insert(entity, {
-		{Stationary{}},
-		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::FIGHT)},
-		Z_BACKGROUND / 2,
-		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
-		EFFECT_ASSET_ID::TEXTURED_ATLAS,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                 {Stationary{}},
+		                                 {static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::FIGHT)},
+		                                 Z_BACKGROUND / 2,
+		                                 TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		                                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
 	return entity;
 }
@@ -969,23 +1005,23 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 Entity createStartIcon(RenderSystem *renderer) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Stationary& start_icon = registry.stationaries.emplace(entity);
+	Stationary &start_icon = registry.stationaries.emplace(entity);
 	start_icon.position = vec2(START_ICON_LOC_X, START_ICON_LOC_Y);
 	start_icon.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
 
 	registry.overviewMapLocations.emplace(entity);
 
 	registry.renderBackground.insert(entity, {
-		{Stationary{}},
-		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::START)},
-		Z_BACKGROUND / 2,
-		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
-		EFFECT_ASSET_ID::TEXTURED_ATLAS,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                 {Stationary{}},
+		                                 {static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::START)},
+		                                 Z_BACKGROUND / 2,
+		                                 TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		                                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
 	return entity;
 }
@@ -993,23 +1029,23 @@ Entity createStartIcon(RenderSystem *renderer) {
 Entity createGoalIcon(RenderSystem *renderer) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Stationary& goal_icon = registry.stationaries.emplace(entity);
+	Stationary &goal_icon = registry.stationaries.emplace(entity);
 	goal_icon.position = vec2(GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y);
 	goal_icon.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
 
 	registry.overviewMapLocations.emplace(entity);
 
 	registry.renderBackground.insert(entity, {
-		{Stationary{}},
-		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::END)},
-		Z_BACKGROUND / 2,
-		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
-		EFFECT_ASSET_ID::TEXTURED_ATLAS,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                 {Stationary{}},
+		                                 {static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::END)},
+		                                 Z_BACKGROUND / 2,
+		                                 TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		                                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
 	return entity;
 }
@@ -1018,23 +1054,23 @@ Entity createGoalIcon(RenderSystem *renderer) {
 Entity createOverviewLine(RenderSystem *renderer, const vec2 firstPos, const vec2 secondPos) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Stationary& line_texture = registry.stationaries.emplace(entity);
+	Stationary &line_texture = registry.stationaries.emplace(entity);
 	const auto dp = firstPos - secondPos;
-	line_texture.position =  0.5f * (firstPos + secondPos);
+	line_texture.position = 0.5f * (firstPos + secondPos);
 	line_texture.angle = atan2(dp.y, dp.x) + M_PI_2;
 	line_texture.scale = vec2({LINE_WIDTH, 0.5f * length(dp)});
 
 	registry.renderBackground.insert(entity, {
-		{Stationary{}},
-		{0},
-		Z_BACKGROUND / 2,
-		TEXTURE_ASSET_ID::BLACK_PIXEL,
-		EFFECT_ASSET_ID::TEXTURED,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                 {Stationary{}},
+		                                 {0},
+		                                 Z_BACKGROUND / 2,
+		                                 TEXTURE_ASSET_ID::BLACK_PIXEL,
+		                                 EFFECT_ASSET_ID::TEXTURED,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
 	return entity;
 }
@@ -1042,20 +1078,42 @@ Entity createOverviewLine(RenderSystem *renderer, const vec2 firstPos, const vec
 Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Stationary& selection = registry.stationaries.emplace(entity);
+	Stationary &selection = registry.stationaries.emplace(entity);
 	selection.position = pos;
 	selection.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
 
 	registry.invisibles.insert(entity, {});
 
 	registry.renderBackground.insert(entity, {
+		                                 {Stationary{}},
+		                                 {static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::SELECTION)},
+		                                 Z_BACKGROUND - Z_BACKGROUND / 4,
+		                                 TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		                                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
+
+	return entity;
+}
+
+Entity createRoundStartButton(RenderSystem* renderer, const vec2 pos) {
+	const auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary &button = registry.stationaries.emplace(entity);
+	button.position = pos;
+	button.scale = vec2({TILE_WIDTH / 2, TILE_HEIGHT / 2});
+
+	registry.renderForeground.insert(entity, {
 		{Stationary{}},
-		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::SELECTION)},
-		Z_BACKGROUND - Z_BACKGROUND / 4,
-		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		{static_cast<uint>(BUTTONS::START_UP)},
+		Z_FOREGROUND,
+		TEXTURE_ASSET_ID::BUTTONS,
 		EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		GEOMETRY_BUFFER_ID::SPRITE,
 	});
@@ -1078,9 +1136,9 @@ Entity createLine(const vec2 position, const vec2 size) {
 		});
 
 	// Create motion
-	Motion& motion = registry.motions.emplace(entity);
+	Motion &motion = registry.motions.emplace(entity);
 	motion.angle = 0.f;
-	motion.velocity = { 0.f, 0.f };
+	motion.velocity = {0.f, 0.f};
 	motion.position = position;
 	motion.scale = size;
 
@@ -1088,61 +1146,71 @@ Entity createLine(const vec2 position, const vec2 size) {
 	return entity;
 }
 
-Entity createText(RenderSystem* renderer, const vec2 pos, const vec2 scale, const std::string &text) {
+Entity createText(RenderSystem *renderer, const vec2 pos, const vec2 scale, const std::string &text,
+                  const FontType font) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	registry.renderForeground.insert(entity, createTextRenderRequest(text, scale));
+	registry.renderForeground.insert(entity, createTextRenderRequest(text, scale, font));
+
+	registry.texts.insert(entity, {text, scale, font});
 
 	// Create stationary
-	Stationary& stationary = registry.stationaries.emplace(entity);
+	Stationary &stationary = registry.stationaries.emplace(entity);
 	stationary.position = pos;
 	stationary.scale = scale;
 
-	registry.texts.emplace(entity);
-
 	return entity;
+}
+
+void updateText(const Entity text_entity, const std::string &new_text) {
+	Text& curr_text = registry.texts.get(text_entity);
+	if (curr_text.text == new_text) {
+		return;
+	}
+	curr_text.text = new_text;
+	registry.renderForeground.remove(text_entity);
+	registry.renderForeground.insert(text_entity, createTextRenderRequest(new_text, curr_text.scale, curr_text.font));
 }
 
 Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size, const float alpha) {
 	const auto entity = Entity();
 
-	Mesh& mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
 
-	Stationary& position = registry.stationaries.emplace(entity);
+	Stationary &position = registry.stationaries.emplace(entity);
 	position.position = pos;
 	position.scale = size;
 
-	vec4& color = registry.colors.emplace(entity);
+	vec4 &color = registry.colors.emplace(entity);
 	color.r = 1.f;
 	color.g = 1.f;
 	color.b = 1.f;
 	color.a = alpha;
 
 	registry.renderForeground.insert(entity, {
-		{Stationary{}},
-		{0},
-		Z_BACKGROUND,
-		TEXTURE_ASSET_ID::BLACK_PIXEL,
-		EFFECT_ASSET_ID::TEXTURED,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                 {Stationary{}},
+		                                 {0},
+		                                 Z_BACKGROUND,
+		                                 TEXTURE_ASSET_ID::BLACK_PIXEL,
+		                                 EFFECT_ASSET_ID::TEXTURED,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
 	return entity;
 }
 
-
-RenderRequest createTextRenderRequest(const std::string& text, const vec2 scale) {
+RenderRequest createTextRenderRequest(const std::string &text, const vec2 scale, const FontType font) {
 	RenderRequest request{};
-	request.used_texture = TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS;
+	request.used_texture = static_cast<TEXTURE_ASSET_ID>(font);
 	request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
 	request.used_geometry = GEOMETRY_BUFFER_ID::SPRITE;
 	request.z_position = Z_FOREGROUND;
 	vec2 current_pos = {};
-	for (const char character : text) {
+	for (const char character: text) {
 		switch (character) {
 			case '\r': {
 				continue;
@@ -1161,7 +1229,7 @@ RenderRequest createTextRenderRequest(const std::string& text, const vec2 scale)
 					printf("The character '%c' will not be rendered\n", character);
 					continue;
 				}
-				Stationary& pos = request.offset_positions.emplace_back();
+				Stationary &pos = request.offset_positions.emplace_back();
 				// All chars below 0x20 do not have a representation (thus those chars are ignored on the atlas)
 				request.atlas_ids.push_back(static_cast<unsigned int>(character) - 0x20);
 
@@ -1169,6 +1237,9 @@ RenderRequest createTextRenderRequest(const std::string& text, const vec2 scale)
 				pos.scale = scale;
 
 				current_pos.x += scale.x;
+				if (font == FontType::SLIM) {
+					current_pos.x += scale.x * 0.1;
+				}
 			}
 		}
 	}

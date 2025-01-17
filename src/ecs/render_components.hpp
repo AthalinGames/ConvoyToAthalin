@@ -33,6 +33,12 @@ struct Mesh
 	std::vector<uint16_t> vertex_indices;
 };
 
+// Walk animation timers
+struct EnemyWalkTimer{ // timer for Slime and SlimeBig
+    float time = 0.f;
+    float start_time = 700.f;
+};
+
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture
@@ -80,6 +86,8 @@ enum class TEXTURE_ASSET_ID {
     TD_MAP_ATLAS,
 	OVERVIEW_ICONS_ATLAS,
 	ASCII_CHAR_ATLAS,
+	SLIM_ASCII_CHAR_ATLAS,
+	BUTTONS,
 	TEXTURE_COUNT
 };
 
@@ -107,6 +115,8 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::TD_MAP_ATLAS: return "TDMapAtlas.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: return "overviewIconsAtlas.png";
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: return "charmap-oldschool_preview.png"; // Source: https://opengameart.org/content/ascii-bitmap-font-oldschool
+		case TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS: return "font.png";
+		case TEXTURE_ASSET_ID::BUTTONS: return "buttons.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
@@ -137,6 +147,20 @@ const std::set texture_atlases = {
     TEXTURE_ASSET_ID::SLIME_BIG,
 	TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
 	TEXTURE_ASSET_ID::TD_MAP_ATLAS,
+	TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS,
+	TEXTURE_ASSET_ID::BUTTONS,
+};
+
+enum class FontType {
+	SQUARE = static_cast<int>(TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS),
+	SLIM = static_cast<int>(TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS),
+};
+
+// Component that is needed for text updates
+struct Text {
+	std::string text;
+	vec2 scale;
+	FontType font;
 };
 
 enum class OVERVIEW_ICON_TEXTURES {
@@ -220,6 +244,17 @@ enum class SPIKES_SPRITE {
     COUNT,
 };
 
+enum class SLIME_WALK_FRAME {
+    FRAME0 = 0,
+    FRAME1,
+    FRAME2,
+    COUNT,
+};
+
+enum class BUTTONS {
+	START_UP = 0,
+	START_DOWN,
+};
 
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
 	// here the texture positions are defined
@@ -231,6 +266,21 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			assert(definedCount <= maxCount); // Atlas cannot have more defined textures than available space
 			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
 			for (unsigned int i = 0; i < definedCount; i++) {
+				const float x_start = (i % cols) * tex_width;
+				const float y_start = (i / cols) * tex_height;
+				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+				texDef.tex_pos = vec2(x_start, y_start);
+				texDef.tex_size = vec2(tex_width, tex_height);
+			}
+			break;
+		}
+		// TODO think about a collective font system
+		case TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS: {
+			// TODO remember that the char offset is 0x20, so to get the correct char you need to subtract 0x20
+			constexpr unsigned int cols = 18, rows = 6, maxCount = cols * rows;
+			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+			for (unsigned int i = 0; i < maxCount; i++) {
 				const float x_start = (i % cols) * tex_width;
 				const float y_start = (i / cols) * tex_height;
 				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
@@ -377,7 +427,7 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
             break;
         }
         case TEXTURE_ASSET_ID::SLIME: {
-            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr unsigned int cols = 3, rows = 4, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
             atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
             for (unsigned int i = 0; i < maxCount; i++) {
@@ -390,7 +440,7 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
             break;
         }
         case TEXTURE_ASSET_ID::SLIME_BIG: {
-            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr unsigned int cols = 3, rows = 4, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
             atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
             for (unsigned int i = 0; i < maxCount; i++) {
@@ -402,6 +452,19 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
             }
             break;
         }
+		case TEXTURE_ASSET_ID::BUTTONS: {
+			constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+			break;
+		}
 		default:
 			assert(false && "Texture atlas has no textures defined");
 	}

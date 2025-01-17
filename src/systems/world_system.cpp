@@ -195,13 +195,13 @@ bool WorldSystem::step(const float elapsed_ms) {
 	}
 
 	// Render Health and Food display
-	ImGui::Begin("Health");
-	ImGui::SetWindowPos({window_width_px * 0.1, window_height_px * 0.03});
-	ImGui::SetWindowSize({window_width_px * 0.06, 65});
-	for (const auto & player : registry.players.components) {
-		ImGui::Text("HP: %d\nFood: %d", player.health, player.food);
-	}
-	ImGui::End();
+	//ImGui::Begin("Health");
+	//ImGui::SetWindowPos({window_width_px * 0.1, window_height_px * 0.03});
+	//ImGui::SetWindowSize({window_width_px * 0.06, 65});
+	//for (const auto & player : registry.players.components) {
+	//	ImGui::Text("HP: %d\nFood: %d", player.health, player.food);
+	//}
+	//ImGui::End();
 
 	// If td system is running, run also its step
 	if (!current_td_system->is_over()) {
@@ -288,7 +288,7 @@ void WorldSystem::restart_game() {
 
 	td_fight_launched = false;
 	// Setup initial Player Hand (Start with one archer)
-    player = createPlayer();
+    player = createPlayer(renderer);
 	createItem(TowerType::ARCHER);
     createItem(TowerType::KNIGHT);
     createItem(ConsumableType::BOMB);
@@ -377,7 +377,7 @@ void WorldSystem::restart_game() {
 		createOverviewLine(renderer, last_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
 	}
 
-	tutorial_hint = createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial");
+	tutorial_hint = createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial", FontType::SQUARE);
 }
 
 // Compute collisions between entities
@@ -424,7 +424,8 @@ bool WorldSystem::is_over() const {
 void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	//TODO: handle keyboard shortcuts
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-		current_td_system.reset(); // without this we would get an error
+		registry.players.clear();
+		current_td_system.reset(); // without this cleanup we would get an error
 		exit(0);
 	}
 
@@ -447,7 +448,7 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 		}
 		case GLFW_KEY_T: {
 			if (action == GLFW_PRESS) {
-				tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data());
+				tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data(), FontType::SQUARE);
 			} else if (action == GLFW_RELEASE) {
 				registry.remove_all_components_of(tutorial_text);
 			}
