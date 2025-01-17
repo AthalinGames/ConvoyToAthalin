@@ -159,31 +159,25 @@ void PhysicsSystem::step(float elapsed_ms)
 			Motion& motion_j = motion_container.components[j];
 			Entity entity_j = motion_container.entities[j];
 
-            if (registry.bombs.has(entity_i)) {
-                if (registry.bombs.get(entity_i).exploding) {
-                    printf("");
-                }
-            }
-
-            if ((registry.towers.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j))){
+            if ((registry.towers.has(entity_i) && registry.enemies.has(entity_j))){
                 if(registry.enemies.get(entity_j).spawned) {
                     if (enemyInRange(motion_i, registry.towers.get(entity_i).range, motion_j)) {
                         registry.collisions.emplace_with_duplicates(entity_i, entity_j);
                         registry.collisions.emplace_with_duplicates(entity_j, entity_i);
                     }
                 }
-			} else if (registry.towers.has(entity_j) && !registry.cards.has(entity_j) && registry.enemies.has(entity_i)) {
+			} else if (registry.towers.has(entity_j) && registry.enemies.has(entity_i)) {
                 if(registry.enemies.get(entity_i).spawned) {
                     if (enemyInRange(motion_j, registry.towers.get(entity_j).range, motion_i)) {
                         registry.collisions.emplace_with_duplicates(entity_i, entity_j);
                         registry.collisions.emplace_with_duplicates(entity_j, entity_i);
                     }
                 }
-            } else if (registry.bombs.has(entity_i) && !registry.cards.has(entity_i) && registry.enemies.has(entity_j)) {
+            } else if (registry.bombs.has(entity_i) && registry.enemies.has(entity_j)) {
                 if(registry.enemies.get(entity_j).spawned) {
                     if (enemyInRange(motion_i, registry.consumables.get(entity_i).range, motion_j)) {
                         const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
-                        auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
+                        auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture, request_j.atlas_ids[0]);
                         if (enemyPolyInBombRange(motion_i, registry.consumables.get(entity_i).range, motion_j, poly_j)) {
                             registry.collisions.emplace_with_duplicates(entity_i, entity_j);
                             registry.collisions.emplace_with_duplicates(entity_j, entity_i);
@@ -192,13 +186,14 @@ void PhysicsSystem::step(float elapsed_ms)
                 }
             } else if (!(registry.enemies.has(entity_i) && registry.enemies.has(entity_j)) // ignore collision between enemies
                         && !(registry.towers.has(entity_i) || registry.towers.has(entity_j)) // ignore collision with towers
+                        && !(registry.consumables.has(entity_i) && registry.consumables.has(entity_j)) // ignore collisions between consumables
                         && collides(motion_i, motion_j)) {
             	// Check if coarse collision is an actual collision
             	// TODO Think about Entities with multiple render requests
             	const RenderRequest& request_i = registry.renderGameLayer.get(entity_i);
             	const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
-            	auto& poly_i = getCollisionMeshOfTexture(request_i.used_texture);
-            	auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
+            	auto& poly_i = getCollisionMeshOfTexture(request_i.used_texture, request_i.atlas_ids[0]);
+            	auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture, request_j.atlas_ids[0]);
                 if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
             		// Create a collisions event
             		// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity

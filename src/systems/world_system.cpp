@@ -394,14 +394,14 @@ void WorldSystem::handle_collisions() {
 		// If td fight is running handle its collisions
 		if (!current_td_system->is_over()) {
 			current_td_system->handle_collision(entity, entity_other);
-            if (collision_count == collisionsRegistry.size()) {
-                collisionsRegistry.components.pop_back();
-                collisionsRegistry.entities.pop_back();
-            } else {
-                collision_count = collisionsRegistry.size();
-            }
-
 		}
+        if (collision_count == collisionsRegistry.size()) {
+            collisionsRegistry.pop_back();
+            //collisionsRegistry.components.pop_back();
+            //collisionsRegistry.entities.pop_back();
+        } else {
+            collision_count = collisionsRegistry.size();
+        }
 	}
 
 	// Remove all collisions from this simulation step

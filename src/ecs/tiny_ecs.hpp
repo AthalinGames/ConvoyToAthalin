@@ -31,6 +31,7 @@ struct ContainerInterface
 	virtual size_t size() = 0;
     // the default parameter here is ignored since it is defined at the original method at compile time, still needs to be here to work in code
 	virtual void remove(Entity e, bool keep_order = false) = 0;
+    virtual void pop_back() = 0;
 	virtual bool has(Entity entity) = 0;
 };
 
@@ -126,6 +127,18 @@ public:
             }
 		}
 	};
+
+    // Removes last component from container
+    void pop_back() override {
+        if (!components.empty()) {
+            Entity e = entities.back();
+            if (map_entity_componentID.contains(e)) {
+                map_entity_componentID.erase(e);
+            }
+            components.pop_back();
+            entities.pop_back();
+        }
+    }
 
 	// Remove all components of type 'Component'
 	void clear() override {

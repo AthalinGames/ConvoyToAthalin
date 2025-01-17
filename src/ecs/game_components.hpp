@@ -154,6 +154,8 @@ struct BombTimer {
 
 struct Spike {
     int damage = 200;
+    std::size_t max_hitcount = 3;
+    std::set<Entity> hit_entities{};
 };
 
 // All data relevant to the shape and motion of entities

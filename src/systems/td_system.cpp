@@ -577,6 +577,23 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
                 bomb.hit_entities.emplace(second);
             }
         }
+    } else if (registry.spikes.has(first) && registry.enemies.has(second)) {
+        auto &spike = registry.spikes.get(first);
+        auto &enemy = registry.enemies.get(second);
+
+        if (spike.hit_entities.contains(second)) {
+            // spike has already hit that enemy
+            return;
+        }
+        enemy.health -= spike.damage;
+        spike.hit_entities.emplace(second);
+        if (enemy.health <= 0) {
+            handle_enemy_death(second, enemy);
+        }
+        // delete spike if the amount of enemies has been reached
+        if (spike.max_hitcount <= spike.hit_entities.size()) {
+            registry.remove_all_components_of(first);
+        }
     }
 }
 
@@ -823,7 +840,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     if (registry.consumables.has(dragged_entity)) {
                         // successfully place card as bomb
                         std::erase(cards, dragged_entity); // C++20 is nice
-                        createConsumableFromCard(renderer, dragged_entity);
+                        createConsumableFromCard(renderer, dragged_entity, consumables);
                         auto consumable_motion = registry.motions.get(dragged_entity);
                         consumables.emplace_back(dragged_entity);
                     } else {
@@ -853,7 +870,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                             }
                         }
                     } else if (registry.consumables.has(dragged_entity)) {
-                        createConsumableFromCard(renderer, dragged_entity);
+                        createConsumableFromCard(renderer, dragged_entity, consumables);
                         auto consumable_motion = registry.motions.get(dragged_entity);
                         consumables.emplace_back(dragged_entity);
                     }

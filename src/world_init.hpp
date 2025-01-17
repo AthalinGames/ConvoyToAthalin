@@ -47,7 +47,7 @@ Entity createRandomItem(std::default_random_engine& rng);
 void createTowerFromCard(RenderSystem* renderer, Entity card);
 void returnTowerToItem(Entity tower);
 // consumable creation
-void createConsumableFromCard(RenderSystem* renderer, Entity card);
+void createConsumableFromCard(RenderSystem* renderer, Entity card, std::vector<Entity> &placed_consumables);
 // the arrows
 Entity createArrow(RenderSystem* renderer, vec2 pos, float velocity, vec2 dir);
 // the enemy unit

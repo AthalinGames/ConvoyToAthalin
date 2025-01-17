@@ -48,7 +48,27 @@ const std::vector sword_collision_poly { //TODO: check if hitbox still rotates c
         vec2{0.66, 0.22} - grid_shift
 };
 
-inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id) {
+const std::vector spike_left_collision_poly {
+        vec2{0.29, 0.62} - grid_shift,
+        vec2{0.43, 0.56} - grid_shift,
+        vec2{0.29, 0.41} - grid_shift,
+        vec2{0.22, 0.56} - grid_shift
+};
+
+const std::vector spike_middle_collision_poly {
+        vec2{0.47, 0.50} - grid_shift,
+        vec2{0.56, 0.44} - grid_shift,
+        vec2{0.47, 0.25} - grid_shift,
+        vec2{0.38, 0.44} - grid_shift
+};
+
+const std::vector spike_right_collision_poly {
+        vec2{0.53, 0.59} - grid_shift,
+        vec2{0.72, 0.56} - grid_shift,
+        vec2{0.63, 0.34} - grid_shift,
+};
+
+inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id, const unsigned int atlas_id = 0) {
     switch (id) {
         case TEXTURE_ASSET_ID::SLIME: //TODO: Slime poly currently not used, since other asset ids used for different textures
             return slime_collision_poly;
@@ -58,6 +78,17 @@ inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID
             return arrow_collision_poly;
         case TEXTURE_ASSET_ID::SWORD:
             return sword_collision_poly;
+        case TEXTURE_ASSET_ID::SPIKES:
+            switch (atlas_id) {
+                case static_cast<unsigned int>(SPIKES_SPRITE::SPIKE_LEFT):
+                    return spike_left_collision_poly;
+                case static_cast<unsigned int>(SPIKES_SPRITE::SPIKE_MIDDLE):
+                    return spike_middle_collision_poly;
+                case static_cast<unsigned int>(SPIKES_SPRITE::SPIKE_RIGHT):
+                    return spike_right_collision_poly;
+                default:
+                    return basic_bounding_box;
+            }
         default: // This is just the bounding box of the texture
             return basic_bounding_box;
     }

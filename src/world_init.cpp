@@ -43,7 +43,7 @@ Entity createItem(const ItemType item) {
                 }
                 case ConsumableType::SPIKES: {
                     registry.spikes.emplace(entity);
-                    consumable.range = 0.5f * TOWER_WIDTH;
+                    consumable.range = 0.25f * TOWER_WIDTH;
                     break;
                 }
 				case ConsumableType::CONSUMABLE_TYPE_COUNT: {
@@ -186,7 +186,7 @@ void createBombFromCard(RenderSystem* renderer, const Entity card, Motion& motio
     registry.bombTimers.emplace(card);
 }
 
-void createSpikesFromCard(RenderSystem* renderer, const Entity card, Motion& motion) {
+void createSpikesFromCard(RenderSystem* renderer, const Entity card, Motion& motion, std::vector<Entity> &placed_consumables) {
 
     motion.angle = 0;
     motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
@@ -216,6 +216,7 @@ void createSpikesFromCard(RenderSystem* renderer, const Entity card, Motion& mot
     registry.renderGameLayer.emplace(spike_middle_entity, request);
 
     registry.consumables.emplace(spike_middle_entity);
+    placed_consumables.emplace_back(spike_middle_entity);
     registry.spikes.emplace(spike_middle_entity);
 
     const auto spike_right_entity = Entity();
@@ -229,11 +230,13 @@ void createSpikesFromCard(RenderSystem* renderer, const Entity card, Motion& mot
     registry.renderGameLayer.emplace(spike_right_entity, request);
 
     registry.consumables.emplace(spike_right_entity);
+    placed_consumables.emplace_back(spike_right_entity);
     registry.spikes.emplace(spike_right_entity);
 
 }
 
-void createConsumableFromCard(RenderSystem* renderer, const Entity card) {
+void createConsumableFromCard(RenderSystem* renderer, const Entity card, std::vector<Entity> &placed_consumables) {
+    //TODO: return created entities for case, that multiple were created or take consumable vector as input var
     assert(registry.cards.has(card));
     registry.cards.remove(card);
     const Stationary& card_pos = registry.stationaries.get(card);
@@ -245,7 +248,7 @@ void createConsumableFromCard(RenderSystem* renderer, const Entity card) {
     if (registry.bombs.has(card)) {
         createBombFromCard(renderer, card, consumable_motion);
     } else if (registry.spikes.has(card)) {
-        createSpikesFromCard(renderer, card, consumable_motion);
+        createSpikesFromCard(renderer, card, consumable_motion, placed_consumables);
     }
     else {
         assert(false && "Invalid Consumable type for consumable creation");
