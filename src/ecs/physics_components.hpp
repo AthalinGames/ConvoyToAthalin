@@ -33,6 +33,54 @@ const std::vector slime_collision_poly {
         vec2{0.09, 0.47} - grid_shift
 };
 
+const std::vector slime_down_collision_poly {
+        vec2{0.18, 0.54} - grid_shift,
+        vec2{0.38, 0.60} - grid_shift,
+        vec2{0.53, 0.60} - grid_shift,
+        vec2{0.81, 0.54} - grid_shift,
+        vec2{0.85, 0.43} - grid_shift,
+        vec2{0.73, 0.19} - grid_shift,
+        vec2{0.53, 0.07} - grid_shift,
+        vec2{0.46, 0.07} - grid_shift,
+        vec2{0.25, 0.19} - grid_shift,
+        vec2{0.13, 0.43} - grid_shift,
+};
+
+const std::vector slime_left_collision_poly {
+        vec2{0.35, 0.57} - grid_shift,
+        vec2{0.76, 0.57} - grid_shift,
+        vec2{0.92, 0.44} - grid_shift,
+        vec2{0.76, 0.25} - grid_shift,
+        vec2{0.40, 0.11} - grid_shift,
+        vec2{0.30, 0.10} - grid_shift,
+        vec2{0.19, 0.27} - grid_shift,
+        vec2{0.19, 0.44} - grid_shift,
+};
+
+const std::vector slime_up_collision_poly {
+        vec2{0.25, 0.64} - grid_shift,
+        vec2{0.46, 0.76} - grid_shift,
+        vec2{0.53, 0.76} - grid_shift,
+        vec2{0.73, 0.64} - grid_shift,
+        vec2{0.85, 0.44} - grid_shift,
+        vec2{0.75, 0.31} - grid_shift,
+        vec2{0.56, 0.22} - grid_shift,
+        vec2{0.43, 0.22} - grid_shift,
+        vec2{0.24, 0.31} - grid_shift,
+        vec2{0.13, 0.44} - grid_shift,
+};
+
+const std::vector slime_right_collision_poly {
+        vec2{0.22, 0.57} - grid_shift,
+        vec2{0.64, 0.57} - grid_shift,
+        vec2{0.79, 0.40} - grid_shift,
+        vec2{0.79, 0.27} - grid_shift,
+        vec2{0.68, 0.10} - grid_shift,
+        vec2{0.57, 0.11} - grid_shift,
+        vec2{0.22, 0.25} - grid_shift,
+        vec2{0.07, 0.44} - grid_shift,
+};
+
 const std::vector arrow_collision_poly { //TODO: check if hitbox still rotates correctly with texture
         vec2{0.33, 0.61} - grid_shift,
         vec2{0.38, 0.66} - grid_shift,
@@ -48,10 +96,20 @@ const std::vector sword_collision_poly { //TODO: check if hitbox still rotates c
         vec2{0.66, 0.22} - grid_shift
 };
 
-inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id) {
+inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id, const unsigned int atlas_id = 0) {
     switch (id) {
-        case TEXTURE_ASSET_ID::SLIME: //TODO: Slime poly currently not used, since other asset ids used for different textures
-            return slime_collision_poly;
+        case TEXTURE_ASSET_ID::SLIME:
+            if (atlas_id < static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT)) {
+                return slime_down_collision_poly;
+            } else if (atlas_id < 2 * static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT)) {
+                return slime_left_collision_poly;
+            } else if (atlas_id < 3 * static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT)) {
+                return slime_up_collision_poly;
+            } else if (atlas_id < 4 * static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT)) {
+                return slime_right_collision_poly;
+            } else {
+                return slime_collision_poly;
+            }
         case TEXTURE_ASSET_ID::BOW:
             return arrow_collision_poly;
         case TEXTURE_ASSET_ID::SWORD:

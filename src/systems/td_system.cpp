@@ -161,6 +161,18 @@ bool TDSystem::step(const float elapsed_ms) {
                     registry.remove_all_components_of(bomb_entity);
                 }
             }
+            for (const auto enemy_entity : registry.enemyWalkTimers.entities) {
+                auto &walk_timer = registry.enemyWalkTimers.get(enemy_entity);
+                walk_timer.time -= elapsed_ms;
+                while (walk_timer.time <= 0) {
+                    walk_timer.time += walk_timer.start_time;
+                }
+                //RenderRequest &render_request = registry.renderGameLayer.get(enemy_entity);
+                //auto const enemy = registry.enemies.get(enemy_entity);
+                //if (registry.slimes.has(enemy_entity)){ // || registry.slimesBig.has(enemy_entity)) {
+                //    render_request.atlas_ids = //TODO: move this to render_system
+                //}
+            }
             if (!td_map.enemies.empty()) {
                 Enemy &next_enemy = registry.enemies.get(td_map.enemies[0]);
                 if (td_map.combat_time > next_enemy.spawn_time) {
@@ -170,6 +182,11 @@ bool TDSystem::step(const float elapsed_ms) {
                     Motion& enemy_motion = registry.motions.get(td_map.enemies[0]);
                     enemy_motion.angle = angle;
                     registry.invisibles.remove(td_map.enemies[0]);
+                    auto &walk_timer = registry.enemyWalkTimers.emplace(td_map.enemies[0]);
+                    if (registry.slimesBig.has(td_map.enemies[0])) {
+                        walk_timer.start_time *= 1.7f;
+                    }
+                    walk_timer.time = walk_timer.start_time * 100.f / next_enemy.speed; // scale original time of walkTimer to enemy speed
                     td_map.enemies.erase(td_map.enemies.begin());
                 }
             }
@@ -187,6 +204,12 @@ bool TDSystem::step(const float elapsed_ms) {
                     enemies.erase(enemy_entity);
                 }
             }
+
+            // Check if round is won
+            if (registry.enemies.components.empty() && registry.maps.get(map).enemies.empty()) {
+                current_phase = GamePhase::FIGHT_DONE;
+            }
+
             // Check if player still has health
             for (std::size_t i = 0; i < registry.players.size(); ++i) {
                 const auto &player = registry.players.components[i];
@@ -195,10 +218,6 @@ bool TDSystem::step(const float elapsed_ms) {
                 }
             }
 
-            // Check if round is won
-            if (registry.enemies.components.empty() && registry.maps.get(map).enemies.empty()) {
-                current_phase = GamePhase::FIGHT_DONE;
-            }
             break;
         }
         case GamePhase::FIGHT_DONE: {
@@ -359,6 +378,20 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
         }
         //return enemy_list;
     }
+
+    //TODO: add animation timer for every different enemy speed in enemies to player entity
+    //std::set<float> enemy_speeds;
+    //auto &current_player = registry.players.get(player);
+    //for (const auto enemy_entity : enemies) {
+    //    const auto enemy = registry.enemies.get(enemy_entity);
+    //    if (!current_player.animation_timers.contains(enemy.speed)) {
+    //        const Entity timer_entity = Entity();
+    //        auto timer = registry.enemyWalkTimers.emplace(timer_entity);
+    //        timer.time = 1000.f * 100.f / enemy.speed;
+    //        registry.players.get(player).animation_timers.emplace(enemy.speed, timer_entity);
+    //    }
+    //}
+
     return enemy_list;
 }
 
@@ -502,6 +535,8 @@ void TDSystem::handle_enemy_death(const Entity enemy_entity, Enemy &enemy) {
             spawn_enemy.section_progress = enemy.section_progress;
             spawn_enemy.spawned = true;
             registry.invisibles.remove(spawn_entity);
+            auto &walk_timer = registry.enemyWalkTimers.emplace(spawn_entity);
+            walk_timer.time = walk_timer.start_time * 100.f / spawn_enemy.speed; // scale original time of walkTimer to enemy speed
         }
     }
     // clear tower aiming

@@ -176,7 +176,7 @@ void PhysicsSystem::step(float elapsed_ms)
                 if(registry.enemies.get(entity_j).spawned) {
                     if (enemyInRange(motion_i, registry.bombs.get(entity_i).range, motion_j)) {
                         const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
-                        auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
+                        auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture, request_j.atlas_ids[0]);
                         if (enemyPolyInBombRange(motion_i, registry.bombs.get(entity_i), motion_j, poly_j)) {
                             registry.collisions.emplace_with_duplicates(entity_i, entity_j);
                             registry.collisions.emplace_with_duplicates(entity_j, entity_i);
@@ -190,8 +190,8 @@ void PhysicsSystem::step(float elapsed_ms)
             	// TODO Think about Entities with multiple render requests
             	const RenderRequest& request_i = registry.renderGameLayer.get(entity_i);
             	const RenderRequest& request_j = registry.renderGameLayer.get(entity_j);
-            	auto& poly_i = getCollisionMeshOfTexture(request_i.used_texture);
-            	auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture);
+            	auto& poly_i = getCollisionMeshOfTexture(request_i.used_texture, request_i.atlas_ids[0]);
+            	auto& poly_j = getCollisionMeshOfTexture(request_j.used_texture, request_j.atlas_ids[0]);
                 if (collidesPoly(motion_i, motion_j, poly_i, poly_j)) {
             		// Create a collisions event
             		// We are abusing the ECS system a bit in that we potentially insert muliple collisions for the same entity
@@ -216,7 +216,14 @@ vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, Entity enemy_entity, 
 	}
 	vec2 next_checkpoint = current_map.checkpoints[enemy.next_checkpoint];
 	float enemy_progress = enemy.enemy_progress;
-	enemy_progress += (enemy.speed * seconds) / current_map.path_length;
+    const auto walk_timer = registry.enemyWalkTimers.get(enemy_entity);
+    float walk_speed = 0;
+    const float walk_interval = walk_timer.start_time / (static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT) * 2 - 1);
+    if (walk_timer.time > walk_interval) {
+        const float move_time = walk_timer.start_time - walk_interval; // time duration when enemy is moving
+        walk_speed = (1.f - pow(abs(walk_timer.time - move_time/2)/move_time/2, 2.f)) * enemy.speed * 1.2f;
+    }
+	enemy_progress += (walk_speed * seconds) / current_map.path_length;
 	if (update_enemy) {
 		enemy.enemy_progress = enemy_progress;
 	}
@@ -228,7 +235,7 @@ vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, Entity enemy_entity, 
      * make section progress go > 1, then mod f and use first part to select section and decimal part to interpolate
      * if section progress over checkpoint size (or maybe size-1) set enemy progress 1 to avoid floating point inaccuracies
      */
-	section_progress += (enemy.speed * seconds) / section_length;
+	section_progress += (walk_speed * seconds) / section_length;
 	if (update_enemy) {
 		enemy.section_progress = section_progress;
 	}

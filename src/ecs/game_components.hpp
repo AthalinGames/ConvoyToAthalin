@@ -4,6 +4,7 @@
 
 #include "common.hpp"
 #include <vector>
+#include <map>
 
 // Player component
 struct Player {
@@ -33,6 +34,7 @@ struct Player {
 	~Player() {
 		status_bar_cleanup_func();
 	}
+    //std::map<float, Entity> animation_timers; // TODO: map movement speed to animation timer
 };
 
 // Enemy components

@@ -42,7 +42,7 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
         //        render_request.used_texture = TEXTURE_ASSET_ID::ARCHER_D;
         //    }
         //} else 
-        if(registry.archers.has(entity) || registry.knights.has(entity) || registry.swords.has(entity) || registry.enemies.has(entity)) {
+        if(registry.archers.has(entity) || registry.knights.has(entity) || registry.swords.has(entity)) {
             float angle_by_pi = pos.angle / M_PI;
             if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
                 //look left
@@ -60,25 +60,49 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
                     render_request.z_position = Z_BACKGROUND;
                 }
             }
-        //} else if (registry.slimes.has(entity)) {
-        //    float angle_by_pi = pos.angle / M_PI;
-        //    //printf("angle %f\n", angle);
-        //    float temp_whole;
-        //    //angle_by_pi = std::modf(angle_by_pi, &temp_whole);
-        //    //printf("angle mod %f\n", angle_by_pi);
-        //    if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
-        //        //look left
-        //        render_request.used_texture = TEXTURE_ASSET_ID::SLIME_L;
-        //    } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
-        //        //look up
-        //        render_request.used_texture = TEXTURE_ASSET_ID::SLIME_U;
-        //    } else if (angle_by_pi >= 0.75 || angle_by_pi < -0.75) {
-        //        //look right
-        //        render_request.used_texture = TEXTURE_ASSET_ID::SLIME_R;
-        //    } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
-        //        //look down
-        //        render_request.used_texture = TEXTURE_ASSET_ID::SLIME_D;
-        //    }
+        } else if (registry.enemies.has(entity)) {
+            auto atlas_id = 0;
+            //for (auto i = static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT); i > 0; --i) {
+            //    if (walk_timer.time < walk_interval * i) {
+            //        atlas_id = i - static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT);
+            //    }
+            //}
+
+            float angle_by_pi = pos.angle / M_PI;
+            if (angle_by_pi >= -0.25 && angle_by_pi < 0.25) {
+                //look left
+                //render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::LEFT) * static_cast<unsigned int>(DIRECTION_SPRITE::LEFT)};
+                atlas_id = static_cast<unsigned int>(DIRECTION_SPRITE::LEFT);
+            } else if (angle_by_pi >= 0.25 && angle_by_pi < 0.75) {
+                //look up
+                //render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::UP)};
+                atlas_id = static_cast<unsigned int>(DIRECTION_SPRITE::UP);
+            } else if (angle_by_pi >= 0.75 || angle_by_pi < -0.75) {
+                //look right
+                //render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::RIGHT)};
+                atlas_id = static_cast<unsigned int>(DIRECTION_SPRITE::RIGHT);
+            } else if (angle_by_pi >= -0.75 && angle_by_pi < -0.25) {
+                //look down
+                //render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
+                atlas_id = static_cast<unsigned int>(DIRECTION_SPRITE::DOWN);
+            }
+            atlas_id *= static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT);
+            const auto walk_timer = registry.enemyWalkTimers.get(entity);
+            const float walk_interval = walk_timer.start_time / (static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT) * 2 - 1);
+            if (walk_timer.time > 4 * walk_interval){
+                atlas_id += static_cast<unsigned int>(SLIME_WALK_FRAME::FRAME0);
+            } else if (walk_timer.time > 3 * walk_interval){
+                atlas_id += static_cast<unsigned int>(SLIME_WALK_FRAME::FRAME1);
+            } else if (walk_timer.time > 2 * walk_interval){
+                atlas_id += static_cast<unsigned int>(SLIME_WALK_FRAME::FRAME2);
+            } else if (walk_timer.time > walk_interval){
+                atlas_id += static_cast<unsigned int>(SLIME_WALK_FRAME::FRAME1);
+            } else if (walk_timer.time > 0){
+                atlas_id += static_cast<unsigned int>(SLIME_WALK_FRAME::FRAME0);
+            }
+
+            //printf("slime atlas id: %d, walk_timer: %f\n", atlas_id, walk_timer.time);
+            render_request.atlas_ids = {static_cast<unsigned int>(atlas_id)};
         }
     }
 
