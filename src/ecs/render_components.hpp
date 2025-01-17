@@ -142,6 +142,13 @@ enum class FontType {
 	SLIM = static_cast<int>(TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS),
 };
 
+// Component that is needed for text updates
+struct Text {
+	std::string text;
+	vec2 scale;
+	FontType font;
+};
+
 enum class OVERVIEW_ICON_TEXTURES {
 	START = 0,
 	SELECTION,

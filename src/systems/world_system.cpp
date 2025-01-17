@@ -414,7 +414,8 @@ bool WorldSystem::is_over() const {
 void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	//TODO: handle keyboard shortcuts
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-		current_td_system.reset(); // without this we would get an error
+		registry.players.clear();
+		current_td_system.reset(); // without this cleanup we would get an error
 		exit(0);
 	}
 

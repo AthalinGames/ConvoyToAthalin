@@ -13,12 +13,29 @@ Entity createPlayer(RenderSystem *renderer) {
 	};
 
 	const auto status_background = createBlackSquare(renderer, {window_width_px / 2, TILE_HEIGHT / 4},
-	                                                 {window_width_px, TILE_HEIGHT / 2}, 0.75);
+													 {window_width_px, TILE_HEIGHT / 2}, 0.75);
 	player.status_bar_entities.push_back(status_background);
 
-	const auto hp_text = createText(renderer, {TILE_WIDTH / 4, TILE_HEIGHT / 4}, {TILE_WIDTH / 6, TILE_HEIGHT / 3},
-											"Hp: Hallo das ist ein Test!", FontType::SLIM);
+	constexpr vec2 text_scale = {TILE_WIDTH / 6, TILE_HEIGHT / 3};
+
+	const auto hp_text = createText(renderer, {TILE_WIDTH / 4, TILE_HEIGHT / 4}, text_scale,
+											"Hp:", FontType::SLIM);
 	player.status_bar_entities.push_back(hp_text);
+
+	const auto hp_number = createText(renderer, {TILE_WIDTH, TILE_HEIGHT / 4}, text_scale, std::to_string(player.health), FontType::SLIM);
+	player.status_bar_entities.push_back(hp_number);
+	player.health_update_callback = [hp_number](const int new_hp) {
+		updateText(hp_number, std::to_string(new_hp));
+	};
+
+	const auto food_text = createText(renderer, {TILE_WIDTH * 2 - TILE_WIDTH / 8, TILE_HEIGHT / 4}, text_scale, "Food:", FontType::SLIM);
+	player.status_bar_entities.push_back(food_text);
+
+	const auto food_number = createText(renderer, {TILE_WIDTH * 3, TILE_HEIGHT / 4}, text_scale, std::to_string(player.food), FontType::SLIM);
+	player.status_bar_entities.push_back(food_number);
+	player.food_update_callback = [food_number](const int new_food) {
+		updateText(food_number, std::to_string(new_food));
+	};
 
 	return entity;
 }
@@ -1051,14 +1068,24 @@ Entity createText(RenderSystem *renderer, const vec2 pos, const vec2 scale, cons
 
 	registry.renderForeground.insert(entity, createTextRenderRequest(text, scale, font));
 
+	registry.texts.insert(entity, {text, scale, font});
+
 	// Create stationary
 	Stationary &stationary = registry.stationaries.emplace(entity);
 	stationary.position = pos;
 	stationary.scale = scale;
 
-	registry.texts.emplace(entity);
-
 	return entity;
+}
+
+void updateText(const Entity text_entity, const std::string &new_text) {
+	Text& curr_text = registry.texts.get(text_entity);
+	if (curr_text.text == new_text) {
+		return;
+	}
+	curr_text.text = new_text;
+	registry.renderForeground.remove(text_entity);
+	registry.renderForeground.insert(text_entity, createTextRenderRequest(new_text, curr_text.scale, curr_text.font));
 }
 
 Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size, const float alpha) {

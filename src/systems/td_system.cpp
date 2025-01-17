@@ -179,7 +179,7 @@ bool TDSystem::step(const float elapsed_ms) {
                 const Entity enemy_entity = registry.enemies.entities[i];
                 if (enemy.enemy_progress >= 1.0f && enemy.alive) {
                     for (Player &player: registry.players.components) {
-                        player.health -= enemy.damage;
+                        player.updateHealth(player.health - enemy.damage);
                     }
                     handle_enemy_death(enemy_entity, enemy);
                     // Delete damaging entity
@@ -215,13 +215,14 @@ bool TDSystem::step(const float elapsed_ms) {
 
             // Add gathered food
             auto& current_player = registry.players.get(player);
-            current_player.food += current_player.baseFoodGain;
+            int food_gain = current_player.baseFoodGain;
             for (const Entity card : cards) {
                 if (registry.towers.has(card)) {
                     const auto& tower = registry.towers.get(card);
-                    current_player.food += tower.food_gain;
+                    food_gain += tower.food_gain;
                 }
             }
+            current_player.updateFood(food_gain + current_player.food);
             // Setup next screen
             const Entity square = createBlackSquare(renderer, {window_width_px / 2, window_height_px / 2},
                                                         {window_width_px, window_height_px}, 0.5f);
@@ -837,12 +838,12 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     if (registry.towers.has(dragged_entity)) {
                         createTowerFromCard(renderer, dragged_entity);
                         auto &dragged_tower = registry.towers.get(dragged_entity);
-                        auto tower_motion = registry.motions.get(dragged_entity);
+                        //auto tower_motion = registry.motions.get(dragged_entity);
                         towers.emplace_back(dragged_entity);
                         dragged_tower.placed = true;
                         // subtract food cost
                         auto &current_player = registry.players.get(player);
-                        current_player.food -= dragged_tower.food_cost;
+                        current_player.updateFood(current_player.food - dragged_tower.food_cost);
                         // recalculate cards that can be placed
                         for (const Entity card: cards) {
                             if (registry.towers.has(card)) {
