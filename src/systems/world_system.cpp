@@ -171,6 +171,21 @@ bool WorldSystem::step(const float elapsed_ms) {
 	}
 	// reduce window brightness if any of the present salmons is dying
 	screen.screen_darken_factor = 1 - min_timer_ms / 4000;
+
+	for (const Entity entity : registry.statusTextTimers.entities) {
+		constexpr float status_time_length = 1000.f;
+		StatusTextTimer &timer = registry.statusTextTimers.get(entity);
+		timer.timer_ms -= elapsed_ms;
+		if (timer.timer_ms < 0) {
+			registry.remove_all_components_of(entity);
+			continue;
+		}
+
+		auto &position = registry.stationaries.get(entity);
+		auto &color = registry.colors.get(entity);
+		color.a = timer.timer_ms / status_time_length;
+		position.position.y += elapsed_ms * (100.f/window_height_px);
+	}
 	// Updating window title with points
 	std::stringstream title_ss;
 	title_ss << "Points: " << points;

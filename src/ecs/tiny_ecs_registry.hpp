@@ -50,6 +50,7 @@ public:
 	ComponentContainer<Clickable> clickables;
 	ComponentContainer<Text> texts;
 	ComponentContainer<HitTimer> hitTimers;
+	ComponentContainer<StatusTextTimer> statusTextTimers;
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -91,6 +92,7 @@ public:
 		registry_list.push_back(&clickables);
 		registry_list.push_back(&texts);
 		registry_list.push_back(&hitTimers);
+		registry_list.push_back(&statusTextTimers);
 	}
 
 	void clear_all_components() {

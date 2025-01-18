@@ -13,28 +13,33 @@ Entity createPlayer(RenderSystem *renderer) {
 	};
 
 	const auto status_background = createBlackSquare(renderer, {window_width_px / 2, TILE_HEIGHT / 4},
-													 {window_width_px, TILE_HEIGHT / 2}, 0.75);
+	                                                 {window_width_px, TILE_HEIGHT / 2}, 0.75);
 	player.status_bar_entities.push_back(status_background);
 
 	constexpr vec2 text_scale = {TILE_WIDTH / 6, TILE_HEIGHT / 3};
 
 	const auto hp_text = createText(renderer, {TILE_WIDTH / 4, TILE_HEIGHT / 4}, text_scale,
-											"Hp:", FontType::SLIM);
+	                                "Hp:", FontType::SLIM);
 	player.status_bar_entities.push_back(hp_text);
 
-	const auto hp_number = createText(renderer, {TILE_WIDTH, TILE_HEIGHT / 4}, text_scale, std::to_string(player.getHealth()), FontType::SLIM);
+	const auto hp_number = createText(renderer, {TILE_WIDTH, TILE_HEIGHT / 4}, text_scale,
+	                                  std::to_string(player.getHealth()), FontType::SLIM);
 	player.status_bar_entities.push_back(hp_number);
-	player.health_update_callback = [hp_number](const int new_hp) {
+	player.health_update_callback = [hp_number, &renderer](const int new_hp, const int old_hp) {
 		updateText(hp_number, std::to_string(new_hp));
+		createStatusText(renderer, std::to_string(new_hp - old_hp) + " HP", new_hp > old_hp);
 	};
 
-	const auto food_text = createText(renderer, {TILE_WIDTH * 2 - TILE_WIDTH / 8, TILE_HEIGHT / 4}, text_scale, "Food:", FontType::SLIM);
+	const auto food_text = createText(renderer, {TILE_WIDTH * 2 - TILE_WIDTH / 8, TILE_HEIGHT / 4}, text_scale, "Food:",
+	                                  FontType::SLIM);
 	player.status_bar_entities.push_back(food_text);
 
-	const auto food_number = createText(renderer, {TILE_WIDTH * 3, TILE_HEIGHT / 4}, text_scale, std::to_string(player.getFood()), FontType::SLIM);
+	const auto food_number = createText(renderer, {TILE_WIDTH * 3, TILE_HEIGHT / 4}, text_scale,
+	                                    std::to_string(player.getFood()), FontType::SLIM);
 	player.status_bar_entities.push_back(food_number);
-	player.food_update_callback = [food_number](const int new_food) {
+	player.food_update_callback = [food_number, &renderer](const int new_food, const int old_food) {
 		updateText(food_number, std::to_string(new_food));
+		createStatusText(renderer, std::to_string(new_food - old_food) + " Food", new_food > old_food);
 	};
 
 	return entity;
@@ -1042,7 +1047,7 @@ Entity createOverviewSelection(RenderSystem *renderer, const vec2 pos) {
 	return entity;
 }
 
-Entity createRoundStartButton(RenderSystem* renderer, const vec2 pos) {
+Entity createRoundStartButton(RenderSystem *renderer, const vec2 pos) {
 	const auto entity = Entity();
 
 	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
@@ -1053,13 +1058,13 @@ Entity createRoundStartButton(RenderSystem* renderer, const vec2 pos) {
 	button.scale = vec2({TILE_WIDTH / 2, TILE_HEIGHT / 2});
 
 	registry.renderForeground.insert(entity, {
-		{Stationary{}},
-		{static_cast<uint>(BUTTONS::START_UP)},
-		Z_FOREGROUND,
-		TEXTURE_ASSET_ID::BUTTONS,
-		EFFECT_ASSET_ID::TEXTURED_ATLAS,
-		GEOMETRY_BUFFER_ID::SPRITE,
-	});
+		                                 {Stationary{}},
+		                                 {static_cast<uint>(BUTTONS::START_UP)},
+		                                 Z_FOREGROUND,
+		                                 TEXTURE_ASSET_ID::BUTTONS,
+		                                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		                                 GEOMETRY_BUFFER_ID::SPRITE,
+	                                 });
 
 	return entity;
 }
@@ -1109,13 +1114,29 @@ Entity createText(RenderSystem *renderer, const vec2 pos, const vec2 scale, cons
 }
 
 void updateText(const Entity text_entity, const std::string &new_text) {
-	Text& curr_text = registry.texts.get(text_entity);
+	Text &curr_text = registry.texts.get(text_entity);
 	if (curr_text.text == new_text) {
 		return;
 	}
 	curr_text.text = new_text;
 	registry.renderForeground.remove(text_entity);
 	registry.renderForeground.insert(text_entity, createTextRenderRequest(new_text, curr_text.scale, curr_text.font));
+}
+
+Entity createStatusText(RenderSystem *renderer, const std::string &text, const bool positive) {
+	const auto entity = createText(renderer, {TILE_WIDTH, TILE_HEIGHT}, {TILE_WIDTH/6, TILE_HEIGHT/3}, text, FontType::SLIM);
+
+	auto &color = registry.colors.emplace(entity);
+	color.a = 1.f;
+	if (positive) {
+		color.g = 1.f;
+	} else {
+		color.r = 1.f;
+	}
+
+	registry.statusTextTimers.emplace(entity);
+
+	return entity;
 }
 
 Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size, const float alpha) {

@@ -55,7 +55,7 @@ TDSystem::~TDSystem() {
     cleanup_ecs();
 }
 
-void TDSystem::init(RenderSystem *renderer, Entity player) {
+void TDSystem::init(RenderSystem *renderer, const Entity player) {
     this->renderer = renderer;
     this->player = player;
     placement_marker = registry.players.get(player).placement_marker;

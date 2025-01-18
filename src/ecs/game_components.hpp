@@ -21,20 +21,20 @@ class Player {
 	std::function<void()> status_bar_cleanup_func = []{};
     Entity placement_marker;
 
-	std::function<void(int new_hp)> health_update_callback = [](int _){};
-	std::function<void(int new_food)> food_update_callback = [](int _){};
+	std::function<void(int new_hp, int old_hp)> health_update_callback = [](int ...){};
+	std::function<void(int new_food, int old_food)> food_update_callback = [](int ...){};
 
 	int getHealth() const { return health; }
 	int getFood() const { return food; }
 
 	void updateHealth(const int new_hp) {
+		health_update_callback(new_hp, health);
 		health = new_hp;
-		health_update_callback(new_hp);
 	}
 
 	void updateFood(const int new_food) {
+		food_update_callback(new_food, food);
 		food = new_food;
-		food_update_callback(new_food);
 	}
 
 	~Player() {
@@ -279,4 +279,8 @@ struct DeathTimer
 
 struct HitTimer {
 	float timer_ms = 200.f;
+};
+
+struct StatusTextTimer {
+	float timer_ms = 1000.f;
 };
