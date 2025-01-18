@@ -22,7 +22,7 @@ Entity createPlayer(RenderSystem *renderer) {
 											"Hp:", FontType::SLIM);
 	player.status_bar_entities.push_back(hp_text);
 
-	const auto hp_number = createText(renderer, {TILE_WIDTH, TILE_HEIGHT / 4}, text_scale, std::to_string(player.health), FontType::SLIM);
+	const auto hp_number = createText(renderer, {TILE_WIDTH, TILE_HEIGHT / 4}, text_scale, std::to_string(player.getHealth()), FontType::SLIM);
 	player.status_bar_entities.push_back(hp_number);
 	player.health_update_callback = [hp_number](const int new_hp) {
 		updateText(hp_number, std::to_string(new_hp));
@@ -31,7 +31,7 @@ Entity createPlayer(RenderSystem *renderer) {
 	const auto food_text = createText(renderer, {TILE_WIDTH * 2 - TILE_WIDTH / 8, TILE_HEIGHT / 4}, text_scale, "Food:", FontType::SLIM);
 	player.status_bar_entities.push_back(food_text);
 
-	const auto food_number = createText(renderer, {TILE_WIDTH * 3, TILE_HEIGHT / 4}, text_scale, std::to_string(player.food), FontType::SLIM);
+	const auto food_number = createText(renderer, {TILE_WIDTH * 3, TILE_HEIGHT / 4}, text_scale, std::to_string(player.getFood()), FontType::SLIM);
 	player.status_bar_entities.push_back(food_number);
 	player.food_update_callback = [food_number](const int new_food) {
 		updateText(food_number, std::to_string(new_food));
@@ -202,7 +202,7 @@ void createBombFromCard(RenderSystem *renderer, const Entity card, Motion &motio
 	motion.angle = -M_PI_2;
 	motion.use_direction_sprite = true;
 	motion.scale = vec2({2 * TOWER_WIDTH, 2 * TOWER_HEIGHT});
-	vec2 motion_pos = motion.position;
+	//vec2 motion_pos = motion.position;
 
 	RenderRequest request = registry.renderForeground.get(card);
 	request.atlas_ids = {static_cast<unsigned int>(BOMB_SPRITE::BOMB0)};
@@ -513,7 +513,7 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 		// check if point is either on the existing line or has a one tile gap
 		vec2 last_checkpoint = map_checkpoints.front();
 		bool regenerate = false;
-		for (int i = 1; i < map_checkpoints.size(); ++i) {
+		for (uint i = 1; i < map_checkpoints.size(); ++i) {
 			const vec2 next_checkpoint = map_checkpoints.at(i);
 			const float manhattan_dist_section = abs(next_checkpoint.x - last_checkpoint.x) + abs(
 				                                     next_checkpoint.y - last_checkpoint.y);
@@ -576,7 +576,7 @@ std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, const u
 		return generateMapCheckpoints(rng, path_length);
 	}
 	// check that no corner of the final checkpoint is hit
-	for (int i = 0; i < map_checkpoints.size() - 1; ++i) {
+	for (uint i = 0; i < map_checkpoints.size() - 1; ++i) {
 		float dist = length(map_checkpoints.at(i) - map_checkpoints.back());
 		if (dist < 2) {
 			restart = true;

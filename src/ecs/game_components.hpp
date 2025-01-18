@@ -7,19 +7,25 @@
 #include <map>
 
 // Player component
-struct Player {
-    int health = 100;
-	std::function<void(int new_hp)> health_update_callback = [](int _){};
+class Player {
+	int health = 100;
+	int food = 10;
+
+	public:
     int maxHealth = 100;
     int coins = 0;
-	int food = 10;
-	std::function<void(int new_food)> food_update_callback = [](int _){};
 	int baseFoodGain = 5;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
 	std::vector<Entity> status_bar_entities;
 	std::function<void()> status_bar_cleanup_func = []{};
     Entity placement_marker;
+
+	std::function<void(int new_hp)> health_update_callback = [](int _){};
+	std::function<void(int new_food)> food_update_callback = [](int _){};
+
+	int getHealth() const { return health; }
+	int getFood() const { return food; }
 
 	void updateHealth(const int new_hp) {
 		health = new_hp;

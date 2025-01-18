@@ -92,7 +92,7 @@ bool TDSystem::step(const float elapsed_ms) {
                     }
                 } else if (registry.knights.has(tower_entity)) {
                     const auto &knight = registry.knights.get(tower_entity);
-                    const auto &knight_motion = registry.motions.get(tower_entity);
+                    //const auto &knight_motion = registry.motions.get(tower_entity);
                     const auto &sword_entity = knight.sword;
                     auto &sword = registry.swords.get(sword_entity);
                     auto &sword_motion = registry.motions.get(sword_entity);
@@ -196,7 +196,7 @@ bool TDSystem::step(const float elapsed_ms) {
                 const Entity enemy_entity = registry.enemies.entities[i];
                 if (enemy.enemy_progress >= 1.0f && enemy.alive) {
                     for (Player &player: registry.players.components) {
-                        player.updateHealth(player.health - enemy.damage);
+                        player.updateHealth(player.getHealth() - enemy.damage);
                     }
                     handle_enemy_death(enemy_entity, enemy);
                     // Delete damaging entity
@@ -213,7 +213,7 @@ bool TDSystem::step(const float elapsed_ms) {
             // Check if player still has health
             for (std::size_t i = 0; i < registry.players.size(); ++i) {
                 const auto &player = registry.players.components[i];
-                if (player.health < 1) {
+                if (player.getHealth() < 1) {
                     current_phase = GamePhase::ENDED;
                 }
             }
@@ -241,7 +241,7 @@ bool TDSystem::step(const float elapsed_ms) {
                     food_gain += tower.food_gain;
                 }
             }
-            current_player.updateFood(food_gain + current_player.food);
+            current_player.updateFood(food_gain + current_player.getFood());
             // Setup next screen
             const Entity square = createBlackSquare(renderer, {window_width_px / 2, window_height_px / 2},
                                                         {window_width_px, window_height_px}, 0.5f);
@@ -334,7 +334,7 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
     }
     if (difficulty >= 1) {
         float spawn_time = 0;
-        for (int i = 0; i <= wave_amount; ++i) {
+        for (uint i = 0; i <= wave_amount; ++i) {
             vec4 wave = combat_pool[uniform_int_dist(rng)];
             spawn_time += wave[2];
             for (int j = 0; j < wave[1]; ++j) {
@@ -500,7 +500,7 @@ void TDSystem::restart_td_fight() {
         cards.push_back(itemEntity);
         if (registry.towers.has(itemEntity)) {
             Tower& tower = registry.towers.get(itemEntity);
-            if (tower.food_cost > current_player.food) {
+            if (tower.food_cost > current_player.getFood()) {
                 registry.cards.get(itemEntity).selectable = false;
                 registry.colors.insert(itemEntity, {0.5f, 0.5f, 0.5f, 1.f});
             }
@@ -896,7 +896,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         // successfully place card as bomb
                         std::erase(cards, dragged_entity); // C++20 is nice
                         createConsumableFromCard(renderer, dragged_entity);
-                        auto consumable_motion = registry.motions.get(dragged_entity);
+                        //auto consumable_motion = registry.motions.get(dragged_entity);
                         consumables.emplace_back(dragged_entity);
                     } else {
                         registry.cards.get(dragged_entity).dragged = false;
@@ -912,13 +912,13 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         dragged_tower.placed = true;
                         // subtract food cost
                         auto &current_player = registry.players.get(player);
-                        current_player.updateFood(current_player.food - dragged_tower.food_cost);
+                        current_player.updateFood(current_player.getFood() - dragged_tower.food_cost);
                         // recalculate cards that can be placed
                         for (const Entity card: cards) {
                             if (registry.towers.has(card)) {
                                 auto &tower = registry.towers.get(card);
                                 auto &card_comp = registry.cards.get(card);
-                                if (card_comp.selectable && tower.food_cost > current_player.food) {
+                                if (card_comp.selectable && tower.food_cost > current_player.getFood()) {
                                     card_comp.selectable = false;
                                     registry.colors.insert(card, {0.5f, 0.5f, 0.5f, 1.f});
                                 }

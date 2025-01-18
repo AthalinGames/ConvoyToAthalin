@@ -216,7 +216,7 @@ bool WorldSystem::step(const float elapsed_ms) {
 		current_td_system.reset(new TDSystem());
 		// check if Player is dead
 		for (const auto & player : registry.players.components) {
-			if (player.health <= 0) {
+			if (player.getHealth() <= 0) {
 				const Entity gameOver = createGameOver(renderer);
 				registry.deathTimers.emplace(gameOver);
 				return true;
