@@ -70,10 +70,12 @@ enum class TEXTURE_ASSET_ID {
     KNIGHT,
     BOMB,
     SPIKES,
+    BARRIER,
     ARCHER_CARD,
     KNIGHT_CARD,
     BOMB_CARD,
     SPIKES_CARD,
+    BARRIER_CARD,
     BOW,
     SWORD,
     SLIME,
@@ -99,10 +101,12 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
         case TEXTURE_ASSET_ID::KNIGHT: return "knight.png";
         case TEXTURE_ASSET_ID::BOMB: return "items/bomb.png";
         case TEXTURE_ASSET_ID::SPIKES: return "items/spikes.png";
+        case TEXTURE_ASSET_ID::BARRIER: return "items/barrier.png";
         case TEXTURE_ASSET_ID::ARCHER_CARD: return "archerCard.png";
         case TEXTURE_ASSET_ID::KNIGHT_CARD: return "knightCard.png";
         case TEXTURE_ASSET_ID::BOMB_CARD: return "bombCard.png";
         case TEXTURE_ASSET_ID::SPIKES_CARD: return "spikesCard.png";
+        case TEXTURE_ASSET_ID::BARRIER_CARD: return "barrierCard.png";
         case TEXTURE_ASSET_ID::BOW: return "bow_and_arrow.png";
         case TEXTURE_ASSET_ID::SWORD: return "sword.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";
@@ -143,6 +147,7 @@ const std::set texture_atlases = {
     TEXTURE_ASSET_ID::SWORD,
     TEXTURE_ASSET_ID::BOMB,
     TEXTURE_ASSET_ID::SPIKES,
+    TEXTURE_ASSET_ID::BARRIER,
     TEXTURE_ASSET_ID::SLIME,
     TEXTURE_ASSET_ID::SLIME_BIG,
 	TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS,
@@ -241,6 +246,13 @@ enum class SPIKES_SPRITE {
     SPIKE_LEFT = 0,
     SPIKE_MIDDLE,
     SPIKE_RIGHT,
+    COUNT,
+};
+
+enum class BARRIER_SPRITE {
+    BARRIER_START = 0,
+    BARRIER_DAMAGED,
+    BARRIER_BROKEN,
     COUNT,
 };
 
@@ -414,6 +426,19 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
             break;
         }
         case TEXTURE_ASSET_ID::SPIKES: {
+            constexpr unsigned int cols = 3, rows = 1, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
+        case TEXTURE_ASSET_ID::BARRIER: {
             constexpr unsigned int cols = 3, rows = 1, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
             atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});

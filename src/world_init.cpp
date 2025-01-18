@@ -82,6 +82,11 @@ Entity createItem(const ItemType item) {
                     consumable.range = 0.25f * TOWER_WIDTH;
                     break;
                 }
+                case ConsumableType::BARRIER: {
+                    registry.barriers.emplace(entity);
+                    consumable.range = 0.25f * TOWER_WIDTH;
+                    break;
+                }
 				case ConsumableType::CONSUMABLE_TYPE_COUNT: {
 					assert(false && "Invalid Consumable type");
 				}
@@ -269,9 +274,21 @@ void createSpikesFromCard(RenderSystem *renderer, const Entity card, Motion& mot
     registry.consumables.emplace(spike_right_entity);
     placed_consumables.emplace_back(spike_right_entity);
     registry.spikes.emplace(spike_right_entity);
-
 }
 
+void createBarrierFromCard(RenderSystem *renderer, const Entity card, Motion &motion) {
+
+    motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+    //vec2 motion_pos = motion.position;
+
+    RenderRequest request = registry.renderForeground.get(card);
+    request.atlas_ids = {static_cast<unsigned int>(BARRIER_SPRITE::BARRIER_START)};
+    request.z_position = Z_FOREGROUND;
+    request.used_texture = TEXTURE_ASSET_ID::BARRIER;
+    request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
+    registry.renderForeground.remove(card);
+    registry.renderGameLayer.emplace(card, request);
+}
 
 void createConsumableFromCard(RenderSystem *renderer, const Entity card, std::vector<Entity> &placed_consumables) {
     //TODO: return created entities for case, that multiple were created or take consumable vector as input var
@@ -287,6 +304,8 @@ void createConsumableFromCard(RenderSystem *renderer, const Entity card, std::ve
         createBombFromCard(renderer, card, consumable_motion);
     } else if (registry.spikes.has(card)) {
         createSpikesFromCard(renderer, card, consumable_motion, placed_consumables);
+    } else if (registry.barriers.has(card)) {
+        createBarrierFromCard(renderer, card, consumable_motion);
     }
     else {
         assert(false && "Invalid Consumable type for consumable creation");
@@ -469,6 +488,15 @@ void createCardFromItem(RenderSystem *renderer, const Entity item) {
                                              EFFECT_ASSET_ID::TEXTURED,
                                              GEOMETRY_BUFFER_ID::SPRITE,
                                           });
+    } else if (registry.barriers.has(item)) {
+        registry.renderForeground.insert(item, {
+                                             {Stationary{}},
+                                             {0},
+                                             Z_FOREGROUND,
+                                             TEXTURE_ASSET_ID::BARRIER_CARD,
+                                             EFFECT_ASSET_ID::TEXTURED,
+                                             GEOMETRY_BUFFER_ID::SPRITE,
+                                             });
     }
 }
 

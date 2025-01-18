@@ -308,6 +308,7 @@ void WorldSystem::restart_game() {
     createItem(TowerType::KNIGHT);
     createItem(ConsumableType::BOMB);
     createItem(ConsumableType::SPIKES);
+    createItem(ConsumableType::BARRIER);
 
     registry.players.get(player).placement_marker = createPlacementMarker(renderer);
 

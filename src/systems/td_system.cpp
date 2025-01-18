@@ -156,12 +156,12 @@ bool TDSystem::step(const float elapsed_ms) {
                 bomb_timer.time -= elapsed_ms;
                 RenderRequest &render_request = registry.renderGameLayer.get(bomb_entity);
                 if (bomb_timer.time > bomb_timer.explosion_time) {
-                    const float burn_time = bomb_timer.time - bomb_timer.explosion_time;
-                    if (burn_time > 2000.0f) {
+                    const float burn_time_remaining = bomb_timer.time - bomb_timer.explosion_time;
+                    if (burn_time_remaining > bomb_timer.burn_time * 0.66) {
                         render_request.atlas_ids = {static_cast<unsigned int>(BOMB_SPRITE::BOMB1)};
-                    } else if (burn_time > 1000.0f) {
+                    } else if (burn_time_remaining > bomb_timer.burn_time * 0.33) {
                         render_request.atlas_ids = {static_cast<unsigned int>(BOMB_SPRITE::BOMB2)};
-                    } else if (burn_time > 0.0f) {
+                    } else if (burn_time_remaining > 0.0f) {
                         render_request.atlas_ids = {static_cast<unsigned int>(BOMB_SPRITE::BOMB3)};
                     }
                 } else {
@@ -180,6 +180,26 @@ bool TDSystem::step(const float elapsed_ms) {
                     registry.remove_all_components_of(bomb_entity);
                 }
             }
+            for (const auto barrier_entity: registry.barrierTimers.entities) {
+                auto &barrier = registry.barriers.get(barrier_entity);
+                auto &barrier_timer = registry.barrierTimers.get(barrier_entity);
+
+                barrier_timer.time -= elapsed_ms;
+                if (barrier_timer.time <= 0) {
+                    if (barrier.health <= 0) {
+                        registry.remove_all_components_of(barrier_entity);
+                    }
+                    barrier_timer.time += barrier_timer.hold_time;
+                    barrier.health--;
+                    RenderRequest &render_request = registry.renderGameLayer.get(barrier_entity);
+                    if (barrier.health == 1) {
+                        render_request.atlas_ids = {static_cast<unsigned int>(BARRIER_SPRITE::BARRIER_DAMAGED)};
+                    } else if (barrier.health == 0) {
+                        render_request.atlas_ids = {static_cast<unsigned int>(BARRIER_SPRITE::BARRIER_BROKEN)};
+                    }
+                }
+            }
+
             for (const auto enemy_entity : registry.enemyWalkTimers.entities) {
                 auto &walk_timer = registry.enemyWalkTimers.get(enemy_entity);
                 walk_timer.time -= elapsed_ms;
@@ -582,6 +602,17 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         // delete spike if the amount of enemies has been reached
         if (spike.max_hitcount <= spike.hit_entities.size()) {
             registry.remove_all_components_of(first);
+        }
+    } else if (registry.barriers.has(first) && registry.enemies.has(second)) {
+        auto &barrier = registry.barriers.get(first);
+        auto &enemy = registry.enemies.get(second);
+        //TODO: emplace Slowed with 1.f to enemy and start timer
+        if (!registry.sloweds.has(second) && barrier.health > 0) {
+            auto &slowed = registry.sloweds.emplace(second);
+            slowed.origin = first;
+        }
+        if (!registry.barrierTimers.has(first)) {
+            registry.barrierTimers.emplace(first);
         }
     }
 }

@@ -31,12 +31,15 @@ public:
     ComponentContainer<Bomb> bombs;
     ComponentContainer<BombTimer> bombTimers;
     ComponentContainer<Spike> spikes;
+    ComponentContainer<Barrier> barriers;
+    ComponentContainer<BarrierTimer> barrierTimers;
     ComponentContainer<Stationary> stationaries;
     ComponentContainer<PlacementMarker> placementMarkers;
     ComponentContainer<Map> maps;
 	ComponentContainer<Enemy> enemies;
     ComponentContainer<Slime> slimes;
     ComponentContainer<SlimeBig> slimesBig;
+    ComponentContainer<Slowed> sloweds;
 	ComponentContainer<OverviewMapLocation> overviewMapLocations;
 	// TODO Think about deleting this or replace this for the collision polygons
 	ComponentContainer<Mesh*> meshPtrs;
@@ -74,12 +77,16 @@ public:
         registry_list.push_back(&weapons);
         registry_list.push_back(&bombs);
         registry_list.push_back(&bombTimers);
+        registry_list.push_back(&spikes);
+        registry_list.push_back(&barriers);
+        registry_list.push_back(&barrierTimers);
         registry_list.push_back(&stationaries);
         registry_list.push_back(&placementMarkers);
         registry_list.push_back(&maps);
 		registry_list.push_back(&enemies);
         registry_list.push_back(&slimes);
         registry_list.push_back(&slimesBig);
+        registry_list.push_back(&sloweds);
 		registry_list.push_back(&overviewMapLocations);
 		registry_list.push_back(&meshPtrs);
         registry_list.push_back(&enemyWalkTimers);

@@ -84,6 +84,11 @@ struct Slime {
 struct SlimeBig {
 };
 
+struct Slowed {
+    float slow = 1.f; // percentage, by which unit is slowed
+    Entity origin;
+};
+
 // Items
 enum class TowerType {
 	ARCHER = 0,
@@ -94,6 +99,7 @@ enum class TowerType {
 enum class ConsumableType {
     BOMB = 0,
     SPIKES,
+    BARRIER,
 	CONSUMABLE_TYPE_COUNT
 };
 
@@ -189,14 +195,24 @@ struct Bomb {
 };
 
 struct BombTimer {
-    float time = 3300.0f;
+    float burn_time = 1500;
     float explosion_time = 300.0f; //explodes when timer below this
+    float time = burn_time + explosion_time;//1800.0f;
 };
 
 struct Spike {
     int damage = 200;
     std::size_t max_hitcount = 3;
     std::set<Entity> hit_entities{};
+};
+
+struct Barrier {
+    int health = 2;
+};
+
+struct BarrierTimer {
+    float hold_time = 1000.0f; // loses 1 health after holding enemies for this amount of time
+    float time = hold_time;
 };
 
 // All data relevant to the shape and motion of entities
