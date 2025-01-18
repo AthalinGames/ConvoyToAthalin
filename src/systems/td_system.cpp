@@ -73,6 +73,25 @@ bool TDSystem::step(const float elapsed_ms) {
         }
         case GamePhase::RUNNING: {
             td_map.combat_time += elapsed_ms;
+            for (const auto hitted_entity : registry.hitTimers.entities) {
+                auto &timer = registry.hitTimers.get(hitted_entity);
+                timer.timer_ms -= elapsed_ms;
+                if (timer.timer_ms < 0) {
+                    registry.hitTimers.remove(hitted_entity);
+                    registry.colors.remove(hitted_entity);
+                    auto &enemy = registry.enemies.get(hitted_entity);
+                    if (enemy.getHealth() <= 0) {
+                        handle_enemy_death(hitted_entity, enemy);
+                    }
+                    continue;
+                }
+
+                auto &color = registry.colors.get(hitted_entity);
+                const float factor = exp(-0.02f * timer.timer_ms);
+                color.r = factor;
+                color.g = factor;
+                color.b = factor;
+            }
             for (const auto tower_entity: registry.shotTimers.entities) {
                 auto &shot_timer = registry.shotTimers.get(tower_entity);
                 shot_timer.time -= elapsed_ms;
@@ -354,7 +373,7 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
                 }
                 enemies.emplace(new_enemy);
                 Enemy& enemy = registry.enemies.get(new_enemy);
-                enemy.health += static_cast<int>(std::floor(difficulty/2) * 50);
+                enemy.addHealth(static_cast<int>(std::floor(difficulty/2) * 50));
                 enemy.speed = wave[3] + wave[3] * (difficulty / 10);
                 enemy.spawn_time = spawn_time;
                 for (auto spawn_entity : spawns_enemies) {
@@ -371,7 +390,7 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
             const Entity new_enemy = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
             enemies.emplace(new_enemy);
             Enemy& enemy = registry.enemies.get(new_enemy);
-            enemy.health += static_cast<int>(std::floor(difficulty/2) * 50);
+            enemy.addHealth(static_cast<int>(std::floor(difficulty/2) * 50));
             enemy.speed = 100.f + 5. * difficulty + i * 5;
             enemy.spawn_time = i * 1000.;
             enemy_list.push_back(new_enemy);
@@ -402,68 +421,6 @@ Entity TDSystem::generate_map(const int difficulty) const {
 
     const auto generated_path = generateMapCheckpoints(rng, difficulty_to_path_length.at(difficulty));
     const Entity new_map = createMap(renderer, generated_path, rng, uniform_dist);
-    /*switch (difficulty) {
-        case 0: {
-            const std::vector<vec2> path_coords = {
-                {0, 2}, {7, 2}, {7, 5}, {13, 5}
-            };
-            generated_path = generateMapCheckpoints(rng, 20);
-            new_map = createMap(renderer, generated_path, rng, uniform_dist);
-            break;
-        }
-        case 1: {
-            const std::vector<vec2> path_coords = {
-                {0, 6}, {7, 6}, {7, 3}, {12, 3}, {12, 5}
-            };
-            new_map = createMap(renderer, path_coords, rng, uniform_dist);
-            break;
-        }
-        case 2: {
-            const std::vector<vec2> path_coords = {
-                {0, 6}, {2, 6}, {2, 0}, {14, 0}, {14, 6}, {6, 6}, {6, 2}, {11, 2}, {11, 4}
-            };
-            new_map = createMap(renderer, path_coords, rng, uniform_dist);
-            break;
-        }
-        case 3: {
-            const std::vector<vec2> path_coords = {
-                {0, 3}, {13, 3}, {13, 0}, {8, 0}, {8, 6}
-            };
-            new_map = createMap(renderer, path_coords, rng, uniform_dist);
-            break;
-        }
-        case 4: {
-            const std::vector<vec2> path_coords = {
-                {0, 5}, {2, 5}, {2, 1}, {6, 1}, {6, 6}, {9, 6}, {9, 3}, {12, 3}
-            };
-            new_map = createMap(renderer, path_coords, rng, uniform_dist);
-            break;
-        }
-        case 5: {
-            const std::vector<vec2> path_coords = {
-                {15, 6}, {11, 6}, {11, 4}, {8, 4}, {8, 2}, {5, 2}
-            };
-            new_map = createMap(renderer, path_coords, rng, uniform_dist);
-            break;
-        }
-        case 6: {
-            const std::vector<vec2> path_coords = {
-                {15, 4}, {10, 4}, {10, 5}, {7, 5}, {7, 4}, {6, 4},
-                {6, 2}, {5, 2}, {5, 1}, {1, 1}, {1, 5}, {5, 5},
-                {5, 4}, {6, 4}, {6, 2}, {7, 2}, {7, 1}, {10, 1},
-                {10, 2}, {12, 2}, {12, 6}
-            };
-            new_map = createMap(renderer, path_coords, rng, uniform_dist);
-            break;
-        }
-        default: {
-            const std::vector<vec2> path_coords = {
-                {0, 2}, {7, 2}, {7, 5}, {13, 5}
-            };
-            new_map = createMap(renderer, path_coords, rng, uniform_dist);
-            break;
-        }
-    }*/
     return  new_map;
 }
 
@@ -557,12 +514,8 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
             // Arrow has already hit that enemy
             return;
         }
-        enemy.health -= arrow.damage;
+        enemy.addDamage(arrow.damage);
         arrow.hit_entities.emplace(second);
-        if (enemy.health <= 0) {
-            handle_enemy_death(second, enemy);
-        }
-        // delete arrow if the amount of enemies has been reached
         if (arrow.max_hitcount <= arrow.hit_entities.size()) {
             registry.remove_all_components_of(first);
         }
@@ -577,12 +530,8 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
             return;
         }
         auto &enemy = registry.enemies.get(second);
-        enemy.health -= sword.damage;
+        enemy.addDamage(sword.damage);
         sword.hit_entities.emplace(second);
-        if (enemy.health <= 0) {
-            handle_enemy_death(second, enemy);
-
-        }
     } else if (registry.towers.has(first) && registry.enemies.has(second)) {
         auto &tower = registry.towers.get(first);
         if (registry.aimingAts.has(first)) {
@@ -612,10 +561,8 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
                 return;
             }
             auto &enemy = registry.enemies.get(second);
-            enemy.health -= bomb.damage;
-            if (enemy.health <= 0) {
-                handle_enemy_death(second, enemy);
-            } else {
+            enemy.addDamage(bomb.damage);
+            if (enemy.getHealth() > 0) {
                 bomb.hit_entities.emplace(second);
             }
         }

@@ -286,8 +286,8 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity,
 	return entity;
 }
 
-Entity createEnemy(RenderSystem *renderer, const vec2 pos, EnemyType enemyType) {
-	const Entity entity = Entity();
+Entity createEnemy(RenderSystem *renderer, const vec2 pos, const EnemyType enemyType) {
+	const auto entity = Entity();
 
 	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(entity, &mesh);
@@ -299,7 +299,15 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos, EnemyType enemyType) 
 	motion.scale = vec2({SLIME_WIDTH, SLIME_HEIGHT});
 	motion.use_direction_sprite = true;
 
-	registry.enemies.emplace(entity);
+	registry.enemies.emplace(entity, [entity] {
+		if (registry.hitTimers.has(entity)) {
+			registry.hitTimers.remove(entity);
+		} else {
+			registry.colors.emplace(entity, 1.f, 1.f, 1.f, 1.f);
+		}
+		registry.hitTimers.emplace(entity);
+	});
+
 	switch (enemyType) {
 		case EnemyType::SLIME:
 			registry.slimes.emplace(entity);

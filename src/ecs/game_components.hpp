@@ -50,8 +50,10 @@ enum class EnemyType {
     ENEMY_TYPE_COUNT
 };
 
-struct Enemy {
-    int health = 100;
+class Enemy {
+	int health = 100;
+	std::function<void()> damage_callback = []{};
+public:
 	float enemy_progress = 0.0f;
     float speed = 0.f;
     float spawn_time = 0.f; // spawn time after combat started(in ms)
@@ -61,6 +63,19 @@ struct Enemy {
     bool alive = true;
 	int damage = 40;
     std::vector<Entity> spawns_enemies; // spawns these enemies (eg. on death)
+
+	explicit Enemy(const std::function<void()> &damage_callback) : damage_callback(damage_callback) {}
+
+	int getHealth() const { return health; }
+
+	void addDamage(const int damage) {
+		health -= damage;
+		printf("health = %d\n", health);
+		printf("alive = %d\n", alive);
+		damage_callback();
+	}
+
+	void addHealth(const int new_health) { health += new_health; }
 };
 
 struct Slime {
@@ -260,4 +275,8 @@ struct DebugComponent
 struct DeathTimer
 {
 	float timer_ms = 3000.f;
+};
+
+struct HitTimer {
+	float timer_ms = 200.f;
 };

@@ -30,7 +30,7 @@ public:
     static void handle_enemy_death(Entity enemy_entity, Enemy &enemy);
 
     // Check for collisions
-    void handle_collision(Entity first, Entity second);
+    static void handle_collision(Entity first, Entity second);
 
     // Aim all towers at their current enemy
     void handle_aiming() const;
