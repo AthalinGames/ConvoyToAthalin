@@ -225,6 +225,9 @@ vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, Entity enemy_entity, 
         const float move_time = walk_timer.start_time - walk_interval; // time duration when enemy is moving
         walk_speed = (1.f - pow(abs(walk_timer.time - move_time/2)/move_time/2, 2.f)) * enemy.speed * 1.2f;
     }
+    if (registry.sloweds.has(enemy_entity)) {
+        walk_speed *= (1.f - registry.sloweds.get(enemy_entity).slow);
+    }
 	enemy_progress += (walk_speed * seconds) / current_map.path_length;
 	if (update_enemy) {
 		enemy.enemy_progress = enemy_progress;

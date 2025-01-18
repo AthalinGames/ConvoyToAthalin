@@ -188,14 +188,21 @@ bool TDSystem::step(const float elapsed_ms) {
                 if (barrier_timer.time <= 0) {
                     if (barrier.health <= 0) {
                         registry.remove_all_components_of(barrier_entity);
+                        continue;
                     }
                     barrier_timer.time += barrier_timer.hold_time;
                     barrier.health--;
                     RenderRequest &render_request = registry.renderGameLayer.get(barrier_entity);
                     if (barrier.health == 1) {
                         render_request.atlas_ids = {static_cast<unsigned int>(BARRIER_SPRITE::BARRIER_DAMAGED)};
-                    } else if (barrier.health == 0) {
+                    } else if (barrier.health <= 0) {
                         render_request.atlas_ids = {static_cast<unsigned int>(BARRIER_SPRITE::BARRIER_BROKEN)};
+                        for (const auto slowed_entity : registry.sloweds.entities) {
+                            auto slowed = registry.sloweds.get(slowed_entity);
+                            if (slowed.origin == barrier_entity) {
+                                registry.sloweds.remove(slowed_entity);
+                            }
+                        }
                     }
                 }
             }
