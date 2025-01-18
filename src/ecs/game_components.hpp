@@ -7,13 +7,13 @@
 #include <map>
 
 // Player component
-struct Player {
-    int health = 100;
-	std::function<void(int new_hp)> health_update_callback = [](int _){};
+class Player {
+	int health = 100;
+	int food = 10;
+
+	public:
     int maxHealth = 100;
     int coins = 0;
-	int food = 10;
-	std::function<void(int new_food)> food_update_callback = [](int _){};
 	int baseFoodGain = 5;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
@@ -21,14 +21,20 @@ struct Player {
 	std::function<void()> status_bar_cleanup_func = []{};
     Entity placement_marker;
 
+	std::function<void(int new_hp, int old_hp)> health_update_callback = [](int ...){};
+	std::function<void(int new_food, int old_food)> food_update_callback = [](int ...){};
+
+	int getHealth() const { return health; }
+	int getFood() const { return food; }
+
 	void updateHealth(const int new_hp) {
+		health_update_callback(new_hp, health);
 		health = new_hp;
-		health_update_callback(new_hp);
 	}
 
 	void updateFood(const int new_food) {
+		food_update_callback(new_food, food);
 		food = new_food;
-		food_update_callback(new_food);
 	}
 
 	~Player() {
@@ -44,8 +50,10 @@ enum class EnemyType {
     ENEMY_TYPE_COUNT
 };
 
-struct Enemy {
-    int health = 100;
+class Enemy {
+	int health = 100;
+	std::function<void()> damage_callback = []{};
+public:
 	float enemy_progress = 0.0f;
     float speed = 0.f;
     float spawn_time = 0.f; // spawn time after combat started(in ms)
@@ -55,6 +63,19 @@ struct Enemy {
     bool alive = true;
 	int damage = 40;
     std::vector<Entity> spawns_enemies; // spawns these enemies (eg. on death)
+
+	explicit Enemy(const std::function<void()> &damage_callback) : damage_callback(damage_callback) {}
+
+	int getHealth() const { return health; }
+
+	void addDamage(const int damage) {
+		health -= damage;
+		printf("health = %d\n", health);
+		printf("alive = %d\n", alive);
+		damage_callback();
+	}
+
+	void addHealth(const int new_health) { health += new_health; }
 };
 
 struct Slime {
@@ -262,4 +283,12 @@ struct DebugComponent
 struct DeathTimer
 {
 	float timer_ms = 3000.f;
+};
+
+struct HitTimer {
+	float timer_ms = 200.f;
+};
+
+struct StatusTextTimer {
+	float timer_ms = 1000.f;
 };

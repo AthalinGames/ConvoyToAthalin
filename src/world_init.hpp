@@ -84,6 +84,8 @@ Entity createRoundStartButton(RenderSystem* renderer, vec2 pos);
 Entity createText(RenderSystem* renderer, vec2 pos, vec2 scale, const std::string &text, FontType font);
 void updateText(Entity text_entity, const std::string &new_text);
 
+Entity createStatusText(RenderSystem* renderer, const std::string &text, bool positive);
+
 Entity createGameOver(RenderSystem* renderer);
 
 Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alpha);
