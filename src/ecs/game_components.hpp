@@ -282,5 +282,5 @@ struct HitTimer {
 };
 
 struct StatusTextTimer {
-	float timer_ms = 1000.f;
+	float timer_ms = 2000.f;
 };

@@ -173,7 +173,7 @@ bool WorldSystem::step(const float elapsed_ms) {
 	screen.screen_darken_factor = 1 - min_timer_ms / 4000;
 
 	for (const Entity entity : registry.statusTextTimers.entities) {
-		constexpr float status_time_length = 1000.f;
+		constexpr float status_time_length = 2000.f;
 		StatusTextTimer &timer = registry.statusTextTimers.get(entity);
 		timer.timer_ms -= elapsed_ms;
 		if (timer.timer_ms < 0) {
