@@ -116,6 +116,14 @@ const std::vector spike_right_collision_poly {
         vec2{0.63, 0.34} - grid_shift,
 };
 
+const std::vector barrier_collision_poly {
+        vec2{0.56, 0.78} - grid_shift,
+        vec2{0.90, 0.75} - grid_shift,
+        vec2{0.81, 0.09} - grid_shift,
+        vec2{0.37, 0.03} - grid_shift,
+        vec2{0.06, 0.62} - grid_shift,
+};
+
 inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID id, const unsigned int atlas_id = 0) {
     switch (id) {
         case TEXTURE_ASSET_ID::SLIME:
@@ -157,6 +165,8 @@ inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID
                 default:
                     return basic_bounding_box;
             }
+        case TEXTURE_ASSET_ID::BARRIER:
+            return barrier_collision_poly;
         default: // This is just the bounding box of the texture
             return basic_bounding_box;
     }

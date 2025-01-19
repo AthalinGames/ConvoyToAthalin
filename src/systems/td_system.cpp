@@ -590,9 +590,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
             }
             auto &enemy = registry.enemies.get(second);
             enemy.addDamage(bomb.damage);
-            if (enemy.getHealth() > 0) {
-                bomb.hit_entities.emplace(second);
-            }
+            bomb.hit_entities.emplace(second);
         }
     } else if (registry.spikes.has(first) && registry.enemies.has(second)) {
         auto &spike = registry.spikes.get(first);
@@ -603,9 +601,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
             return;
         }
         enemy.addDamage(spike.damage);
-        if (enemy.getHealth() > 0) {
-            spike.hit_entities.emplace(second);
-        }
+        spike.hit_entities.emplace(second);
         // delete spike if the amount of enemies has been reached
         if (spike.max_hitcount <= spike.hit_entities.size()) {
             registry.remove_all_components_of(first);

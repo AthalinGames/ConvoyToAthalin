@@ -211,7 +211,7 @@ struct Barrier {
 };
 
 struct BarrierTimer {
-    float hold_time = 1000.0f; // loses 1 health after holding enemies for this amount of time
+    float hold_time = 1500.0f; // loses 1 health after holding enemies for this amount of time
     float time = hold_time;
 };
 
