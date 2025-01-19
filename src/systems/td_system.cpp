@@ -190,12 +190,14 @@ bool TDSystem::step(const float elapsed_ms) {
                         registry.remove_all_components_of(barrier_entity);
                         continue;
                     }
-                    barrier_timer.time += barrier_timer.hold_time;
+                    //TODO: if barrier not at hp zero yet, just remove timer component, so barrier does not break completely
                     barrier.health--;
                     RenderRequest &render_request = registry.renderGameLayer.get(barrier_entity);
                     if (barrier.health == 1) {
                         render_request.atlas_ids = {static_cast<unsigned int>(BARRIER_SPRITE::BARRIER_DAMAGED)};
+                        registry.barrierTimers.remove(barrier_entity);
                     } else if (barrier.health <= 0) {
+                        barrier_timer.time += barrier_timer.hold_time;
                         render_request.atlas_ids = {static_cast<unsigned int>(BARRIER_SPRITE::BARRIER_BROKEN)};
                         for (const auto slowed_entity : registry.sloweds.entities) {
                             auto slowed = registry.sloweds.get(slowed_entity);
@@ -203,6 +205,8 @@ bool TDSystem::step(const float elapsed_ms) {
                                 registry.sloweds.remove(slowed_entity);
                             }
                         }
+                    } else {
+                        registry.barrierTimers.remove(barrier_entity);
                     }
                 }
             }
@@ -609,7 +613,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
     } else if (registry.barriers.has(first) && registry.enemies.has(second)) {
         auto &barrier = registry.barriers.get(first);
         auto &enemy = registry.enemies.get(second);
-        //TODO: emplace Slowed with 1.f to enemy and start timer
+        //TODO: emplace timer again if not there
         if (!registry.sloweds.has(second) && barrier.health > 0) {
             auto &slowed = registry.sloweds.emplace(second);
             slowed.origin = first;
