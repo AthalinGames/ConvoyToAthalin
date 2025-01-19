@@ -250,10 +250,12 @@ bool WorldSystem::step(const float elapsed_ms) {
 			location_props.selectable = false;
 		}
 		auto &next_map_pos_props = registry.overviewMapLocations.get(next_map_pos);
+		registry.invisibles.remove(next_map_pos_props.overview_selection);
 		for (const Entity next_location : next_map_pos_props.next_locations) {
 			auto &location_props = registry.overviewMapLocations.get(next_location);
 			location_props.selectable = true;
 		}
+		next_map_pos_props.selectable = false;
 		current_map_pos = next_map_pos;
 
 		registry.invisibles.remove(tutorial_hint);
@@ -329,7 +331,7 @@ void WorldSystem::restart_game() {
 }
 
 // Compute collisions between entities
-void WorldSystem::handle_collisions() {
+void WorldSystem::handle_collisions() const {
 	// Loop over all collisions detected by the physics system
 	auto& collisionsRegistry = registry.collisions;
 	//for (uint i = 0; i < collisionsRegistry.components.size(); i++) {
@@ -356,7 +358,7 @@ void WorldSystem::handle_collisions() {
 	registry.collisions.clear();
 }
 
-void WorldSystem::handle_post_collision_actions() {
+void WorldSystem::handle_post_collision_actions() const {
 	// If td fight is running handle its post collision actions
 	if (!current_td_system->is_over()) {
 		current_td_system->handle_aiming();

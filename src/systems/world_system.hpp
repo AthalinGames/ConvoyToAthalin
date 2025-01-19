@@ -35,10 +35,10 @@ public:
     bool step(float elapsed_ms);
 
     // Check for collisions
-    void handle_collisions();
+    void handle_collisions() const;
 
     // Aim all towers at their current enemy
-    void handle_post_collision_actions();
+    void handle_post_collision_actions() const;
 
     // Should the game be over ?
     bool is_over()const;

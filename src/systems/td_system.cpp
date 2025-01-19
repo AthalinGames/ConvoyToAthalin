@@ -5,6 +5,7 @@
 #include "td_system.hpp"
 
 #include "physics_system.hpp"
+#include "world_generation.hpp"
 #include "world_system.hpp"
 
 TDSystem::TDSystem(const unsigned int seed) : dragging(false) {
