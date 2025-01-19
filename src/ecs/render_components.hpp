@@ -39,6 +39,12 @@ struct EnemyWalkTimer{ // timer for Slime and SlimeBig
     float start_time = 700.f;
 };
 
+struct PolyVisualization {
+    std::vector<std::vector<Entity>> lines = {};
+    std::vector<std::vector<vec2>> offsets = {};
+};
+
+
 /**
  * The following enumerators represent global identifiers refering to graphic
  * assets. For example TEXTURE_ASSET_ID are the identifiers of each texture
@@ -91,6 +97,7 @@ enum class TEXTURE_ASSET_ID {
 	ASCII_CHAR_ATLAS,
 	SLIM_ASCII_CHAR_ATLAS,
 	BUTTONS,
+    POLY_PIXEL,
 	TEXTURE_COUNT
 };
 
@@ -123,6 +130,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: return "charmap-oldschool_preview.png"; // Source: https://opengameart.org/content/ascii-bitmap-font-oldschool
 		case TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS: return "font.png";
 		case TEXTURE_ASSET_ID::BUTTONS: return "buttons.png";
+        case TEXTURE_ASSET_ID::POLY_PIXEL: return "poly_pixel.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);

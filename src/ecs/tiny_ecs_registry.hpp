@@ -4,6 +4,7 @@
 #include "tiny_ecs.hpp"
 #include "game_components.hpp"
 #include "render_components.hpp"
+#include "physics_components.hpp"
 
 class ECSRegistry
 {
@@ -56,6 +57,7 @@ public:
 	ComponentContainer<Text> texts;
 	ComponentContainer<HitTimer> hitTimers;
 	ComponentContainer<StatusTextTimer> statusTextTimers;
+    ComponentContainer<PolyVisualization> polyVisualizations;
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -103,6 +105,7 @@ public:
 		registry_list.push_back(&texts);
 		registry_list.push_back(&hitTimers);
 		registry_list.push_back(&statusTextTimers);
+        registry_list.push_back(&polyVisualizations);
 	}
 
 	void clear_all_components() {

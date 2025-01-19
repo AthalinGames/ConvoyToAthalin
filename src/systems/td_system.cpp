@@ -461,6 +461,7 @@ Entity TDSystem::generate_map(const int difficulty) const {
 
     const auto generated_path = generateMapCheckpoints(rng, difficulty_to_path_length.at(difficulty));
     const Entity new_map = createMap(renderer, generated_path, rng, uniform_dist);
+    //TODO: create lines to make blocked path visible
     return  new_map;
 }
 
@@ -873,7 +874,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                 }
 
                 // block placement on enemy path
-                float path_blocked_radius = window_height_px * 0.05;
+                float path_blocked_radius = TOWER_WIDTH / 1.5f;//window_height_px * 0.05;
                 if (abs(distance(mapProperties.checkpoints[0], card_pos)) < path_blocked_radius) {
                     place_occupied = true;
                 }

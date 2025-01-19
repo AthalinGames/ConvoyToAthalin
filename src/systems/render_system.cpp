@@ -424,6 +424,7 @@ void RenderSystem::draw() const {
 		const Entity entity = registry.renderGameLayer.entities[i];
 		RenderRequest& request = registry.renderGameLayer.components[i];
 		draw_layer(projection_2D, entity, request);
+
 	}
 	for (std::size_t i = 0; i < registry.renderForeground.size(); ++i) {
 		const Entity entity = registry.renderForeground.entities[i];
