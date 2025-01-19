@@ -8,6 +8,7 @@
 #include <sstream>
 
 #include "physics_system.hpp"
+#include "world_generation.hpp"
 #include "ecs/game_components.hpp"
 
 // Game configuration
@@ -316,82 +317,13 @@ void WorldSystem::restart_game() {
 	overview_map = createOverviewMap(renderer);
 	// Generate possible paths
 	// TODO fix path crossing
-	std::array<std::array<bool, grid_width>, grid_height> visited{};
-	std::array<std::array<uint8_t, grid_height>, path_count> paths{};
-	for (int path_no = 0; path_no < path_count; ++path_no) {
-		auto next_pos = static_cast<uint8_t>(overview_path_start_dist(rng));
-		paths[path_no][0] = next_pos;
-		visited[0][next_pos] = true;
-		for (int height = 1; height < grid_height; ++height) {
-			std::vector<uint8_t> next_positions{};
-			next_positions.push_back(next_pos);
-			if (next_pos > 0 && !(visited[height - 1][next_pos - 1] && visited[height][next_pos])) {
-				next_positions.push_back(next_pos - 1);
-			} else if (next_pos < grid_width - 1 && !(visited[height - 1][next_pos + 1] && visited[height][next_pos])) {
-				next_positions.push_back(next_pos + 1);
-			}
-			std::shuffle(next_positions.begin(), next_positions.end(), rng);
-			const auto width_location = next_positions.back();
-			paths[path_no][height] = width_location;
-			visited[height][width_location] = true;
-		}
-	}
+	const auto [paths, visited] = generate_overview_paths(rng);
 
 	// Render locations
-	std::array<std::array<vec2, grid_width>, grid_height> location_position;
-	std::array<std::array<Entity, grid_width>, grid_height> location_entities;
-	for (int height = 0; height < grid_height; ++height) {
-		for (int width = 0; width < grid_width; ++width) {
-			if (visited[height][width]) {
-				constexpr float grid_offset_y = (1.0f / grid_width) / 2;
-				constexpr float grid_offset_x = (1.0f / grid_height) / 2;
-				const auto y_percentage = static_cast<float>(width) / grid_width + grid_offset_y;
-				const auto x_percentage = static_cast<float>(height) / grid_height + grid_offset_x;
-				const auto lerp_x_1 = overview_locations[1] * x_percentage + overview_locations[0] * (1 - x_percentage);
-				const auto lerp_x_2 = overview_locations[3] * x_percentage + overview_locations[2] * (1 - x_percentage);
-				auto location_pos = lerp_x_1 * y_percentage + lerp_x_2 * (1 - y_percentage);
-				location_pos.x += (uniform_dist(rng) - 0.5f) * 30;
-				location_pos.y += (uniform_dist(rng) - 0.5f) * 30;
-				location_position[height][width] = location_pos;
-				const auto location_entity = createFightLocation(renderer, location_pos);
-				location_entities[height][width] = location_entity;
-			}
-		}
-	}
-	// Add Start and Goal
-	current_map_pos = createStartIcon(renderer);
-	auto &start_loc_props = registry.overviewMapLocations.get(current_map_pos);
-	auto &end_loc_props = registry.overviewMapLocations.get(createGoalIcon(renderer));
+	const overview_grid_entities location_entities = create_fight_locations(renderer, rng, visited);
 
-	// Render path connections and connect internal graph
-	for (int path_no = 0; path_no < path_count; ++path_no) {
-		auto width_location = paths[path_no][0];
-		Entity last_loc_entity = location_entities[0][width_location];
-		auto &loc_props = registry.overviewMapLocations.get(last_loc_entity);
-		// Make starting positions selectable
-		loc_props.selectable = true;
-		loc_props.previous_locations.push_back(current_map_pos);
-		start_loc_props.next_locations.push_back(last_loc_entity);
-		auto last_pos = location_position[0][width_location];
-		createOverviewLine(renderer, vec2{START_ICON_LOC_X, START_ICON_LOC_Y}, last_pos);
-		for (int height = 1; height < grid_height; ++height) {
-			width_location = paths[path_no][height];
-			Entity current_loc_entity = location_entities[height][width_location];
-			auto &curr_loc_props = registry.overviewMapLocations.get(current_loc_entity);
-			auto &last_loc_props = registry.overviewMapLocations.get(last_loc_entity);
-			// Setup location linking
-			curr_loc_props.previous_locations.push_back(last_loc_entity);
-			last_loc_props.next_locations.push_back(current_loc_entity);
-			// Render connection between locations
-			const auto current_pos = location_position[height][width_location];
-			createOverviewLine(renderer, last_pos, current_pos);
-			// Fetch next
-			last_pos = current_pos;
-			last_loc_entity = current_loc_entity;
-		}
-		end_loc_props.previous_locations.push_back(last_loc_entity);
-		createOverviewLine(renderer, last_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
-	}
+	// Add Start and Goal
+	current_map_pos = build_overview_graph(renderer, paths, location_entities);
 
 	tutorial_hint = createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial", FontType::SQUARE);
 }

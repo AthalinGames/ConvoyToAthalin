@@ -78,17 +78,7 @@ At each location you will need to protect the convoy from monsters.
 )";
     static constexpr auto tutorial_pos = vec2(100, 100);
 
-    // Overview params
-    static constexpr uint8_t grid_width = 5;
-    static constexpr uint8_t grid_height = 8;
-    static constexpr uint8_t path_count = 4;
 
-    static constexpr std::array<vec2, 4> overview_locations{
-        vec2{0.4f * window_width_px, START_ICON_LOC_Y},
-        vec2{GOAL_ICON_LOC_X, 0.4f * window_height_px},
-        vec2{START_ICON_LOC_X, 0.55f * window_height_px},
-        vec2{0.65f * window_width_px, GOAL_ICON_LOC_Y}
-    };
 
     // TDSystem handle;
     std::unique_ptr<TDSystem> current_td_system;
@@ -101,5 +91,4 @@ At each location you will need to protect the convoy from monsters.
     // C++ random number generator
     std::default_random_engine rng;
     std::uniform_real_distribution<float> uniform_dist; // number between 0..1
-    std::uniform_int_distribution<uint16_t> overview_path_start_dist = std::uniform_int_distribution<uint16_t>(0, grid_width - 1);
 };
