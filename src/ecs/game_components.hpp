@@ -51,7 +51,7 @@ enum class EnemyType {
 };
 
 class Enemy {
-	int health = 100;
+	int health = 0;
 	std::function<void()> damage_callback = []{};
 public:
 	float enemy_progress = 0.0f;
@@ -61,7 +61,7 @@ public:
     uint next_checkpoint = 1; // checkpoint 0 is start position
     float section_progress = 0.f;
     bool alive = true;
-	int damage = 40;
+	int damage = 10; // damage to player if enemy completes path
     std::vector<Entity> spawns_enemies; // spawns these enemies (eg. on death)
 
 	explicit Enemy(const std::function<void()> &damage_callback) : damage_callback(damage_callback) {}
@@ -76,6 +76,10 @@ public:
 	}
 
 	void addHealth(const int new_health) { health += new_health; }
+
+    void setPlayerDamage(const int player_damage) {
+        damage = player_damage;
+    }
 };
 
 struct Slime {
@@ -100,6 +104,7 @@ enum class ConsumableType {
     BOMB = 0,
     SPIKES,
     BARRIER,
+    HEALTH_POTION,
 	CONSUMABLE_TYPE_COUNT
 };
 
@@ -215,6 +220,10 @@ struct BarrierTimer {
     float time = hold_time;
 };
 
+struct HealthPotion {
+    int health = 40;
+};
+
 // All data relevant to the shape and motion of entities
 struct Motion {
 	vec2 position = { 0.f, 0.f };
@@ -305,6 +314,12 @@ struct HitTimer {
 	float timer_ms = 200.f;
 };
 
+enum class StatusType {
+    HEALTH = 0,
+    FOOD
+};
+
 struct StatusTextTimer {
 	float timer_ms = 2000.f;
+    StatusType type = StatusType::HEALTH;
 };

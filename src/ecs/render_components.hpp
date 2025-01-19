@@ -76,6 +76,7 @@ enum class TEXTURE_ASSET_ID {
     BOMB_CARD,
     SPIKES_CARD,
     BARRIER_CARD,
+    HEALTH_POTION_CARD,
     BOW,
     SWORD,
     SLIME,
@@ -107,6 +108,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
         case TEXTURE_ASSET_ID::BOMB_CARD: return "bombCard.png";
         case TEXTURE_ASSET_ID::SPIKES_CARD: return "spikesCard.png";
         case TEXTURE_ASSET_ID::BARRIER_CARD: return "barrierCard.png";
+        case TEXTURE_ASSET_ID::HEALTH_POTION_CARD: return "healthPotionCard.png";
         case TEXTURE_ASSET_ID::BOW: return "bow_and_arrow.png";
         case TEXTURE_ASSET_ID::SWORD: return "sword.png";
         case TEXTURE_ASSET_ID::SLIME: return "Slime.png";

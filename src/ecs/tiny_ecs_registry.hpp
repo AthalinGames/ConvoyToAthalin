@@ -33,6 +33,7 @@ public:
     ComponentContainer<Spike> spikes;
     ComponentContainer<Barrier> barriers;
     ComponentContainer<BarrierTimer> barrierTimers;
+    ComponentContainer<HealthPotion> healthPotions;
     ComponentContainer<Stationary> stationaries;
     ComponentContainer<PlacementMarker> placementMarkers;
     ComponentContainer<Map> maps;
@@ -80,6 +81,7 @@ public:
         registry_list.push_back(&spikes);
         registry_list.push_back(&barriers);
         registry_list.push_back(&barrierTimers);
+        registry_list.push_back(&healthPotions);
         registry_list.push_back(&stationaries);
         registry_list.push_back(&placementMarkers);
         registry_list.push_back(&maps);
