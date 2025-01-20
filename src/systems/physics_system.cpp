@@ -136,6 +136,16 @@ void PhysicsSystem::step(float elapsed_ms)
                 Motion &motion = registry.motions.get(enemy_container.entities[i]);
                 const float step_seconds = elapsed_ms / 1000.f;
             	motion.position = calculate_enemy_position(enemy, enemy_container.entities[i], active_map, step_seconds, true);
+
+                Transform tf;
+                tf.translate(motion.position);
+                tf.scale(motion.scale);
+                auto &poly_visualization = registry.hitboxVisualizations.get(enemy_container.entities[i]);
+                for (uint i = 0; i < poly_visualization.lines[poly_visualization.active_poly].size(); i++) {
+                    auto &stationary = registry.stationaries.get(poly_visualization.lines[poly_visualization.active_poly][i]);
+                    stationary.position = tf * poly_visualization.offsets[poly_visualization.active_poly][i];
+                }
+
                 //printf("%f %f\n", motion.position[0], motion.position[0]);
                 //printf("%f, %f\n", enemy.enemy_progress, enemy.section_progress);
             }

@@ -18,6 +18,14 @@ TDSystem::TDSystem() {
 
 void TDSystem::cleanup_ecs() {
     // Remove all components related to a td fight that are still on map
+    for (const auto &visualization : registry.hitboxVisualizations.entities) {
+        auto poly_visualization = registry.hitboxVisualizations.get(visualization);
+        for (const auto &poly_lines: poly_visualization.lines) {
+            for (const auto &line_entity: poly_lines) {
+                registry.remove_all_components_of(line_entity);
+            }
+        }
+    }
     for (const auto card: cards) {
         if (registry.cards.has(card)){//TODO: if you stop dragging just when combat ends, Entity can lose card component before being erased from cards vector
             returnCardToItem(card);
@@ -27,7 +35,7 @@ void TDSystem::cleanup_ecs() {
     for (const auto enemy: enemies) {
         registry.remove_all_components_of(enemy);
     }
-    for (const auto tower: towers) {
+    for (const auto tower : towers) {
         returnTowerToItem(tower);
     }
     for (const auto consumable: consumables) {
@@ -544,6 +552,13 @@ void TDSystem::handle_enemy_death(const Entity enemy_entity, Enemy &enemy) {
             aimingRegistry.remove(aiming);
         }
     }
+    // clear poly visualizations
+    auto &poly_visualization = registry.hitboxVisualizations.get(enemy_entity);
+    for (const auto &poly_lines : poly_visualization.lines) {
+        for (const auto &line_entity : poly_lines) {
+            registry.remove_all_components_of(line_entity);
+        }
+    }
     registry.remove_all_components_of(enemy_entity);
 }
 
@@ -724,6 +739,33 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
             }
             break;
         }
+        case GLFW_KEY_M:
+            if (action == GLFW_RELEASE) {
+                for (auto &enemy_entity : enemies) {
+                    if (registry.enemies.has(enemy_entity)) {
+                        if (registry.enemies.get(enemy_entity).spawned) {
+                            auto &poly_visualization = registry.hitboxVisualizations.get(enemy_entity);
+                            for (auto &line_entity: poly_visualization.lines[poly_visualization.active_poly]) {
+                                if (!registry.invisibles.has(line_entity)) {
+                                    registry.invisibles.emplace(line_entity);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else { // GLFW_PRESS and on windows also GLFW_REPEAT
+                for (auto &enemy_entity : enemies) {
+                    if (registry.enemies.has(enemy_entity)) {
+                        if (registry.enemies.get(enemy_entity).spawned) {
+                            auto &poly_visualization = registry.hitboxVisualizations.get(enemy_entity);
+                            for (auto &line_entity: poly_visualization.lines[poly_visualization.active_poly]) {
+                                registry.invisibles.remove(line_entity);
+                            }
+                        }
+                    }
+                }
+            }
+            break;
         case GLFW_KEY_R: {
             if (action == GLFW_PRESS) {
                 current_phase = GamePhase::ENDED;

@@ -86,6 +86,18 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
                 //render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
                 atlas_id = static_cast<unsigned int>(DIRECTION_SPRITE::DOWN);
             }
+            auto &poly_visualization = registry.hitboxVisualizations.get(entity);
+            poly_visualization.active_poly = atlas_id;
+            for (uint i = 0; i < poly_visualization.lines.size(); i++) {
+                if (i != poly_visualization.active_poly) {
+                    for (auto &line_entity : poly_visualization.lines[i]) {
+                        if (!registry.invisibles.has(line_entity)) {
+                            registry.invisibles.emplace(line_entity);
+                        }
+                    }
+                }
+            }
+
             atlas_id *= static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT);
             const auto walk_timer = registry.enemyWalkTimers.get(entity);
             const float walk_interval = walk_timer.start_time / (static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT) * 2 - 1);
@@ -101,7 +113,7 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
                 atlas_id += static_cast<unsigned int>(SLIME_WALK_FRAME::FRAME0);
             }
 
-            //printf("slime atlas id: %d, walk_timer: %f\n", atlas_id, walk_timer.time);
+            printf("slime atlas id: %d, walk_timer: %f\n", atlas_id, walk_timer.time);
             render_request.atlas_ids = {static_cast<unsigned int>(atlas_id)};
         }
     }

@@ -387,33 +387,57 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity,
 	return entity;
 }
 
-void createPolyVisualization(RenderSystem *renderer, const Entity entity, const std::vector<std::vector<vec2>> polys) {
-    auto &visualization = registry.polyVisualizations.emplace(entity);
+void createHitboxVisualization(RenderSystem *renderer, const Entity entity, const std::vector<std::vector<vec2>> polys) {
+    auto &visualization = registry.hitboxVisualizations.emplace(entity);
     for (const std::vector<vec2> &poly : polys) {
         std::vector<Entity> lines;
         std::vector<vec2> offsets;
+
         for (int i = 0; i < poly.size()-1; ++i) {
             vec2 vert_curr = poly[i];
             vec2 vert_next = poly[i+1];
             vec2 middle = 0.5f * (vert_next + vert_curr);
             vec2 dp = vert_curr - vert_next;
             float angle = atan2(dp.y, dp.x) + M_PI_2;
-            //TODO: get angle of line between points and create Entities, Stationaries and RenderRequests for each middle point
             const auto line_entity = Entity();
             auto &stationary = registry.stationaries.emplace(line_entity);
             stationary.angle = angle;
-            stationary.scale = vec2(TOWER_WIDTH/2, distance(vert_curr, vert_next));
-            registry.renderForeground.insert(entity, {
+            stationary.scale = vec2(TOWER_WIDTH/4, registry.motions.get(entity).scale.y * distance(vert_curr, vert_next));// (TOWER_WIDTH/2, distance(vert_curr, vert_next));
+            registry.renderForeground.insert(line_entity, {
                                                 {Stationary{}},
                                                 {0},
                                                 Z_BACKGROUND / 2,
-                                                TEXTURE_ASSET_ID::POLY_PIXEL,
+                                                TEXTURE_ASSET_ID::HITBOX_LINE,
                                                 EFFECT_ASSET_ID::TEXTURED,
                                                 GEOMETRY_BUFFER_ID::SPRITE,
                                             });
             lines.push_back(line_entity);
             offsets.push_back(middle);
+            registry.invisibles.emplace(line_entity);
         }
+
+        //TODO: if line between last and first vertex is done in loop, for some reason, mouse call gets triggered before start_button has been generated
+        vec2 vert_curr = poly.back();
+        vec2 vert_next = poly.front();
+        vec2 middle = 0.5f * (vert_next + vert_curr);
+        vec2 dp = vert_curr - vert_next;
+        float angle = atan2(dp.y, dp.x) + M_PI_2;
+        const auto line_entity = Entity();
+        auto &stationary = registry.stationaries.emplace(line_entity);
+        stationary.angle = angle;
+        stationary.scale = vec2(TOWER_WIDTH/4, registry.motions.get(entity).scale.y * distance(vert_curr, vert_next));// (TOWER_WIDTH/2, distance(vert_curr, vert_next));
+        registry.renderForeground.insert(line_entity, {
+                {Stationary{}},
+                {0},
+                Z_BACKGROUND / 2,
+                TEXTURE_ASSET_ID::HITBOX_LINE,
+                EFFECT_ASSET_ID::TEXTURED,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+        lines.push_back(line_entity);
+        offsets.push_back(middle);
+        registry.invisibles.emplace(line_entity);
+
         visualization.lines.push_back(lines);
         visualization.offsets.push_back(offsets);
     }
@@ -472,10 +496,12 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos, const EnemyType enemy
 
     //TODO: for each collision poly
     std::vector<std::vector<vec2>> polys;
-    for (int i = 0; i < static_cast<unsigned int>(DIRECTION_SPRITE::COUNT); ++i) {
+    for (int i = 0;
+         i < static_cast<unsigned int>(DIRECTION_SPRITE::COUNT) * static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT);
+         i += static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT)) {
         polys.push_back(getCollisionMeshOfTexture(registry.renderGameLayer.get(entity).used_texture, i));
     }
-    createPolyVisualization(renderer, entity, polys);
+    createHitboxVisualization(renderer, entity, polys);
 
 	return entity;
 }

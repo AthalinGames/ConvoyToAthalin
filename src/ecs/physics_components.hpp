@@ -139,6 +139,7 @@ inline const std::vector<vec2>& getCollisionMeshOfTexture(const TEXTURE_ASSET_ID
                 return slime_collision_poly;
             }
         case TEXTURE_ASSET_ID::SLIME_BIG:
+            printf("%d\n", atlas_id);
             if (atlas_id < static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT)) {
                 return slime_down_collision_poly;
             } else if (atlas_id < 2 * static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT)) {
