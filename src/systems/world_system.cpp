@@ -186,6 +186,16 @@ bool WorldSystem::step(const float elapsed_ms) {
 		auto &color = registry.colors.get(entity);
 		color.a = timer.timer_ms / status_time_length;
 		position.position.y += elapsed_ms * (100.f/window_height_px);
+        switch (timer.type) {
+            case StatusType::HEALTH:
+                position.position.x = TILE_WIDTH / 4;
+                break;
+            case StatusType::FOOD:
+                position.position.x = TILE_WIDTH * 2 - TILE_WIDTH / 8;
+                break;
+        }
+
+
 	}
 	// Updating window title with points
 	std::stringstream title_ss;
@@ -312,6 +322,7 @@ void WorldSystem::restart_game() {
     createItem(ConsumableType::BOMB);
     createItem(ConsumableType::SPIKES);
     createItem(ConsumableType::BARRIER);
+    createItem(ConsumableType::HEALTH_POTION);
 
     registry.players.get(player).placement_marker = createPlacementMarker(renderer);
 

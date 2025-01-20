@@ -27,7 +27,11 @@ Entity createPlayer(RenderSystem *renderer) {
 	player.status_bar_entities.push_back(hp_number);
 	player.health_update_callback = [hp_number, &renderer](const int new_hp, const int old_hp) {
 		updateText(hp_number, std::to_string(new_hp));
-		createStatusText(renderer, std::to_string(new_hp - old_hp) + " HP", new_hp > old_hp);
+        std::string status_sign;
+        if (new_hp - old_hp >= 0) {
+            status_sign = "+";
+        }
+		createStatusText(renderer, status_sign + std::to_string(new_hp - old_hp) + " HP", new_hp > old_hp, StatusType::HEALTH);
 	};
 
 	const auto food_text = createText(renderer, {TILE_WIDTH * 2 - TILE_WIDTH / 8, TILE_HEIGHT / 4}, text_scale, "Food:",
@@ -39,7 +43,11 @@ Entity createPlayer(RenderSystem *renderer) {
 	player.status_bar_entities.push_back(food_number);
 	player.food_update_callback = [food_number, &renderer](const int new_food, const int old_food) {
 		updateText(food_number, std::to_string(new_food));
-		createStatusText(renderer, std::to_string(new_food - old_food) + " Food", new_food > old_food);
+        std::string status_sign;
+        if (new_food - old_food >= 0) {
+            status_sign = "+";
+        }
+		createStatusText(renderer, status_sign + std::to_string(new_food - old_food) + " Food", new_food > old_food, StatusType::FOOD);
 	};
 
 	return entity;
@@ -85,6 +93,10 @@ Entity createItem(const ItemType item) {
                 case ConsumableType::BARRIER: {
                     registry.barriers.emplace(entity);
                     consumable.range = 0.25f * TOWER_WIDTH;
+                    break;
+                }
+                case ConsumableType::HEALTH_POTION: {
+                    registry.healthPotions.emplace(entity);
                     break;
                 }
 				case ConsumableType::CONSUMABLE_TYPE_COUNT: {
@@ -290,7 +302,7 @@ void createBarrierFromCard(RenderSystem *renderer, const Entity card, Motion &mo
     registry.renderGameLayer.emplace(card, request);
 }
 
-void createConsumableFromCard(RenderSystem *renderer, const Entity card, std::vector<Entity> &placed_consumables) {
+void createConsumableFromCard(RenderSystem *renderer, const Entity card, const Entity player_entity, std::vector<Entity> &placed_consumables) {
     //TODO: return created entities for case, that multiple were created or take consumable vector as input var
     assert(registry.cards.has(card));
     registry.cards.remove(card);
@@ -302,14 +314,22 @@ void createConsumableFromCard(RenderSystem *renderer, const Entity card, std::ve
 
     if (registry.bombs.has(card)) {
         createBombFromCard(renderer, card, consumable_motion);
+        placed_consumables.emplace_back(card);
     } else if (registry.spikes.has(card)) {
         createSpikesFromCard(renderer, card, consumable_motion, placed_consumables);
+        placed_consumables.emplace_back(card);
     } else if (registry.barriers.has(card)) {
         createBarrierFromCard(renderer, card, consumable_motion);
+        placed_consumables.emplace_back(card);
+    } else if (registry.healthPotions.has(card)) {
+        auto &player = registry.players.get(player_entity);
+        player.updateHealth(min(player.getHealth() + registry.healthPotions.get(card).health, player.maxHealth));
+        registry.remove_all_components_of(card);
     }
     else {
         assert(false && "Invalid Consumable type for consumable creation");
     }
+
 }
 
 void returnArcherToItem(const Entity tower) {
@@ -494,6 +514,15 @@ void createCardFromItem(RenderSystem *renderer, const Entity item) {
                                              {0},
                                              Z_FOREGROUND,
                                              TEXTURE_ASSET_ID::BARRIER_CARD,
+                                             EFFECT_ASSET_ID::TEXTURED,
+                                             GEOMETRY_BUFFER_ID::SPRITE,
+                                             });
+    } else if (registry.healthPotions.has(item)) {
+        registry.renderForeground.insert(item, {
+                                             {Stationary{}},
+                                             {0},
+                                             Z_FOREGROUND,
+                                             TEXTURE_ASSET_ID::HEALTH_POTION_CARD,
                                              EFFECT_ASSET_ID::TEXTURED,
                                              GEOMETRY_BUFFER_ID::SPRITE,
                                              });
@@ -1031,7 +1060,14 @@ void updateText(const Entity text_entity, const std::string &new_text) {
 	registry.renderForeground.insert(text_entity, createTextRenderRequest(new_text, curr_text.scale, curr_text.font));
 }
 
-Entity createStatusText(RenderSystem *renderer, const std::string &text, const bool positive) {
+Entity createStatusText(RenderSystem *renderer, const std::string &text, const bool positive, const StatusType type) {
+    //vec2 pos = ;
+    //switch (type) {
+    //    case StatusType::HEALTH:
+    //        pos.x = TILE_WIDTH / 4;
+    //    case StatusType::FOOD:
+    //        pos.x = TILE_WIDTH * 2 - TILE_WIDTH / 8;
+    //}
 	const auto entity = createText(renderer, {TILE_WIDTH, TILE_HEIGHT}, {TILE_WIDTH/6, TILE_HEIGHT/3}, text, FontType::SLIM);
 
 	auto &color = registry.colors.emplace(entity);
@@ -1042,7 +1078,8 @@ Entity createStatusText(RenderSystem *renderer, const std::string &text, const b
 		color.r = 1.f;
 	}
 
-	registry.statusTextTimers.emplace(entity);
+	auto &timer = registry.statusTextTimers.emplace(entity);
+    timer.type = type;
 
 	return entity;
 }

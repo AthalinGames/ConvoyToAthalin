@@ -191,12 +191,14 @@ bool TDSystem::step(const float elapsed_ms) {
                         registry.remove_all_components_of(barrier_entity);
                         continue;
                     }
-                    barrier_timer.time += barrier_timer.hold_time;
+                    //TODO: if barrier not at hp zero yet, just remove timer component, so barrier does not break completely
                     barrier.health--;
                     RenderRequest &render_request = registry.renderGameLayer.get(barrier_entity);
                     if (barrier.health == 1) {
                         render_request.atlas_ids = {static_cast<unsigned int>(BARRIER_SPRITE::BARRIER_DAMAGED)};
+                        registry.barrierTimers.remove(barrier_entity);
                     } else if (barrier.health <= 0) {
+                        barrier_timer.time += barrier_timer.hold_time;
                         render_request.atlas_ids = {static_cast<unsigned int>(BARRIER_SPRITE::BARRIER_BROKEN)};
                         for (const auto slowed_entity : registry.sloweds.entities) {
                             auto slowed = registry.sloweds.get(slowed_entity);
@@ -204,6 +206,8 @@ bool TDSystem::step(const float elapsed_ms) {
                                 registry.sloweds.remove(slowed_entity);
                             }
                         }
+                    } else {
+                        registry.barrierTimers.remove(barrier_entity);
                     }
                 }
             }
@@ -275,7 +279,9 @@ bool TDSystem::step(const float elapsed_ms) {
                 dragging = false;
                 registry.cards.get(dragged_entity).dragged = false;
                 registry.invisibles.remove(dragged_entity);
-                registry.invisibles.emplace(placement_marker);
+                if (!registry.invisibles.has(placement_marker)) {
+                    registry.invisibles.emplace(placement_marker);
+                }
                 realignCards();
             }
 
@@ -366,16 +372,19 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
         enemy2.speed = 100.f;
         enemy2.spawn_time = 1000;
         enemy2.addHealth(120);
+        enemy2.setPlayerDamage(5);
 
 
         enemies.emplace(spawned_enemy1);
         Enemy &spawn1 = registry.enemies.get(spawned_enemy1);
         spawn1.speed = 100.f;
+        spawn1.addHealth(100);
         enemy2.spawns_enemies.push_back(spawned_enemy1);
 
         enemies.emplace(spawned_enemy2);
         Enemy &spawn2 = registry.enemies.get(spawned_enemy2);
         spawn2.speed = 120.f;
+        spawn2.addHealth(100);
         enemy2.spawns_enemies.push_back(spawned_enemy2);
 
         return {debug_enemy, debug_enemy2};
@@ -389,6 +398,8 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
                 const Entity new_enemy = createEnemy(renderer, {0, 100}, static_cast<EnemyType>(wave[0]));
                 std::vector<Entity> spawns_enemies = {};
                 if (static_cast<EnemyType>(wave[0]) == EnemyType::SLIME_BIG) {
+                    registry.enemies.get(new_enemy).addHealth(static_cast<int>(std::floor(difficulty/2) * 20));
+                    registry.enemies.get(new_enemy).setPlayerDamage(5);
                     const auto spawned_enemy1 = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
                     const auto spawned_enemy2 = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
                     enemies.emplace(spawned_enemy1);
@@ -402,7 +413,7 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
                 }
                 enemies.emplace(new_enemy);
                 Enemy& enemy = registry.enemies.get(new_enemy);
-                enemy.addHealth(static_cast<int>(std::floor(difficulty/2) * 50));
+                enemy.addHealth(100 + static_cast<int>(std::floor(difficulty/2) * 50));
                 enemy.speed = wave[3] + wave[3] * (difficulty / 10);
                 enemy.spawn_time = spawn_time;
                 for (auto spawn_entity : spawns_enemies) {
@@ -610,7 +621,7 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
     } else if (registry.barriers.has(first) && registry.enemies.has(second)) {
         auto &barrier = registry.barriers.get(first);
         auto &enemy = registry.enemies.get(second);
-        //TODO: emplace Slowed with 1.f to enemy and start timer
+        //TODO: emplace timer again if not there
         if (!registry.sloweds.has(second) && barrier.health > 0) {
             auto &slowed = registry.sloweds.emplace(second);
             slowed.origin = first;
@@ -824,7 +835,9 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                 dragging = false;
                 registry.cards.get(dragged_entity).dragged = false;
                 registry.invisibles.remove(dragged_entity);
-                registry.invisibles.emplace(placement_marker);
+                if (!registry.invisibles.has(placement_marker)) {
+                    registry.invisibles.emplace(placement_marker);
+                }
                 realignCards();
             }
             //if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) { //TODO move this to on_mouse_move
@@ -840,7 +853,9 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                 const auto &mapProperties = maps.get(map);
                 vec2 card_pos = registry.stationaries.get(dragged_entity).position;
                 registry.invisibles.remove(dragged_entity);
-                registry.invisibles.emplace(placement_marker);
+                if (!registry.invisibles.has(placement_marker)) {
+                    registry.invisibles.emplace(placement_marker);
+                }
 
                 // block placement on other towers
                 bool place_occupied = false;
@@ -894,9 +909,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     if (registry.consumables.has(dragged_entity)) {
                         // successfully place card as bomb
                         std::erase(cards, dragged_entity); // C++20 is nice
-                        createConsumableFromCard(renderer, dragged_entity, consumables);
+                        createConsumableFromCard(renderer, dragged_entity, player, consumables);
                         //auto consumable_motion = registry.motions.get(dragged_entity);
-                        consumables.emplace_back(dragged_entity);
                     } else {
                         registry.cards.get(dragged_entity).dragged = false;
                     }
@@ -924,9 +938,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                             }
                         }
                     } else if (registry.consumables.has(dragged_entity)) {
-                        createConsumableFromCard(renderer, dragged_entity, consumables);
-                        auto consumable_motion = registry.motions.get(dragged_entity);
-                        consumables.emplace_back(dragged_entity);
+                        createConsumableFromCard(renderer, dragged_entity, player, consumables);
+                        //auto consumable_motion = registry.motions.get(dragged_entity);
                     }
                 }
                 realignCards();
@@ -940,16 +953,19 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         dragged_entity = registry.cards.entities[i];
                         dragging = true;
                         printf("z:%f\n", registry.renderForeground.get(dragged_entity).z_position);
-                        registry.invisibles.emplace(dragged_entity);
-                        registry.stationaries.get(placement_marker).position = registry.stationaries.get(dragged_entity).position;
-                        float marker_scale = 2*TOWER_WIDTH;
-                        if (registry.towers.has(dragged_entity)) {
-                            marker_scale = 2*registry.towers.get(dragged_entity).range;
-                        } else if (registry.consumables.has(dragged_entity)) {
-                            marker_scale = 2*registry.consumables.get(dragged_entity).range;
+                        if (!registry.healthPotions.has(dragged_entity)) {
+                            registry.invisibles.emplace(dragged_entity);
+                            registry.stationaries.get(placement_marker).position = registry.stationaries.get(
+                                    dragged_entity).position;
+                            float marker_scale = 2 * TOWER_WIDTH;
+                            if (registry.towers.has(dragged_entity)) {
+                                marker_scale = 2 * registry.towers.get(dragged_entity).range;
+                            } else if (registry.consumables.has(dragged_entity)) {
+                                marker_scale = 2 * registry.consumables.get(dragged_entity).range;
+                            }
+                            registry.stationaries.get(placement_marker).scale = vec2(marker_scale, marker_scale);
+                            registry.invisibles.remove(placement_marker);
                         }
-                        registry.stationaries.get(placement_marker).scale = vec2(marker_scale, marker_scale);
-                        registry.invisibles.remove(placement_marker);
                     }
                 }
             }

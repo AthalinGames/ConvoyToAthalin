@@ -49,7 +49,7 @@ Entity createRandomItem(std::default_random_engine& rng);
 void createTowerFromCard(RenderSystem* renderer, Entity card);
 void returnTowerToItem(Entity tower);
 // consumable creation
-void createConsumableFromCard(RenderSystem* renderer, Entity card, std::vector<Entity> &placed_consumables);
+void createConsumableFromCard(RenderSystem* renderer, Entity card, Entity player_entity, std::vector<Entity> &placed_consumables);
 // the arrows
 Entity createArrow(RenderSystem* renderer, vec2 pos, float velocity, vec2 dir);
 // the enemy unit
@@ -83,7 +83,7 @@ Entity createRoundStartButton(RenderSystem* renderer, vec2 pos);
 Entity createText(RenderSystem* renderer, vec2 pos, vec2 scale, const std::string &text, FontType font);
 void updateText(Entity text_entity, const std::string &new_text);
 
-Entity createStatusText(RenderSystem* renderer, const std::string &text, bool positive);
+Entity createStatusText(RenderSystem* renderer, const std::string &text, bool positive, StatusType type);
 
 Entity createGameOver(RenderSystem* renderer);
 
