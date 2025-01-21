@@ -600,6 +600,13 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         enemy.addDamage(arrow.damage);
         arrow.hit_entities.emplace(second);
         if (arrow.max_hitcount <= arrow.hit_entities.size()) {
+            // clear hitbox visualizations
+            auto &hitbox_visualization = registry.hitboxVisualizations.get(first);
+            for (const auto &poly_lines: hitbox_visualization.lines) {
+                for (const auto &line_entity: poly_lines) {
+                    registry.remove_all_components_of(line_entity);
+                }
+            }
             registry.remove_all_components_of(first);
         }
     } else if (registry.enemies.has(second) && registry.swords.has(first)) {
@@ -798,6 +805,14 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
                         }
                     }
                 }
+                for (auto &arrow_entity : registry.arrows.entities) {
+                    auto &hitbox_visualization = registry.hitboxVisualizations.get(arrow_entity);
+                    for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                        if (!registry.invisibles.has(line_entity)) {
+                            registry.invisibles.emplace(line_entity);
+                        }
+                    }
+                }
             } else { // GLFW_PRESS and on windows also GLFW_REPEAT
                 for (auto &enemy_entity : enemies) {
                     if (registry.enemies.get(enemy_entity).spawned) {
@@ -830,6 +845,12 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
                                 registry.invisibles.emplace(line_entity);
                             }
                         }
+                    }
+                }
+                for (auto &arrow_entity : registry.arrows.entities) {
+                    auto &hitbox_visualization = registry.hitboxVisualizations.get(arrow_entity);
+                    for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                        registry.invisibles.remove(line_entity);
                     }
                 }
             }

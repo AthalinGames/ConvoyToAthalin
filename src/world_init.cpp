@@ -126,6 +126,13 @@ void createHitboxVisualization(RenderSystem *renderer, const Entity entity, cons
     auto &visualization = registry.hitboxVisualizations.emplace(entity);
     auto motion = registry.motions.get(entity);
 
+    Transform tf;
+    tf.translate(motion.position);
+    if (!motion.use_direction_sprite) {
+        tf.rotate(motion.angle);
+    }
+    tf.scale(motion.scale);
+
     for (const std::vector<vec2> &poly : polys) {
         std::vector<Entity> lines;
         std::vector<vec2> offsets;
@@ -142,9 +149,6 @@ void createHitboxVisualization(RenderSystem *renderer, const Entity entity, cons
             stationary.angle = angle;
             stationary.scale = vec2(TOWER_WIDTH / 4, motion.scale.y * distance(vert_curr, vert_next));
 
-            Transform tf;
-            tf.translate(motion.position);
-            tf.scale(motion.scale);
             stationary.position = tf * middle;
 
             registry.renderForeground.insert(line_entity, {
@@ -457,7 +461,7 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity,
 
 	registry.arrows.emplace(entity);
 
-	registry.renderGameLayer.insert(entity, {
+	auto request = registry.renderGameLayer.insert(entity, {
 		                                {Stationary{}},
 		                                {static_cast<unsigned int>(BOW_SPRITE::ARROW)},
 		                                Z_MIDDLE,
@@ -465,6 +469,8 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity,
 		                                EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		                                GEOMETRY_BUFFER_ID::SPRITE,
 	                                });
+
+    createHitboxVisualization(renderer, entity, {getCollisionMeshOfTexture(request.used_texture)});
 
 	return entity;
 }

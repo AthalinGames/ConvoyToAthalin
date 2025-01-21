@@ -121,6 +121,16 @@ void PhysicsSystem::step(float elapsed_ms)
 		Motion& motion = motion_container.components[i];
 		const float step_seconds = elapsed_ms / 1000.f;
 		motion.position += step_seconds * motion.velocity;
+        if (registry.arrows.has(motion_container.entities[i])) {
+            Transform tf;
+            tf.translate(motion.position);
+            tf.rotate(motion.angle);
+            auto &hitbox_visualization = registry.hitboxVisualizations.get(motion_container.entities[i]);
+            for (uint j = 0; j < hitbox_visualization.lines[hitbox_visualization.active_poly].size(); j++) {
+                auto &stationary = registry.stationaries.get(hitbox_visualization.lines[hitbox_visualization.active_poly][j]);
+                stationary.position = tf * hitbox_visualization.offsets[hitbox_visualization.active_poly][j];
+            }
+        }
 	}
 
     auto& map_container = registry.maps;
