@@ -42,6 +42,7 @@ struct EnemyWalkTimer{ // timer for Slime and SlimeBig
 struct HitboxVisualization {
     std::vector<std::vector<Entity>> lines = {};
     std::vector<std::vector<vec2>> offsets = {};
+    std::vector<std::vector<float>> angles = {};
     uint active_poly = 0;
 };
 

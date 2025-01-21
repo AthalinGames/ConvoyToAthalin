@@ -177,7 +177,6 @@ struct Knight {
 struct Sword { //TODO: maybe outsource hitcound and hit list to Weapon and make Arrow Weapon, too.
     int damage = 40;
     bool has_collision = false; // activate collision when sword is swung
-    std::size_t max_hitcount = 1;
     std::set<Entity> hit_entities{};
 };
 

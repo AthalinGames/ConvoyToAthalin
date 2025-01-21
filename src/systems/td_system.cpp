@@ -19,8 +19,8 @@ TDSystem::TDSystem() {
 void TDSystem::cleanup_ecs() {
     // Remove all components related to a td fight that are still on map
     for (const auto &visualization : registry.hitboxVisualizations.entities) {
-        auto poly_visualization = registry.hitboxVisualizations.get(visualization);
-        for (const auto &poly_lines: poly_visualization.lines) {
+        auto hitbox_visualization = registry.hitboxVisualizations.get(visualization);
+        for (const auto &poly_lines: hitbox_visualization.lines) {
             for (const auto &line_entity: poly_lines) {
                 registry.remove_all_components_of(line_entity);
             }
@@ -82,20 +82,20 @@ bool TDSystem::step(const float elapsed_ms) {
         }
         case GamePhase::RUNNING: {
             td_map.combat_time += elapsed_ms;
-            for (const auto hitted_entity : registry.hitTimers.entities) {
-                auto &timer = registry.hitTimers.get(hitted_entity);
+            for (const auto hit_entity : registry.hitTimers.entities) {
+                auto &timer = registry.hitTimers.get(hit_entity);
                 timer.timer_ms -= elapsed_ms;
                 if (timer.timer_ms < 0) {
-                    registry.hitTimers.remove(hitted_entity);
-                    registry.colors.remove(hitted_entity);
-                    auto &enemy = registry.enemies.get(hitted_entity);
+                    registry.hitTimers.remove(hit_entity);
+                    registry.colors.remove(hit_entity);
+                    auto &enemy = registry.enemies.get(hit_entity);
                     if (enemy.getHealth() <= 0) {
-                        handle_enemy_death(hitted_entity, enemy);
+                        handle_enemy_death(hit_entity, enemy);
                     }
                     continue;
                 }
 
-                auto &color = registry.colors.get(hitted_entity);
+                auto &color = registry.colors.get(hit_entity);
                 const float factor = exp(-0.02f * timer.timer_ms);
                 color.r = factor;
                 color.g = factor;
@@ -153,6 +153,20 @@ bool TDSystem::step(const float elapsed_ms) {
                     while (sword_motion.angle > M_PI) {
                         sword_motion.angle -= 2 * M_PI;
                     }
+
+                    Transform tf;
+                    tf.translate(sword_motion.position);
+                    tf.rotate(sword_motion.angle);
+                    tf.scale(sword_motion.scale);
+                    auto &hitbox_visualization = registry.hitboxVisualizations.get(sword_entity);
+                    for (uint i = 0; i < hitbox_visualization.lines[hitbox_visualization.active_poly].size(); i++) {
+                        auto &stationary = registry.stationaries.get(hitbox_visualization.lines[hitbox_visualization.active_poly][i]);
+                        stationary.position = tf * hitbox_visualization.offsets[hitbox_visualization.active_poly][i];
+                        stationary.angle = sword_motion.angle + hitbox_visualization.angles[hitbox_visualization.active_poly][i];
+                        while (stationary.angle > M_PI) {
+                            stationary.angle -= 2 * M_PI;
+                        }
+                    }
                 }
 
                 if (shot_timer.time < 0) {
@@ -186,7 +200,7 @@ bool TDSystem::step(const float elapsed_ms) {
                     }
                 }
                 if (bomb_timer.time <= 0) {
-                    registry.remove_all_components_of(bomb_entity);
+                    handle_consumable_destruction(bomb_entity);
                 }
             }
             for (const auto barrier_entity: registry.barrierTimers.entities) {
@@ -196,7 +210,7 @@ bool TDSystem::step(const float elapsed_ms) {
                 barrier_timer.time -= elapsed_ms;
                 if (barrier_timer.time <= 0) {
                     if (barrier.health <= 0) {
-                        registry.remove_all_components_of(barrier_entity);
+                        handle_consumable_destruction(barrier_entity);
                         continue;
                     }
                     //TODO: if barrier not at hp zero yet, just remove timer component, so barrier does not break completely
@@ -257,10 +271,8 @@ bool TDSystem::step(const float elapsed_ms) {
                     for (Player &player: registry.players.components) {
                         player.updateHealth(player.getHealth() - enemy.damage);
                     }
-                    handle_enemy_death(enemy_entity, enemy);
                     // Delete damaging entity
-                    registry.remove_all_components_of(enemy_entity);
-                    enemies.erase(enemy_entity);
+                    handle_enemy_death(enemy_entity, enemy);
                 }
             }
 
@@ -552,14 +564,29 @@ void TDSystem::handle_enemy_death(const Entity enemy_entity, Enemy &enemy) {
             aimingRegistry.remove(aiming);
         }
     }
-    // clear poly visualizations
-    auto &poly_visualization = registry.hitboxVisualizations.get(enemy_entity);
-    for (const auto &poly_lines : poly_visualization.lines) {
+    // clear hitbox visualizations
+    auto &hitbox_visualization = registry.hitboxVisualizations.get(enemy_entity);
+    for (const auto &poly_lines : hitbox_visualization.lines) {
         for (const auto &line_entity : poly_lines) {
             registry.remove_all_components_of(line_entity);
         }
     }
     registry.remove_all_components_of(enemy_entity);
+    enemies.erase(enemy_entity);
+}
+
+void TDSystem::handle_consumable_destruction(Entity consumable_entity) {
+    if (registry.barriers.has(consumable_entity) || registry.spikes.has(consumable_entity)) {
+        // clear hitbox visualizations
+        auto &hitbox_visualization = registry.hitboxVisualizations.get(consumable_entity);
+        for (const auto &poly_lines: hitbox_visualization.lines) {
+            for (const auto &line_entity: poly_lines) {
+                registry.remove_all_components_of(line_entity);
+            }
+        }
+    }
+    registry.remove_all_components_of(consumable_entity);
+    consumables.erase(consumable_entity);
 }
 
 void TDSystem::handle_collision(const Entity first, const Entity second) {
@@ -632,11 +659,10 @@ void TDSystem::handle_collision(const Entity first, const Entity second) {
         spike.hit_entities.emplace(second);
         // delete spike if the amount of enemies has been reached
         if (spike.max_hitcount <= spike.hit_entities.size()) {
-            registry.remove_all_components_of(first);
+            handle_consumable_destruction(first);
         }
     } else if (registry.barriers.has(first) && registry.enemies.has(second)) {
         auto &barrier = registry.barriers.get(first);
-        auto &enemy = registry.enemies.get(second);
         //TODO: emplace timer again if not there
         if (!registry.sloweds.has(second) && barrier.health > 0) {
             auto &slowed = registry.sloweds.emplace(second);
@@ -742,10 +768,21 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
         case GLFW_KEY_M:
             if (action == GLFW_RELEASE) {
                 for (auto &enemy_entity : enemies) {
-                    if (registry.enemies.has(enemy_entity)) {
-                        if (registry.enemies.get(enemy_entity).spawned) {
-                            auto &poly_visualization = registry.hitboxVisualizations.get(enemy_entity);
-                            for (auto &line_entity: poly_visualization.lines[poly_visualization.active_poly]) {
+                    if (registry.enemies.get(enemy_entity).spawned) {
+                        auto &hitbox_visualization = registry.hitboxVisualizations.get(enemy_entity);
+                        for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                            if (!registry.invisibles.has(line_entity)) {
+                                registry.invisibles.emplace(line_entity);
+                            }
+                        }
+                    }
+
+                }
+                for (auto &consumable_entity : consumables) {
+                    if (registry.barriers.has(consumable_entity) || registry.spikes.has(consumable_entity)) {
+                        if (registry.consumables.get(consumable_entity).placed) {
+                            auto &hitbox_visualization = registry.hitboxVisualizations.get(consumable_entity);
+                            for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
                                 if (!registry.invisibles.has(line_entity)) {
                                     registry.invisibles.emplace(line_entity);
                                 }
@@ -753,13 +790,44 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
                         }
                     }
                 }
+                for (auto &sword_entity : registry.swords.entities) {
+                    auto &hitbox_visualization = registry.hitboxVisualizations.get(sword_entity);
+                    for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                        if (!registry.invisibles.has(line_entity)) {
+                            registry.invisibles.emplace(line_entity);
+                        }
+                    }
+                }
             } else { // GLFW_PRESS and on windows also GLFW_REPEAT
                 for (auto &enemy_entity : enemies) {
-                    if (registry.enemies.has(enemy_entity)) {
-                        if (registry.enemies.get(enemy_entity).spawned) {
-                            auto &poly_visualization = registry.hitboxVisualizations.get(enemy_entity);
-                            for (auto &line_entity: poly_visualization.lines[poly_visualization.active_poly]) {
+                    if (registry.enemies.get(enemy_entity).spawned) {
+                        auto &hitbox_visualization = registry.hitboxVisualizations.get(enemy_entity);
+                        for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                            registry.invisibles.remove(line_entity);
+                        }
+                    }
+
+                }
+                for (auto &consumable_entity : consumables) {
+                    if (registry.barriers.has(consumable_entity) || registry.spikes.has(consumable_entity)) {
+                        if (registry.consumables.get(consumable_entity).placed) {
+                            auto &hitbox_visualization = registry.hitboxVisualizations.get(consumable_entity);
+                            for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
                                 registry.invisibles.remove(line_entity);
+                            }
+                        }
+                    }
+                }
+                for (auto &sword_entity : registry.swords.entities) {
+                    auto &hitbox_visualization = registry.hitboxVisualizations.get(sword_entity);
+                    if (registry.swords.get(sword_entity).has_collision) {
+                        for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                            registry.invisibles.remove(line_entity);
+                        }
+                    } else {
+                        for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                            if (!registry.invisibles.has(line_entity)) {
+                                registry.invisibles.emplace(line_entity);
                             }
                         }
                     }

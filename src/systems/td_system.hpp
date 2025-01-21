@@ -27,10 +27,13 @@ public:
     void cleanup_ecs();
 
     // Handle an enemy dying
-    static void handle_enemy_death(Entity enemy_entity, Enemy &enemy);
+    void handle_enemy_death(Entity enemy_entity, Enemy &enemy);
+
+    // Handle a consumable being destroyed
+    void handle_consumable_destruction(Entity consumable_entity);
 
     // Check for collisions
-    static void handle_collision(Entity first, Entity second);
+    void handle_collision(Entity first, Entity second);
 
     // Aim all towers at their current enemy
     void handle_aiming() const;
@@ -66,7 +69,7 @@ private:
     bool dragging; // shows if mouse is currently dragging something
     Entity dragged_entity;
     std::vector<Entity> towers;
-    std::vector<Entity> consumables;
+    std::set<Entity> consumables;
     std::vector<Entity> cards;
     std::set<Entity> enemies;
     Entity map;

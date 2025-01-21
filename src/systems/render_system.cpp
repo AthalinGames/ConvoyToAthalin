@@ -86,11 +86,11 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
                 //render_request.atlas_ids = {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)};
                 atlas_id = static_cast<unsigned int>(DIRECTION_SPRITE::DOWN);
             }
-            auto &poly_visualization = registry.hitboxVisualizations.get(entity);
-            poly_visualization.active_poly = atlas_id;
-            for (uint i = 0; i < poly_visualization.lines.size(); i++) {
-                if (i != poly_visualization.active_poly) {
-                    for (auto &line_entity : poly_visualization.lines[i]) {
+            auto &hitbox_visualization = registry.hitboxVisualizations.get(entity);
+            hitbox_visualization.active_poly = atlas_id;
+            for (uint i = 0; i < hitbox_visualization.lines.size(); i++) {
+                if (i != hitbox_visualization.active_poly) {
+                    for (auto &line_entity : hitbox_visualization.lines[i]) {
                         if (!registry.invisibles.has(line_entity)) {
                             registry.invisibles.emplace(line_entity);
                         }

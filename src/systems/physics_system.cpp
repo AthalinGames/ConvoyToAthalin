@@ -140,10 +140,10 @@ void PhysicsSystem::step(float elapsed_ms)
                 Transform tf;
                 tf.translate(motion.position);
                 tf.scale(motion.scale);
-                auto &poly_visualization = registry.hitboxVisualizations.get(enemy_container.entities[i]);
-                for (uint i = 0; i < poly_visualization.lines[poly_visualization.active_poly].size(); i++) {
-                    auto &stationary = registry.stationaries.get(poly_visualization.lines[poly_visualization.active_poly][i]);
-                    stationary.position = tf * poly_visualization.offsets[poly_visualization.active_poly][i];
+                auto &hitbox_visualization = registry.hitboxVisualizations.get(enemy_container.entities[i]);
+                for (uint i = 0; i < hitbox_visualization.lines[hitbox_visualization.active_poly].size(); i++) {
+                    auto &stationary = registry.stationaries.get(hitbox_visualization.lines[hitbox_visualization.active_poly][i]);
+                    stationary.position = tf * hitbox_visualization.offsets[hitbox_visualization.active_poly][i];
                 }
 
                 //printf("%f %f\n", motion.position[0], motion.position[0]);

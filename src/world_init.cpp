@@ -122,6 +122,80 @@ Entity createRandomItem(std::default_random_engine &rng) {
 	}
 }
 
+void createHitboxVisualization(RenderSystem *renderer, const Entity entity, const std::vector<std::vector<vec2>> polys) {
+    auto &visualization = registry.hitboxVisualizations.emplace(entity);
+    auto motion = registry.motions.get(entity);
+
+    for (const std::vector<vec2> &poly : polys) {
+        std::vector<Entity> lines;
+        std::vector<vec2> offsets;
+        std::vector<float> angles;
+
+        for (int i = 0; i < poly.size() - 1; ++i) {
+            vec2 vert_curr = poly[i];
+            vec2 vert_next = poly[i + 1];
+            vec2 middle = 0.5f * (vert_next + vert_curr);
+            vec2 dp = vert_curr - vert_next;
+            float angle = atan2(dp.y, dp.x) + M_PI_2;
+            const auto line_entity = Entity();
+            auto &stationary = registry.stationaries.emplace(line_entity);
+            stationary.angle = angle;
+            stationary.scale = vec2(TOWER_WIDTH / 4, motion.scale.y * distance(vert_curr, vert_next));
+
+            Transform tf;
+            tf.translate(motion.position);
+            tf.scale(motion.scale);
+            stationary.position = tf * middle;
+
+            registry.renderForeground.insert(line_entity, {
+                    {Stationary{}},
+                    {0},
+                    Z_BACKGROUND / 2,
+                    TEXTURE_ASSET_ID::HITBOX_LINE,
+                    EFFECT_ASSET_ID::TEXTURED,
+                    GEOMETRY_BUFFER_ID::SPRITE,
+            });
+            lines.push_back(line_entity);
+            offsets.push_back(middle);
+            angles.push_back(angle);
+            registry.invisibles.emplace(line_entity);
+        }
+
+        //TODO: if line between last and first vertex is done in loop, for some reason, mouse call gets triggered before start_button has been generated
+        vec2 vert_curr = poly.back();
+        vec2 vert_next = poly.front();
+        vec2 middle = 0.5f * (vert_next + vert_curr);
+        vec2 dp = vert_curr - vert_next;
+        float angle = atan2(dp.y, dp.x) + M_PI_2;
+        const auto line_entity = Entity();
+        auto &stationary = registry.stationaries.emplace(line_entity);
+        stationary.angle = angle;
+        stationary.scale = vec2(TOWER_WIDTH / 4, registry.motions.get(entity).scale.y * distance(vert_curr,
+                                                                                                 vert_next));// (TOWER_WIDTH/2, distance(vert_curr, vert_next));
+
+        Transform tf;
+        tf.translate(motion.position);
+        tf.scale(motion.scale);
+        stationary.position = tf * middle;
+
+        registry.renderForeground.insert(line_entity, {
+                {Stationary{}},
+                {0},
+                Z_BACKGROUND / 2,
+                TEXTURE_ASSET_ID::HITBOX_LINE,
+                EFFECT_ASSET_ID::TEXTURED,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+        lines.push_back(line_entity);
+        offsets.push_back(middle);
+        angles.push_back(angle);
+        registry.invisibles.emplace(line_entity);
+
+        visualization.lines.push_back(lines);
+        visualization.offsets.push_back(offsets);
+        visualization.angles.push_back(angles);
+    }
+}
 
 void createArcherFromCard(RenderSystem *renderer, const Entity card, Motion &motion) {
 	const auto bow = Entity();
@@ -194,14 +268,15 @@ void createKnightFromCard(RenderSystem *renderer, const Entity card, Motion &mot
 	sword_motion.velocity = vec2(0, 0);
 	sword_motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
 	printf("%f|%f\n", motion.position.x, motion.position.y);
-	registry.renderGameLayer.insert(sword, {
-		                                {Stationary{}},
-		                                {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
-		                                Z_BACKGROUND,
-		                                TEXTURE_ASSET_ID::SWORD,
-		                                EFFECT_ASSET_ID::TEXTURED_ATLAS,
-		                                GEOMETRY_BUFFER_ID::SPRITE,
-	                                });
+	auto sword_request = registry.renderGameLayer.insert(sword, {
+                                                                        {Stationary{}},
+                                                                        {static_cast<unsigned int>(DIRECTION_SPRITE::DOWN)},
+                                                                        Z_BACKGROUND,
+                                                                        TEXTURE_ASSET_ID::SWORD,
+                                                                        EFFECT_ASSET_ID::TEXTURED_ATLAS,
+                                                                        GEOMETRY_BUFFER_ID::SPRITE,
+                                                                    });
+    createHitboxVisualization(renderer, sword, {getCollisionMeshOfTexture(sword_request.used_texture)});
 }
 
 void createTowerFromCard(RenderSystem *renderer, const Entity card) {
@@ -240,7 +315,7 @@ void createBombFromCard(RenderSystem *renderer, const Entity card, Motion &motio
 	registry.bombTimers.emplace(card);
 }
 
-void createSpikesFromCard(RenderSystem *renderer, const Entity card, Motion& motion, std::vector<Entity> &placed_consumables) {
+void createSpikesFromCard(RenderSystem *renderer, const Entity card, Motion& motion, std::set<Entity> &placed_consumables) {
 
     motion.angle = 0;
     motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
@@ -258,6 +333,8 @@ void createSpikesFromCard(RenderSystem *renderer, const Entity card, Motion& mot
     registry.renderForeground.remove(card);
     registry.renderGameLayer.emplace(card, request);
 
+    createHitboxVisualization(renderer, card, {getCollisionMeshOfTexture(request.used_texture, request.atlas_ids[0])});
+
     //TODO: create new entities for rest of spikes
     const auto spike_middle_entity = Entity();
     auto &spike_middle_motion = registry.motions.emplace(spike_middle_entity);
@@ -269,8 +346,10 @@ void createSpikesFromCard(RenderSystem *renderer, const Entity card, Motion& mot
     request.atlas_ids = {static_cast<unsigned int>(SPIKES_SPRITE::SPIKE_MIDDLE)};
     registry.renderGameLayer.emplace(spike_middle_entity, request);
 
-    registry.consumables.emplace(spike_middle_entity);
-    placed_consumables.emplace_back(spike_middle_entity);
+    createHitboxVisualization(renderer, spike_middle_entity, {getCollisionMeshOfTexture(request.used_texture, request.atlas_ids[0])});
+
+    registry.consumables.emplace(spike_middle_entity).placed = true;
+    placed_consumables.emplace(spike_middle_entity);
     registry.spikes.emplace(spike_middle_entity);
 
     const auto spike_right_entity = Entity();
@@ -283,9 +362,11 @@ void createSpikesFromCard(RenderSystem *renderer, const Entity card, Motion& mot
     request.atlas_ids = {static_cast<unsigned int>(SPIKES_SPRITE::SPIKE_RIGHT)};
     registry.renderGameLayer.emplace(spike_right_entity, request);
 
-    registry.consumables.emplace(spike_right_entity);
-    placed_consumables.emplace_back(spike_right_entity);
+    registry.consumables.emplace(spike_right_entity).placed = true;
+    placed_consumables.emplace(spike_right_entity);
     registry.spikes.emplace(spike_right_entity);
+
+    createHitboxVisualization(renderer, spike_right_entity, {getCollisionMeshOfTexture(request.used_texture, request.atlas_ids[0])});
 }
 
 void createBarrierFromCard(RenderSystem *renderer, const Entity card, Motion &motion) {
@@ -300,9 +381,10 @@ void createBarrierFromCard(RenderSystem *renderer, const Entity card, Motion &mo
     request.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS;
     registry.renderForeground.remove(card);
     registry.renderGameLayer.emplace(card, request);
+    createHitboxVisualization(renderer, card, {getCollisionMeshOfTexture(request.used_texture)});
 }
 
-void createConsumableFromCard(RenderSystem *renderer, const Entity card, const Entity player_entity, std::vector<Entity> &placed_consumables) {
+void createConsumableFromCard(RenderSystem *renderer, const Entity card, const Entity player_entity, std::set<Entity> &placed_consumables) {
     //TODO: return created entities for case, that multiple were created or take consumable vector as input var
     assert(registry.cards.has(card));
     registry.cards.remove(card, true);
@@ -311,16 +393,17 @@ void createConsumableFromCard(RenderSystem *renderer, const Entity card, const E
     consumable_motion.position = card_pos.position;
     consumable_motion.velocity = vec2(0, 0);
     registry.stationaries.remove(card);
+    registry.consumables.get(card).placed = true;
 
     if (registry.bombs.has(card)) {
         createBombFromCard(renderer, card, consumable_motion);
-        placed_consumables.emplace_back(card);
+        placed_consumables.emplace(card);
     } else if (registry.spikes.has(card)) {
         createSpikesFromCard(renderer, card, consumable_motion, placed_consumables);
-        placed_consumables.emplace_back(card);
+        placed_consumables.emplace(card);
     } else if (registry.barriers.has(card)) {
         createBarrierFromCard(renderer, card, consumable_motion);
-        placed_consumables.emplace_back(card);
+        placed_consumables.emplace(card);
     } else if (registry.healthPotions.has(card)) {
         auto &player = registry.players.get(player_entity);
         player.updateHealth(min(player.getHealth() + registry.healthPotions.get(card).health, player.maxHealth));
@@ -360,7 +443,6 @@ void returnTowerToItem(const Entity tower) {
 	}
 }
 
-
 Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity, const vec2 dir) {
 	const auto entity = Entity();
 
@@ -385,62 +467,6 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity,
 	                                });
 
 	return entity;
-}
-
-void createHitboxVisualization(RenderSystem *renderer, const Entity entity, const std::vector<std::vector<vec2>> polys) {
-    auto &visualization = registry.hitboxVisualizations.emplace(entity);
-    for (const std::vector<vec2> &poly : polys) {
-        std::vector<Entity> lines;
-        std::vector<vec2> offsets;
-
-        for (int i = 0; i < poly.size()-1; ++i) {
-            vec2 vert_curr = poly[i];
-            vec2 vert_next = poly[i+1];
-            vec2 middle = 0.5f * (vert_next + vert_curr);
-            vec2 dp = vert_curr - vert_next;
-            float angle = atan2(dp.y, dp.x) + M_PI_2;
-            const auto line_entity = Entity();
-            auto &stationary = registry.stationaries.emplace(line_entity);
-            stationary.angle = angle;
-            stationary.scale = vec2(TOWER_WIDTH/4, registry.motions.get(entity).scale.y * distance(vert_curr, vert_next));// (TOWER_WIDTH/2, distance(vert_curr, vert_next));
-            registry.renderForeground.insert(line_entity, {
-                                                {Stationary{}},
-                                                {0},
-                                                Z_BACKGROUND / 2,
-                                                TEXTURE_ASSET_ID::HITBOX_LINE,
-                                                EFFECT_ASSET_ID::TEXTURED,
-                                                GEOMETRY_BUFFER_ID::SPRITE,
-                                            });
-            lines.push_back(line_entity);
-            offsets.push_back(middle);
-            registry.invisibles.emplace(line_entity);
-        }
-
-        //TODO: if line between last and first vertex is done in loop, for some reason, mouse call gets triggered before start_button has been generated
-        vec2 vert_curr = poly.back();
-        vec2 vert_next = poly.front();
-        vec2 middle = 0.5f * (vert_next + vert_curr);
-        vec2 dp = vert_curr - vert_next;
-        float angle = atan2(dp.y, dp.x) + M_PI_2;
-        const auto line_entity = Entity();
-        auto &stationary = registry.stationaries.emplace(line_entity);
-        stationary.angle = angle;
-        stationary.scale = vec2(TOWER_WIDTH/4, registry.motions.get(entity).scale.y * distance(vert_curr, vert_next));// (TOWER_WIDTH/2, distance(vert_curr, vert_next));
-        registry.renderForeground.insert(line_entity, {
-                {Stationary{}},
-                {0},
-                Z_BACKGROUND / 2,
-                TEXTURE_ASSET_ID::HITBOX_LINE,
-                EFFECT_ASSET_ID::TEXTURED,
-                GEOMETRY_BUFFER_ID::SPRITE,
-        });
-        lines.push_back(line_entity);
-        offsets.push_back(middle);
-        registry.invisibles.emplace(line_entity);
-
-        visualization.lines.push_back(lines);
-        visualization.offsets.push_back(offsets);
-    }
 }
 
 Entity createEnemy(RenderSystem *renderer, const vec2 pos, const EnemyType enemyType) {
