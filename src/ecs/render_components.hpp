@@ -46,6 +46,10 @@ struct HitboxVisualization {
     uint active_poly = 0;
 };
 
+struct PathVisualization {
+    std::vector<Entity> tiles = {};
+};
+
 
 /**
  * The following enumerators represent global identifiers refering to graphic
@@ -166,6 +170,7 @@ const std::set texture_atlases = {
 	TEXTURE_ASSET_ID::TD_MAP_ATLAS,
 	TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS,
 	TEXTURE_ASSET_ID::BUTTONS,
+    TEXTURE_ASSET_ID::PLACEMENT_MARKER,
 };
 
 enum class FontType {
@@ -278,6 +283,12 @@ enum class SLIME_WALK_FRAME {
 enum class BUTTONS {
 	START_UP = 0,
 	START_DOWN,
+};
+
+enum class PLACEMENT_MARKER {
+    PLACEMENT = 0,
+    PATH_SQUARE,
+    PATH_CIRCLE,
 };
 
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
@@ -502,6 +513,19 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
             }
 			break;
 		}
+        case TEXTURE_ASSET_ID::PLACEMENT_MARKER: {
+            constexpr unsigned int cols = 3, rows = 1, maxCount = cols * rows;
+            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
+            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
+            for (unsigned int i = 0; i < maxCount; i++) {
+                const float x_start = (i % cols) * tex_width;
+                const float y_start = (i / cols) * tex_height;
+                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
+                texDef.tex_pos = vec2(x_start, y_start);
+                texDef.tex_size = vec2(tex_width, tex_height);
+            }
+            break;
+        }
 		default:
 			assert(false && "Texture atlas has no textures defined");
 	}

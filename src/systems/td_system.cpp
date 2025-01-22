@@ -485,6 +485,7 @@ Entity TDSystem::generate_map(const int difficulty) const {
     const auto generated_path = generateMapCheckpoints(rng, difficulty_to_path_length.at(difficulty));
     const Entity new_map = createMap(renderer, generated_path, rng, uniform_dist);
     //TODO: create lines to make blocked path visible
+    //createPathVisualization(renderer, registry.maps.get(new_map).checkpoints);
     return  new_map;
 }
 
@@ -994,7 +995,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
 
                 // block placement on other towers
                 bool place_occupied = false;
-                constexpr float tower_blocked_radius = TOWER_HEIGHT;
+                constexpr float tower_blocked_radius = TILE_HEIGHT;
                 //abs(distance(vec2(0, 0), vec2(TOWER_WIDTH, TOWER_HEIGHT)));
                 for (std::size_t tower_index = 0; tower_index < registry.towers.size(); ++tower_index) {
                     if (!registry.towers.components[tower_index].placed) {

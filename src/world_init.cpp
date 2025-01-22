@@ -920,6 +920,57 @@ Entity createPlacementMarker(RenderSystem *renderer) {
 	return entity;
 }
 
+/*
+void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoints) {
+    for (int i = 0; i < checkpoints.size() - 1; ++i) {
+        vec2 curr = checkpoints[i];
+        vec2 next = checkpoints[i+1];
+        vec2 diff = next - curr;
+        vec2 step = vec2((diff.x == 0.f ? 0 : TILE_WIDTH), diff.y == 0.f ? 0 : TILE_HEIGHT);
+
+        Entity corner_tile_entity = Entity();
+        auto &stationary_corner = registry.stationaries.emplace(corner_tile_entity);
+        stationary_corner.position = curr;
+        stationary_corner.scale = vec2(TILE_WIDTH, TILE_HEIGHT);
+        registry.renderForeground.insert(corner_tile_entity, {
+                {Stationary{}},
+                {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
+                Z_FOREGROUND,
+                TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+                EFFECT_ASSET_ID::TEXTURED,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+        for (int j = 1; j < (diff.x == 0 ? diff.y/TILE_HEIGHT : diff.x/TILE_WIDTH); ++j) {
+            Entity new_tile_entity = Entity();
+            auto &stationary = registry.stationaries.emplace(new_tile_entity);
+            stationary.position = curr + static_cast<float>(j) * step;
+            stationary.scale = vec2(TILE_WIDTH, TILE_HEIGHT);
+            registry.renderForeground.insert(new_tile_entity, {
+                                            {Stationary{}},
+                                            {static_cast<uint>(PLACEMENT_MARKER::PATH_SQUARE)},
+                                            Z_FOREGROUND,
+                                            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+                                            EFFECT_ASSET_ID::TEXTURED,
+                                            GEOMETRY_BUFFER_ID::SPRITE,
+                                        });
+        }
+    }
+
+    Entity corner_tile_entity = Entity();
+    auto &stationary_corner = registry.stationaries.emplace(corner_tile_entity);
+    stationary_corner.position = checkpoints.back();
+    stationary_corner.scale = vec2(TILE_WIDTH, TILE_HEIGHT);
+    registry.renderForeground.insert(corner_tile_entity, {
+            {Stationary{}},
+            {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
+            Z_FOREGROUND,
+            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+            EFFECT_ASSET_ID::TEXTURED,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+}
+ */
+
 Entity createGameOver(RenderSystem *renderer) {
 	const auto entity = Entity();
 
