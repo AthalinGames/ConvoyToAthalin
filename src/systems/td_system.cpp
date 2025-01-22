@@ -26,6 +26,7 @@ void TDSystem::cleanup_ecs() {
             }
         }
     }
+    registry.hitboxVisualizations.clear();
     for (const auto card: cards) {
         if (registry.cards.has(card)){//TODO: if you stop dragging just when combat ends, Entity can lose card component before being erased from cards vector
             returnCardToItem(card);
@@ -424,10 +425,12 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
                     const auto spawned_enemy2 = createEnemy(renderer, {0, 100}, EnemyType::SLIME);
                     enemies.emplace(spawned_enemy1);
                     Enemy &spawn1 = registry.enemies.get(spawned_enemy1);
+                    spawn1.addHealth(100 + static_cast<int>(std::floor(difficulty/2) * 50));
                     spawn1.speed = 100.f;
                     spawns_enemies.push_back(spawned_enemy1);
                     enemies.emplace(spawned_enemy2);
                     Enemy &spawn2 = registry.enemies.get(spawned_enemy2);
+                    spawn2.addHealth(100 + static_cast<int>(std::floor(difficulty/2) * 50));
                     spawn2.speed = 120.f;
                     spawns_enemies.push_back(spawned_enemy2);
                 }

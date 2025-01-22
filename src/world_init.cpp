@@ -124,7 +124,7 @@ Entity createRandomItem(std::default_random_engine &rng) {
 
 void createHitboxVisualization(RenderSystem *renderer, const Entity entity, const std::vector<std::vector<vec2>> polys) {
     auto &visualization = registry.hitboxVisualizations.emplace(entity);
-    auto motion = registry.motions.get(entity);
+    auto &motion = registry.motions.get(entity);
 
     Transform tf;
     tf.translate(motion.position);
@@ -146,8 +146,14 @@ void createHitboxVisualization(RenderSystem *renderer, const Entity entity, cons
             float angle = atan2(dp.y, dp.x) + M_PI_2;
             const auto line_entity = Entity();
             auto &stationary = registry.stationaries.emplace(line_entity);
-            stationary.angle = angle;
-            stationary.scale = vec2(TOWER_WIDTH / 4, motion.scale.y * distance(vert_curr, vert_next));
+
+            //stationary.angle = angle;
+            stationary.angle = motion.angle + angle;
+            while (stationary.angle > M_PI) {
+                stationary.angle -= 2 * M_PI;
+            }
+
+            stationary.scale = vec2(TOWER_WIDTH / 8, motion.scale.y * distance(vert_curr, vert_next));
 
             stationary.position = tf * middle;
 
@@ -173,13 +179,14 @@ void createHitboxVisualization(RenderSystem *renderer, const Entity entity, cons
         float angle = atan2(dp.y, dp.x) + M_PI_2;
         const auto line_entity = Entity();
         auto &stationary = registry.stationaries.emplace(line_entity);
-        stationary.angle = angle;
-        stationary.scale = vec2(TOWER_WIDTH / 4, registry.motions.get(entity).scale.y * distance(vert_curr,
-                                                                                                 vert_next));// (TOWER_WIDTH/2, distance(vert_curr, vert_next));
 
-        Transform tf;
-        tf.translate(motion.position);
-        tf.scale(motion.scale);
+        //stationary.angle = angle;
+        stationary.angle = motion.angle + angle;
+        while (stationary.angle > M_PI) {
+            stationary.angle -= 2 * M_PI;
+        }
+
+        stationary.scale = vec2(TOWER_WIDTH / 8, registry.motions.get(entity).scale.y * distance(vert_curr, vert_next));// (TOWER_WIDTH/2, distance(vert_curr, vert_next));
         stationary.position = tf * middle;
 
         registry.renderForeground.insert(line_entity, {

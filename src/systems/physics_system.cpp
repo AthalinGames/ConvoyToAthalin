@@ -122,14 +122,32 @@ void PhysicsSystem::step(float elapsed_ms)
 		const float step_seconds = elapsed_ms / 1000.f;
 		motion.position += step_seconds * motion.velocity;
         if (registry.arrows.has(motion_container.entities[i])) {
-            Transform tf;
-            tf.translate(motion.position);
-            tf.rotate(motion.angle);
-            auto &hitbox_visualization = registry.hitboxVisualizations.get(motion_container.entities[i]);
-            for (uint j = 0; j < hitbox_visualization.lines[hitbox_visualization.active_poly].size(); j++) {
-                auto &stationary = registry.stationaries.get(hitbox_visualization.lines[hitbox_visualization.active_poly][j]);
-                stationary.position = tf * hitbox_visualization.offsets[hitbox_visualization.active_poly][j];
+            //Transform tf;
+            //tf.translate(motion.position);
+            //tf.rotate(motion.angle);
+            //auto &hitbox_visualization = registry.hitboxVisualizations.get(motion_container.entities[i]);
+            //for (uint j = 0; j < hitbox_visualization.lines[hitbox_visualization.active_poly].size(); j++) {
+            //    auto &stationary = registry.stationaries.get(hitbox_visualization.lines[hitbox_visualization.active_poly][j]);
+            //    stationary.position = tf * hitbox_visualization.offsets[hitbox_visualization.active_poly][j];
+            //}
+
+            if (registry.hitboxVisualizations.has(motion_container.entities[i])) {
+                Transform tf;
+                tf.translate(motion.position);
+                //TODO: for some reason, rotate, scale and stationary.angle have to be set here, because otherwise the hitbox is wrong. I cant find what goes wrong with the original hitbox.
+                tf.rotate(motion.angle);
+                tf.scale(motion.scale);
+                auto &hitbox_visualization = registry.hitboxVisualizations.get(motion_container.entities[i]);
+                for (uint i = 0; i < hitbox_visualization.lines[hitbox_visualization.active_poly].size(); i++) {
+                    auto &stationary = registry.stationaries.get(hitbox_visualization.lines[hitbox_visualization.active_poly][i]);
+                    stationary.position = tf * hitbox_visualization.offsets[hitbox_visualization.active_poly][i];
+                    stationary.angle = motion.angle + hitbox_visualization.angles[hitbox_visualization.active_poly][i];
+                    while (stationary.angle > M_PI) {
+                        stationary.angle -= 2 * M_PI;
+                    }
+                }
             }
+
         }
 	}
 

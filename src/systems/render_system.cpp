@@ -113,7 +113,7 @@ void RenderSystem::applyTextureRotation(RenderRequest& render_request, //TODO ma
                 atlas_id += static_cast<unsigned int>(SLIME_WALK_FRAME::FRAME0);
             }
 
-            printf("slime atlas id: %d, walk_timer: %f\n", atlas_id, walk_timer.time);
+            //printf("slime atlas id: %d, walk_timer: %f\n", atlas_id, walk_timer.time);
             render_request.atlas_ids = {static_cast<unsigned int>(atlas_id)};
         }
     }
