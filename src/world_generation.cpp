@@ -58,6 +58,12 @@ std::pair<overview_paths, overview_grid_visited> generate_overview_paths(std::de
     return {overview_paths, visited};
 }
 
+constexpr vec2 circle_section_lerp(const vec2 origin, const float radius, const float start_angle, const float end_angle, const float percentage) {
+	const float angle = start_angle * percentage + end_angle * (1 - percentage);
+	const vec2 circle_pos = {radius * cos(angle), radius * sin(angle)};
+	return circle_pos + origin;
+}
+
 overview_grid_entities create_fight_locations(RenderSystem *renderer, std::default_random_engine &rng, const overview_grid_visited &visited) {
     std::uniform_real_distribution<float> dist(0, 1);
     overview_grid_entities locations{};
@@ -67,13 +73,18 @@ overview_grid_entities create_fight_locations(RenderSystem *renderer, std::defau
             if (!visited[height][width]) {
                 continue;
             }
-            constexpr float grid_offset_y = (1.0f / grid_width) / 2;
-            constexpr float grid_offset_x = (1.0f / grid_height) / 2;
-            const auto y_percentage = static_cast<float>(width) / grid_width + grid_offset_y;
-            const auto x_percentage = static_cast<float>(height) / grid_height + grid_offset_x;
-            const auto lerp_x_1 = overview_locations[1] * x_percentage + overview_locations[0] * (1 - x_percentage);
-            const auto lerp_x_2 = overview_locations[3] * x_percentage + overview_locations[2] * (1 - x_percentage);
-            auto location_pos = lerp_x_1 * y_percentage + lerp_x_2 * (1 - y_percentage);
+            constexpr float grid_offset_width = (1.0f / grid_width) / 2;
+            constexpr float grid_offset_height = (1.0f / grid_height) / 2;
+            const auto width_percentage = static_cast<float>(width) / grid_width + grid_offset_width;
+            const auto height_percentage = static_cast<float>(height) / grid_height + grid_offset_height;
+        	constexpr vec2 start_pos = {START_ICON_LOC_X, START_ICON_LOC_Y};
+        	constexpr vec2 goal_pos = {GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y};
+        	const vec2 selected_pos = height_percentage < 0.5f ? start_pos : goal_pos;
+        	const float dist_percentage = height_percentage < 0.5f ? height_percentage : 1 - height_percentage;
+        	const float start_angle = height_percentage < 0.5f ? -M_PI_2 * (1 - dist_percentage) : M_PI;
+        	const float end_angle = height_percentage < 0.5f ? 0 : M_PI_2 * (1 + dist_percentage);
+        	const float radius = length(goal_pos - start_pos) * dist_percentage;
+        	auto location_pos = circle_section_lerp(selected_pos, radius + 0.05 * window_height_px, start_angle, end_angle, width_percentage);
             location_pos += (vec2(dist(rng), dist(rng)) - 0.5f) * 30.f;
             locations[height][width] = createFightLocation(renderer, location_pos);
         }
