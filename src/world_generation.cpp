@@ -58,7 +58,7 @@ std::pair<overview_paths, overview_grid_visited> generate_overview_paths(std::de
     return {overview_paths, visited};
 }
 
-constexpr vec2 circle_section_lerp(const vec2 origin, const float radius, const float start_angle, const float end_angle, const float percentage) {
+vec2 circle_section_lerp(const vec2 origin, const float radius, const float start_angle, const float end_angle, const float percentage) {
 	const float angle = start_angle * percentage + end_angle * (1 - percentage);
 	const vec2 circle_pos = {radius * cos(angle), radius * sin(angle)};
 	return circle_pos + origin;
