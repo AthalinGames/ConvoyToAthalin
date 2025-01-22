@@ -485,7 +485,7 @@ Entity TDSystem::generate_map(const int difficulty) const {
     const auto generated_path = generateMapCheckpoints(rng, difficulty_to_path_length.at(difficulty));
     const Entity new_map = createMap(renderer, generated_path, rng, uniform_dist);
     //TODO: create lines to make blocked path visible
-    //createPathVisualization(renderer, registry.maps.get(new_map).checkpoints);
+    createPathVisualization(renderer, registry.maps.get(new_map).checkpoints);
     return  new_map;
 }
 

@@ -908,10 +908,10 @@ Entity createPlacementMarker(RenderSystem *renderer) {
 
 	registry.renderForeground.insert(entity, {
 		                                 {Stationary{}},
-		                                 {0},
+                                         {static_cast<uint>(PLACEMENT_MARKER::PLACEMENT)},
 		                                 Z_FOREGROUND,
 		                                 TEXTURE_ASSET_ID::PLACEMENT_MARKER,
-		                                 EFFECT_ASSET_ID::TEXTURED,
+		                                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		                                 GEOMETRY_BUFFER_ID::SPRITE,
 	                                 });
 
@@ -920,7 +920,6 @@ Entity createPlacementMarker(RenderSystem *renderer) {
 	return entity;
 }
 
-/*
 void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoints) {
     for (int i = 0; i < checkpoints.size() - 1; ++i) {
         vec2 curr = checkpoints[i];
@@ -937,7 +936,7 @@ void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoin
                 {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
                 Z_FOREGROUND,
                 TEXTURE_ASSET_ID::PLACEMENT_MARKER,
-                EFFECT_ASSET_ID::TEXTURED,
+                EFFECT_ASSET_ID::TEXTURED_ATLAS,
                 GEOMETRY_BUFFER_ID::SPRITE,
         });
         for (int j = 1; j < (diff.x == 0 ? diff.y/TILE_HEIGHT : diff.x/TILE_WIDTH); ++j) {
@@ -950,7 +949,7 @@ void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoin
                                             {static_cast<uint>(PLACEMENT_MARKER::PATH_SQUARE)},
                                             Z_FOREGROUND,
                                             TEXTURE_ASSET_ID::PLACEMENT_MARKER,
-                                            EFFECT_ASSET_ID::TEXTURED,
+                                            EFFECT_ASSET_ID::TEXTURED_ATLAS,
                                             GEOMETRY_BUFFER_ID::SPRITE,
                                         });
         }
@@ -965,11 +964,11 @@ void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoin
             {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
             Z_FOREGROUND,
             TEXTURE_ASSET_ID::PLACEMENT_MARKER,
-            EFFECT_ASSET_ID::TEXTURED,
+            EFFECT_ASSET_ID::TEXTURED_ATLAS,
             GEOMETRY_BUFFER_ID::SPRITE,
     });
 }
- */
+
 
 Entity createGameOver(RenderSystem *renderer) {
 	const auto entity = Entity();

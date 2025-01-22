@@ -64,7 +64,7 @@ Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints,
 // marker to place cards on combat map
 Entity createPlacementMarker(RenderSystem *renderer);
 // shows where placement on path is blocked
-//void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoints);
+void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoints);
 // the overview map
 Entity createOverviewMap(RenderSystem* renderer);
 // location on the overview map
