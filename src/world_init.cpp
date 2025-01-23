@@ -819,19 +819,19 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2> &checkpoints,
 	map_texture.position = vec2(0, 0);
 
 	Map &map_attributes = registry.maps.emplace(entity);
-	const std::vector<vec2> map_coordinates = grid_to_coordinates(checkpoints);
-	map_attributes.checkpoints = map_coordinates;
+	std::vector<vec2> map_coordinates = grid_to_coordinates(checkpoints);
 
     // delete unnecessary checkpoints on straights
-    for (int i = 0; i < map_attributes.checkpoints.size()-2; ++i) {
-        auto first = map_attributes.checkpoints[i];
-        auto second = map_attributes.checkpoints[i + 1];
-        auto third = map_attributes.checkpoints[i + 2];
+    for (int i = 0; i < map_coordinates.size()-2; ++i) {
+        auto first = map_coordinates[i];
+        auto second = map_coordinates[i + 1];
+        auto third = map_coordinates[i + 2];
         if ((first.x == second.x && second.x == third.x) || (first.y == second.y && second.y == third.y)) {
-            map_attributes.checkpoints.erase(map_attributes.checkpoints.begin() + i + 1);
+            map_coordinates.erase(map_coordinates.begin() + i + 1);
             i--;
         }
     }
+    map_attributes.checkpoints = map_coordinates;
 
 	//calculate path length
 	float path_length = 0;
