@@ -81,8 +81,8 @@ overview_grid_entities create_fight_locations(RenderSystem *renderer, std::defau
         	constexpr vec2 goal_pos = {GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y};
         	const vec2 selected_pos = height_percentage < 0.5f ? start_pos : goal_pos;
         	const float dist_percentage = height_percentage < 0.5f ? height_percentage : 1 - height_percentage;
-        	const float start_angle = height_percentage < 0.5f ? -M_PI_2 * (1 - dist_percentage) : M_PI;
-        	const float end_angle = height_percentage < 0.5f ? 0 : M_PI_2 * (1 + dist_percentage);
+        	const float start_angle = height_percentage < 0.5f ? -(M_PI_2 + M_PI_2/4) * (1 - dist_percentage) : M_PI + M_PI_2 * (0.5f - dist_percentage)/3;
+        	const float end_angle = height_percentage < 0.5f ? M_PI_2 * (0.5f - dist_percentage)/3 : M_PI_2 * (0.8 + dist_percentage);
         	const float radius = length(goal_pos - start_pos) * dist_percentage;
         	auto location_pos = circle_section_lerp(selected_pos, radius + 0.05 * window_height_px, start_angle, end_angle, width_percentage);
             location_pos += (vec2(dist(rng), dist(rng)) - 0.5f) * 30.f;
