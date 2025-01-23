@@ -47,7 +47,6 @@ struct HitboxVisualization {
 };
 
 struct PathVisualization {
-    std::vector<Entity> tiles = {};
 };
 
 

@@ -791,6 +791,17 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2> &checkpoints,
 	const std::vector<vec2> map_coordinates = grid_to_coordinates(checkpoints);
 	map_attributes.checkpoints = map_coordinates;
 
+    // delete unnecessary checkpoints on straights
+    for (int i = 0; i < map_attributes.checkpoints.size()-2; ++i) {
+        auto first = map_attributes.checkpoints[i];
+        auto second = map_attributes.checkpoints[i + 1];
+        auto third = map_attributes.checkpoints[i + 2];
+        if ((first.x == second.x && second.x == third.x) || (first.y == second.y && second.y == third.y)) {
+            map_attributes.checkpoints.erase(map_attributes.checkpoints.begin() + i + 1);
+            i--;
+        }
+    }
+
 	//calculate path length
 	float path_length = 0;
 	if (map_coordinates.size() > 1) {
@@ -939,6 +950,8 @@ void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoin
                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
                 GEOMETRY_BUFFER_ID::SPRITE,
         });
+        registry.invisibles.emplace(corner_tile_entity);
+        registry.pathVisualizations.emplace(corner_tile_entity);
         int steps_num = floor(diff.x == 0 ? diff.y/TILE_HEIGHT : diff.x/TILE_WIDTH);
         for (int j = steps_num / abs(steps_num); abs(j) < abs((diff.x == 0 ? diff.y/TILE_HEIGHT : diff.x/TILE_WIDTH)); j+=steps_num / abs(steps_num)) {
             Entity new_tile_entity = Entity();
@@ -953,6 +966,8 @@ void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoin
                                             EFFECT_ASSET_ID::TEXTURED_ATLAS,
                                             GEOMETRY_BUFFER_ID::SPRITE,
                                         });
+            registry.invisibles.emplace(new_tile_entity);
+            registry.pathVisualizations.emplace(new_tile_entity);
         }
     }
 
@@ -968,6 +983,8 @@ void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoin
             EFFECT_ASSET_ID::TEXTURED_ATLAS,
             GEOMETRY_BUFFER_ID::SPRITE,
     });
+    registry.invisibles.emplace(corner_tile_entity);
+    registry.pathVisualizations.emplace(corner_tile_entity);
 }
 
 

@@ -27,6 +27,9 @@ void TDSystem::cleanup_ecs() {
         }
     }
     registry.hitboxVisualizations.clear();
+    for (const auto visualization : registry.pathVisualizations.entities) {
+        registry.pathVisualizations.remove(visualization);
+    }
     for (const auto card: cards) {
         if (registry.cards.has(card)){//TODO: if you stop dragging just when combat ends, Entity can lose card component before being erased from cards vector
             returnCardToItem(card);
@@ -484,7 +487,6 @@ Entity TDSystem::generate_map(const int difficulty) const {
 
     const auto generated_path = generateMapCheckpoints(rng, difficulty_to_path_length.at(difficulty));
     const Entity new_map = createMap(renderer, generated_path, rng, uniform_dist);
-    //TODO: create lines to make blocked path visible
     createPathVisualization(renderer, registry.maps.get(new_map).checkpoints);
     return  new_map;
 }
@@ -817,6 +819,11 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
                         }
                     }
                 }
+                for (auto tile_entity : registry.pathVisualizations.entities) {
+                    if (!registry.invisibles.has(tile_entity)) {
+                        registry.invisibles.emplace(tile_entity);
+                    }
+                }
             } else { // GLFW_PRESS and on windows also GLFW_REPEAT
                 for (auto &enemy_entity : enemies) {
                     if (registry.enemies.get(enemy_entity).spawned) {
@@ -856,6 +863,9 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
                     for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
                         registry.invisibles.remove(line_entity);
                     }
+                }
+                for (auto tile_entity : registry.pathVisualizations.entities) {
+                    registry.invisibles.remove(tile_entity);
                 }
             }
             break;
