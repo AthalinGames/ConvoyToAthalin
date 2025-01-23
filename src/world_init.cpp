@@ -939,7 +939,8 @@ void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoin
                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
                 GEOMETRY_BUFFER_ID::SPRITE,
         });
-        for (int j = 1; j < (diff.x == 0 ? diff.y/TILE_HEIGHT : diff.x/TILE_WIDTH); ++j) {
+        int steps_num = floor(diff.x == 0 ? diff.y/TILE_HEIGHT : diff.x/TILE_WIDTH);
+        for (int j = steps_num / abs(steps_num); abs(j) < abs((diff.x == 0 ? diff.y/TILE_HEIGHT : diff.x/TILE_WIDTH)); j+=steps_num / abs(steps_num)) {
             Entity new_tile_entity = Entity();
             auto &stationary = registry.stationaries.emplace(new_tile_entity);
             stationary.position = curr + static_cast<float>(j) * step;
