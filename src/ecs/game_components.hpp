@@ -270,10 +270,17 @@ struct Map
 	}
 };
 
+enum class LocationType {
+	FIGHT = 0,
+	GARRISON,
+	MERCHANT,
+};
+
 struct OverviewMapLocation {
 	std::vector<Entity> next_locations{};
 	std::vector<Entity> previous_locations{};
 	Entity overview_selection;
+	LocationType type;
 	bool selectable = false;
 	bool active = false;
 };

@@ -978,6 +978,7 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 	auto &properties = registry.overviewMapLocations.emplace(entity);
 	properties.active = true;
 	properties.overview_selection = createOverviewSelection(renderer, pos);
+	properties.type = LocationType::FIGHT;
 
 	registry.renderBackground.insert(entity, {
 		                                 {Stationary{}},
@@ -990,6 +991,62 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 
 	return entity;
 }
+
+Entity createGarrisonLocation(RenderSystem *renderer, const vec2 pos) {
+	const auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary &garrison_location_pos = registry.stationaries.emplace(entity);
+	garrison_location_pos.position = pos;
+	garrison_location_pos.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
+
+	auto &properties = registry.overviewMapLocations.emplace(entity);
+	properties.active = true;
+	properties.overview_selection = createOverviewSelection(renderer, pos);
+	properties.type = LocationType::GARRISON;
+
+	registry.renderBackground.insert(entity, {
+		{Stationary{}},
+		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::GARRISON)},
+		Z_BACKGROUND / 2,
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+Entity createShopLocation(RenderSystem *renderer, const vec2 pos) {
+	const auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary &garrison_location_pos = registry.stationaries.emplace(entity);
+	garrison_location_pos.position = pos;
+	garrison_location_pos.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
+
+	auto &properties = registry.overviewMapLocations.emplace(entity);
+	properties.active = true;
+	properties.overview_selection = createOverviewSelection(renderer, pos);
+	properties.type = LocationType::MERCHANT;
+
+	registry.renderBackground.insert(entity, {
+		{Stationary{}},
+		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::MERCHANT)},
+		Z_BACKGROUND / 2,
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+
 
 Entity createStartIcon(RenderSystem *renderer) {
 	const auto entity = Entity();

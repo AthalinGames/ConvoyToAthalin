@@ -67,6 +67,8 @@ Entity createPlacementMarker(RenderSystem *renderer);
 Entity createOverviewMap(RenderSystem* renderer);
 // location on the overview map
 Entity createFightLocation(RenderSystem* renderer, vec2 pos);
+Entity createGarrisonLocation(RenderSystem* renderer, vec2 pos);
+Entity createShopLocation(RenderSystem* renderer, vec2 pos);
 // line between locations on the overview map
 Entity createOverviewLine(RenderSystem* renderer, vec2 firstPos, vec2 secondPos);
 // a red line for debugging purposes

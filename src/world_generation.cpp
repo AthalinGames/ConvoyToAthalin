@@ -66,6 +66,8 @@ vec2 circle_section_lerp(const vec2 origin, const float radius, const float star
 
 overview_grid_entities create_fight_locations(RenderSystem *renderer, std::default_random_engine &rng, const overview_grid_visited &visited) {
     std::uniform_real_distribution<float> dist(0, 1);
+	std::uniform_int_distribution<uint> location_dist(0, 1);
+	std::uniform_int_distribution<uint> shop_type(0, 1);
     overview_grid_entities locations{};
 
     for (uint height = 0; height < grid_height; ++height) {
@@ -86,7 +88,15 @@ overview_grid_entities create_fight_locations(RenderSystem *renderer, std::defau
         	const float radius = length(goal_pos - start_pos) * dist_percentage;
         	auto location_pos = circle_section_lerp(selected_pos, radius + 0.05 * window_height_px, start_angle, end_angle, width_percentage);
             location_pos += (vec2(dist(rng), dist(rng)) - 0.5f) * 30.f;
-            locations[height][width] = createFightLocation(renderer, location_pos);
+        	if ((height == 3 || height == 6) && location_dist(rng) == 0) {
+        		if (shop_type(rng) == 0) {
+        			locations[height][width] = createGarrisonLocation(renderer, location_pos);
+        		} else {
+        			locations[height][width] = createShopLocation(renderer, location_pos);
+        		}
+        	} else {
+        		locations[height][width] = createFightLocation(renderer, location_pos);
+        	}
         }
     }
 
