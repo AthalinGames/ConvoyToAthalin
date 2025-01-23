@@ -19,7 +19,7 @@ class Player {
     int won_battles = 0;
 	std::vector<Entity> status_bar_entities;
 	std::function<void()> status_bar_cleanup_func = []{};
-    Entity placement_marker;
+    std::vector<Entity> placement_marker;
 
 	std::function<void(int new_hp, int old_hp)> health_update_callback = [](int ...){};
 	std::function<void(int new_food, int old_food)> food_update_callback = [](int ...){};

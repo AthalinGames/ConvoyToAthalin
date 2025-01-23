@@ -306,8 +306,11 @@ bool TDSystem::step(const float elapsed_ms) {
                 dragging = false;
                 registry.cards.get(dragged_entity).dragged = false;
                 registry.invisibles.remove(dragged_entity);
-                if (!registry.invisibles.has(placement_marker)) {
-                    registry.invisibles.emplace(placement_marker);
+                if (!registry.invisibles.has(placement_marker[0])) {
+                    registry.invisibles.emplace(placement_marker[0]);
+                }
+                if (!registry.invisibles.has(placement_marker[1])) {
+                    registry.invisibles.emplace(placement_marker[1]);
                 }
                 realignCards();
             }
@@ -911,7 +914,8 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
         if (dragging) {
             if (registry.cards.has(dragged_entity)) {
                 registry.stationaries.get(dragged_entity).position = pos;
-                registry.stationaries.get(placement_marker).position = pos;
+                registry.stationaries.get(placement_marker[0]).position = pos;
+                registry.stationaries.get(placement_marker[1]).position = pos;
                 //registry.stationaries.get(dragged_entity).scale = vec2(0.5 * CARD_WIDTH, 0.5 * CARD_HEIGHT);
             }
         } else if (pos[1] > (CARD_AXIS_HEIGHT - CARD_HEIGHT / 2) && pos[1] < (CARD_AXIS_HEIGHT + CARD_HEIGHT / 2) &&
@@ -992,8 +996,11 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                 dragging = false;
                 registry.cards.get(dragged_entity).dragged = false;
                 registry.invisibles.remove(dragged_entity);
-                if (!registry.invisibles.has(placement_marker)) {
-                    registry.invisibles.emplace(placement_marker);
+                if (!registry.invisibles.has(placement_marker[0])) {
+                    registry.invisibles.emplace(placement_marker[0]);
+                }
+                if (!registry.invisibles.has(placement_marker[1])) {
+                    registry.invisibles.emplace(placement_marker[1]);
                 }
                 realignCards();
             }
@@ -1010,8 +1017,11 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                 const auto &mapProperties = maps.get(map);
                 vec2 card_pos = registry.stationaries.get(dragged_entity).position;
                 registry.invisibles.remove(dragged_entity);
-                if (!registry.invisibles.has(placement_marker)) {
-                    registry.invisibles.emplace(placement_marker);
+                if (!registry.invisibles.has(placement_marker[0])) {
+                    registry.invisibles.emplace(placement_marker[0]);
+                }
+                if (!registry.invisibles.has(placement_marker[1])) {
+                    registry.invisibles.emplace(placement_marker[1]);
                 }
 
                 // block placement on other towers
@@ -1030,7 +1040,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                 }
 
                 // block placement on enemy path
-                float path_blocked_radius = TOWER_WIDTH / 1.5f;//window_height_px * 0.05;
+                float path_blocked_radius = TILE_WIDTH / 2 + TOWER_WIDTH / 2;//window_height_px * 0.05;
                 if (abs(distance(mapProperties.checkpoints[0], card_pos)) < path_blocked_radius) {
                     place_occupied = true;
                 }
@@ -1112,7 +1122,9 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         printf("z:%f\n", registry.renderForeground.get(dragged_entity).z_position);
                         if (!registry.healthPotions.has(dragged_entity)) {
                             registry.invisibles.emplace(dragged_entity);
-                            registry.stationaries.get(placement_marker).position = registry.stationaries.get(
+                            registry.stationaries.get(placement_marker[0]).position = registry.stationaries.get(
+                                    dragged_entity).position;
+                            registry.stationaries.get(placement_marker[1]).position = registry.stationaries.get(
                                     dragged_entity).position;
                             float marker_scale = 2 * TOWER_WIDTH;
                             if (registry.towers.has(dragged_entity)) {
@@ -1120,8 +1132,9 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                             } else if (registry.consumables.has(dragged_entity)) {
                                 marker_scale = 2 * registry.consumables.get(dragged_entity).range;
                             }
-                            registry.stationaries.get(placement_marker).scale = vec2(marker_scale, marker_scale);
-                            registry.invisibles.remove(placement_marker);
+                            registry.stationaries.get(placement_marker[0]).scale = vec2(marker_scale, marker_scale);
+                            registry.invisibles.remove(placement_marker[0]);
+                            registry.invisibles.remove(placement_marker[1]);
                         }
                     }
                 }

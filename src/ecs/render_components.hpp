@@ -288,9 +288,10 @@ enum class BUTTONS {
 };
 
 enum class PLACEMENT_MARKER {
-    PLACEMENT = 0,
+    RANGE = 0,
     PATH_SQUARE,
     PATH_CIRCLE,
+    PLACEMENT,
 };
 
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
@@ -516,7 +517,7 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			break;
 		}
         case TEXTURE_ASSET_ID::PLACEMENT_MARKER: {
-            constexpr unsigned int cols = 3, rows = 1, maxCount = cols * rows;
+            constexpr unsigned int cols = 4, rows = 1, maxCount = cols * rows;
             constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
             atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
             for (unsigned int i = 0; i < maxCount; i++) {

@@ -939,27 +939,42 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2> &checkpoints,
 	return entity;
 }
 
-Entity createPlacementMarker(RenderSystem *renderer) {
-	const auto entity = Entity();
-	registry.placementMarkers.emplace(entity);
+std::vector<Entity> createPlacementMarker(RenderSystem *renderer) {
+	const auto range_entity = Entity();
+	registry.placementMarkers.emplace(range_entity);
 	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
+	registry.meshPtrs.emplace(range_entity, &mesh);
 
-	Stationary &placement_marker = registry.stationaries.emplace(entity);
-	placement_marker.scale = vec2({2 * TOWER_WIDTH, 2 * TOWER_HEIGHT});
+	Stationary &range_marker = registry.stationaries.emplace(range_entity);
+    range_marker.scale = vec2({2 * TOWER_WIDTH, 2 * TOWER_HEIGHT});
 
-	registry.renderForeground.insert(entity, {
+	registry.renderForeground.insert(range_entity, {
 		                                 {Stationary{}},
-                                         {static_cast<uint>(PLACEMENT_MARKER::PLACEMENT)},
+                                         {static_cast<uint>(PLACEMENT_MARKER::RANGE)},
 		                                 Z_FOREGROUND,
 		                                 TEXTURE_ASSET_ID::PLACEMENT_MARKER,
 		                                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		                                 GEOMETRY_BUFFER_ID::SPRITE,
 	                                 });
 
-	registry.invisibles.emplace(entity);
+	registry.invisibles.emplace(range_entity);
 
-	return entity;
+    const auto place_entity = Entity();
+    Stationary &placement_marker = registry.stationaries.emplace(place_entity);
+    placement_marker.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+
+    registry.renderForeground.insert(place_entity, {
+            {Stationary{}},
+            {static_cast<uint>(PLACEMENT_MARKER::PLACEMENT)},
+            Z_FOREGROUND,
+            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+            EFFECT_ASSET_ID::TEXTURED_ATLAS,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+
+    registry.invisibles.emplace(place_entity);
+
+	return {range_entity, place_entity};
 }
 
 void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoints) {
