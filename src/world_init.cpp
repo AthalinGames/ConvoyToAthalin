@@ -246,6 +246,22 @@ void createArcherFromCard(RenderSystem *renderer, const Entity card, Motion &mot
 		                                EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		                                GEOMETRY_BUFFER_ID::SPRITE,
 	                                });
+
+    const auto visualization = Entity();
+    registry.towerVisualizations.emplace(visualization);
+    auto &stationary_corner = registry.stationaries.emplace(visualization);
+    stationary_corner.position = motion_pos;
+    stationary_corner.scale = vec2(TOWER_WIDTH, TOWER_HEIGHT);
+    registry.renderForeground.insert(visualization, {
+            {Stationary{}},
+            {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
+            Z_FOREGROUND,
+            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+            EFFECT_ASSET_ID::TEXTURED_ATLAS,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+    registry.invisibles.emplace(visualization);
+
 }
 
 void createKnightFromCard(RenderSystem *renderer, const Entity card, Motion &motion) {
@@ -288,6 +304,21 @@ void createKnightFromCard(RenderSystem *renderer, const Entity card, Motion &mot
                                                                         GEOMETRY_BUFFER_ID::SPRITE,
                                                                     });
     createHitboxVisualization(renderer, sword, {getCollisionMeshOfTexture(sword_request.used_texture)});
+
+    const auto visualization = Entity();
+    registry.towerVisualizations.emplace(visualization);
+    auto &stationary_corner = registry.stationaries.emplace(visualization);
+    stationary_corner.position = motion_pos;
+    stationary_corner.scale = vec2(TOWER_WIDTH, TOWER_HEIGHT);
+    registry.renderForeground.insert(visualization, {
+            {Stationary{}},
+            {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
+            Z_FOREGROUND,
+            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+            EFFECT_ASSET_ID::TEXTURED_ATLAS,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+    registry.invisibles.emplace(visualization);
 }
 
 void createTowerFromCard(RenderSystem *renderer, const Entity card) {

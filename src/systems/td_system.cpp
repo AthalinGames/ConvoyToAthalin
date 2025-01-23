@@ -30,6 +30,9 @@ void TDSystem::cleanup_ecs() {
     for (const auto visualization : registry.pathVisualizations.entities) {
         registry.pathVisualizations.remove(visualization);
     }
+    for (const auto visualization : registry.towerVisualizations.entities) {
+        registry.towerVisualizations.remove(visualization);
+    }
     for (const auto card: cards) {
         if (registry.cards.has(card)){//TODO: if you stop dragging just when combat ends, Entity can lose card component before being erased from cards vector
             returnCardToItem(card);
@@ -824,6 +827,11 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
                         registry.invisibles.emplace(tile_entity);
                     }
                 }
+                for (auto tile_entity : registry.towerVisualizations.entities) {
+                    if (!registry.invisibles.has(tile_entity)) {
+                        registry.invisibles.emplace(tile_entity);
+                    }
+                }
             } else { // GLFW_PRESS and on windows also GLFW_REPEAT
                 for (auto &enemy_entity : enemies) {
                     if (registry.enemies.get(enemy_entity).spawned) {
@@ -865,6 +873,9 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
                     }
                 }
                 for (auto tile_entity : registry.pathVisualizations.entities) {
+                    registry.invisibles.remove(tile_entity);
+                }
+                for (auto tile_entity : registry.towerVisualizations.entities) {
                     registry.invisibles.remove(tile_entity);
                 }
             }

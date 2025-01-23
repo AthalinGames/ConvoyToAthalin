@@ -59,6 +59,7 @@ public:
 	ComponentContainer<StatusTextTimer> statusTextTimers;
     ComponentContainer<HitboxVisualization> hitboxVisualizations;
     ComponentContainer<PathVisualization> pathVisualizations;
+    ComponentContainer<TowerVisualization> towerVisualizations;
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -108,6 +109,7 @@ public:
 		registry_list.push_back(&statusTextTimers);
         registry_list.push_back(&hitboxVisualizations);
         registry_list.push_back(&pathVisualizations);
+        registry_list.push_back(&towerVisualizations);
 	}
 
 	void clear_all_components() {

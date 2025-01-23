@@ -49,6 +49,9 @@ struct HitboxVisualization {
 struct PathVisualization {
 };
 
+struct TowerVisualization {
+};
+
 
 /**
  * The following enumerators represent global identifiers refering to graphic
