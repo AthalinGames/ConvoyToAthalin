@@ -72,9 +72,7 @@ struct HitboxVisualization {
  */
 
 enum class TEXTURE_ASSET_ID {
-	FISH = 0,
-	TURTLE,
-	ARCHER,
+	ARCHER = 0,
     KNIGHT,
     BOMB,
     SPIKES,
@@ -100,13 +98,12 @@ enum class TEXTURE_ASSET_ID {
 	SLIM_ASCII_CHAR_ATLAS,
 	BUTTONS,
     HITBOX_LINE,
+	SHOP_MERCHANT,
 	TEXTURE_COUNT
 };
 
 constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 	switch (id) {
-		case TEXTURE_ASSET_ID::FISH: return "fish.png";
-		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
         case TEXTURE_ASSET_ID::KNIGHT: return "knight.png";
         case TEXTURE_ASSET_ID::BOMB: return "items/bomb.png";
@@ -133,6 +130,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS: return "font.png";
 		case TEXTURE_ASSET_ID::BUTTONS: return "buttons.png";
         case TEXTURE_ASSET_ID::HITBOX_LINE: return "hitbox_line.png";
+		case TEXTURE_ASSET_ID::SHOP_MERCHANT: return "shop.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
