@@ -1017,11 +1017,11 @@ void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoin
         }
     }
 
-    Entity corner_tile_entity = Entity();
-    auto &stationary_corner = registry.stationaries.emplace(corner_tile_entity);
+    Entity last_tile_entity = Entity();
+    auto &stationary_corner = registry.stationaries.emplace(last_tile_entity);
     stationary_corner.position = checkpoints.back();
     stationary_corner.scale = vec2(TILE_WIDTH, TILE_HEIGHT);
-    registry.renderForeground.insert(corner_tile_entity, {
+    registry.renderForeground.insert(last_tile_entity, {
             {Stationary{}},
             {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
             Z_FOREGROUND,
@@ -1029,8 +1029,8 @@ void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoin
             EFFECT_ASSET_ID::TEXTURED_ATLAS,
             GEOMETRY_BUFFER_ID::SPRITE,
     });
-    registry.invisibles.emplace(corner_tile_entity);
-    registry.pathVisualizations.emplace(corner_tile_entity);
+    registry.invisibles.emplace(last_tile_entity);
+    registry.pathVisualizations.emplace(last_tile_entity);
 }
 
 

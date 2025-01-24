@@ -67,6 +67,7 @@ private:
     std::vector<Entity> placement_marker;
     float current_speed;
     bool dragging; // shows if mouse is currently dragging something
+    bool show_visualizations; // show hitboxes and areas where tower placement is blocked;
     Entity dragged_entity;
     std::vector<Entity> towers;
     std::set<Entity> consumables;
