@@ -13,6 +13,7 @@
 #include <SDL_mixer.h>
 
 #include "render_system.hpp"
+#include "shop_system.hpp"
 #include "td_system.hpp"
 
 // Container for all our entities and game logic. Individual rendering / update is
@@ -66,6 +67,7 @@ private:
     Entity current_map_pos;
     Entity next_map_pos;
     bool td_fight_launched = false;
+    bool shop_launched = false;
 
     // Tutorial entity;
     Entity tutorial_hint;
@@ -82,6 +84,8 @@ At each location you will need to protect the convoy from monsters.
 
     // TDSystem handle;
     std::unique_ptr<TDSystem> current_td_system;
+    // ShopSystem handle;
+    std::unique_ptr<ShopSystem> current_shop_system;
 
     // music references
     Mix_Music* background_music;

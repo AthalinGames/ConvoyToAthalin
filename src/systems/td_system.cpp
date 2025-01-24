@@ -83,6 +83,7 @@ bool TDSystem::step(const float elapsed_ms) {
         }
         case GamePhase::RUNNING: {
             td_map.combat_time += elapsed_ms;
+            Player &current_player = registry.players.get(player);
             for (const auto hit_entity : registry.hitTimers.entities) {
                 auto &timer = registry.hitTimers.get(hit_entity);
                 timer.timer_ms -= elapsed_ms;
@@ -91,6 +92,7 @@ bool TDSystem::step(const float elapsed_ms) {
                     registry.colors.remove(hit_entity);
                     auto &enemy = registry.enemies.get(hit_entity);
                     if (enemy.getHealth() <= 0) {
+                        current_player.updateCoins(enemy.coin_gain + current_player.getCoins());
                         handle_enemy_death(hit_entity, enemy);
                     }
                     continue;

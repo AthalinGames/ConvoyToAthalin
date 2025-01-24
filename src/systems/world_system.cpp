@@ -41,6 +41,7 @@ WorldSystem::~WorldSystem() {
 
 	// cleanup entities before registry is cleared
 	current_td_system.reset();
+	current_shop_system.reset();
 
 	// Destroy all created components
 	registry.clear_all_components();
@@ -232,25 +233,36 @@ bool WorldSystem::step(const float elapsed_ms) {
 	// If td system is running, run also its step
 	if (!current_td_system->is_over()) {
 		current_td_system->step(elapsed_ms);
-	} else if (td_fight_launched) {
-		// Check if Player is already dead
-		if (registry.deathTimers.size() > 0) {
-			return true;
-		}
-
-		// TD Fight should be finished
-		current_td_system.reset(new TDSystem());
-		// check if Player is dead
-		for (const auto & player : registry.players.components) {
-			if (player.getHealth() <= 0) {
-				const Entity gameOver = createGameOver(renderer);
-				registry.deathTimers.emplace(gameOver);
+	} else if (!current_shop_system->is_over()) {
+		current_shop_system->step(elapsed_ms);
+	} else if (td_fight_launched | shop_launched) {
+		if (td_fight_launched) {
+			// Do fight cleanup
+			// Check if Player is already dead
+			if (registry.deathTimers.size() > 0) {
 				return true;
 			}
+			// TD Fight should be finished
+			current_td_system.reset(new TDSystem());
+			// check if Player is dead
+			for (const auto & player : registry.players.components) {
+				if (player.getHealth() <= 0) {
+					const Entity gameOver = createGameOver(renderer);
+					registry.deathTimers.emplace(gameOver);
+					return true;
+				}
+			}
+
+			Player& current_player = registry.players.get(player);
+			current_player.won_battles++;
+
+			td_fight_launched = false;
+		} else if (shop_launched) {
+			// Do shop cleanup
+			current_shop_system.reset(new ShopSystem());
+			shop_launched = false;
 		}
 
-        Player& current_player = registry.players.get(player);
-        current_player.won_battles++;
 		// Setup Overview-Map for next selection
 		auto &current_map_pos_props = registry.overviewMapLocations.get(current_map_pos);
 		current_map_pos_props.active = false;
@@ -270,8 +282,7 @@ bool WorldSystem::step(const float elapsed_ms) {
 
 		registry.invisibles.remove(tutorial_hint);
 
-		// Finally get back to normal steps
-		td_fight_launched = false;
+		// Finally get back to overview-map steps
 	}
 
 	return true;
@@ -327,6 +338,7 @@ void WorldSystem::restart_game() {
     registry.players.get(player).placement_marker = createPlacementMarker(renderer);
 
 	current_td_system.reset(new TDSystem());
+	current_shop_system.reset(new ShopSystem());
 	overview_map = createOverviewMap(renderer);
 	// Generate possible paths
 	// TODO fix path crossing
@@ -395,6 +407,10 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 		current_td_system->on_key(key, 0, action, mod);
 		return;
 	}
+	if (!current_shop_system->is_over()) {
+		current_shop_system->on_key(key, 0, action, mod);
+		return;
+	}
 
 	switch (key) {
 		// restart game key
@@ -456,6 +472,8 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 	// If td fight is running handle the proper mouse movements
 	if (!current_td_system->is_over()) {
 		current_td_system->on_mouse_move(pos, window);
+	} else if (!current_shop_system->is_over()) {
+		current_shop_system->on_mouse_move(pos, window);
 	} else {
 		auto &overview_map_reg = registry.overviewMapLocations;
 
@@ -486,15 +504,24 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 void WorldSystem::on_mouse_button(const int button, const int action, const int mods) {
 	if (!current_td_system->is_over()) {
 		current_td_system->on_mouse_button(button, action, mods, window);
+	} else if (!current_shop_system->is_over()) {
+		current_shop_system->on_mouse_button(button, action, mods, window);
 	} else {
 		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 			auto &clickables = registry.clickables;
 			for (const auto entity : clickables.entities) {
 				if (registry.overviewMapLocations.has(entity)) {
-					current_td_system.reset( new TDSystem(rng()));
-					current_td_system->init(renderer, player);
+					const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
+					if (loc_props.type == LocationType::FIGHT) {
+						current_td_system.reset( new TDSystem(rng()));
+						current_td_system->init(renderer, player);
+						td_fight_launched = true;
+					} else {
+						current_shop_system.reset(new ShopSystem(rng()));
+						current_shop_system->init(renderer, player, loc_props.type);
+						shop_launched = true;
+					}
 					registry.invisibles.emplace(tutorial_hint);
-					td_fight_launched = true;
 					next_map_pos = entity;
 				}
 			}

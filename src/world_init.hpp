@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <random>
 
 #include "common.hpp"
@@ -44,7 +45,7 @@ constexpr float Z_FOREGROUND = 1;
 Entity createPlayer(RenderSystem *renderer);
 // item
 Entity createItem(ItemType item);
-Entity createRandomItem(std::default_random_engine& rng);
+Entity createRandomItem(std::default_random_engine& rng, std::optional<ItemType> itemType = std::nullopt);
 // tower creation
 void createTowerFromCard(RenderSystem* renderer, Entity card);
 void returnTowerToItem(Entity tower);
@@ -90,6 +91,8 @@ Entity createStatusText(RenderSystem* renderer, const std::string &text, bool po
 Entity createGameOver(RenderSystem* renderer);
 
 Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alpha);
+
+Entity createMerchantBackground();
 
 /// scale defines the scale of each character
 RenderRequest createTextRenderRequest(const std::string& text, vec2 scale, FontType font);

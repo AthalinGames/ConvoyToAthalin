@@ -6,18 +6,18 @@
 
 class ShopSystem {
 public:
-    explicit ShopSystem(unsigned int seed, LocationType location);
+    explicit ShopSystem(unsigned int seed);
     ShopSystem();
 
     // starts the ShopSystem
-    void init(RenderSystem* renderSystem, Entity player);
+    void init(RenderSystem* renderSystem, Entity player, LocationType location);
     void restartShop();
 
     // Releases all associated resources
     ~ShopSystem();
 
     // Steps the shop ahead by ms milliseconds
-    bool step(float elapsed_ms);
+    bool step(float elapsed_ms) const;
 
     void cleanup_ecs();
 
@@ -31,8 +31,11 @@ public:
 private:
     bool over;
 
-    RenderSystem* renderSystem;
+    uint card_count = 4;
+
+    RenderSystem* renderSystem = nullptr;
     Entity player;
+    LocationType location;
 
     std::vector<Entity> new_cards;
 

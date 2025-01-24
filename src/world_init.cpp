@@ -109,17 +109,29 @@ Entity createItem(const ItemType item) {
 	return entity;
 }
 
-Entity createRandomItem(std::default_random_engine &rng) {
+Entity createRandomItem(std::default_random_engine &rng, const std::optional<ItemType> itemType) {
+	if (itemType.has_value()) {
+		return std::visit(overloaded{
+			[&rng] (const TowerType) {
+				std::uniform_int_distribution<uint> dist(0, tower_type_count - 1);
+				return createItem(static_cast<TowerType>(dist(rng)));
+			},
+			[&rng] (const ConsumableType) {
+				std::uniform_int_distribution<uint> dist(0, consumable_type_count - 1);
+				return createItem(static_cast<ConsumableType>(dist(rng)));
+			}
+		}, itemType.value());
+	}
 	std::uniform_int_distribution<unsigned int> distribution(0, item_type_count - 1);
 	const unsigned int item_id = distribution(rng);
 	if (item_id < tower_type_count) {
 		return createItem(static_cast<TowerType>(item_id));
-	} else if (item_id < consumable_type_count + tower_type_count) {
-		return createItem(static_cast<ConsumableType>(item_id - tower_type_count));
-	} else {
-		assert(false && "Invalid item type");
-		return Entity();
 	}
+	if (item_id < consumable_type_count + tower_type_count) {
+		return createItem(static_cast<ConsumableType>(item_id - tower_type_count));
+	}
+	assert(false && "Invalid item type");
+	return Entity();
 }
 
 void createHitboxVisualization(RenderSystem *renderer, const Entity entity, const std::vector<std::vector<vec2>> polys) {
@@ -138,7 +150,7 @@ void createHitboxVisualization(RenderSystem *renderer, const Entity entity, cons
         std::vector<vec2> offsets;
         std::vector<float> angles;
 
-        for (int i = 0; i < poly.size() - 1; ++i) {
+        for (uint i = 0; i < poly.size() - 1; ++i) {
             vec2 vert_curr = poly[i];
             vec2 vert_next = poly[i + 1];
             vec2 middle = 0.5f * (vert_next + vert_curr);
@@ -535,7 +547,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos, const EnemyType enemy
 
     //TODO: for each collision poly
     std::vector<std::vector<vec2>> polys;
-    for (int i = 0;
+    for (uint i = 0;
          i < static_cast<unsigned int>(DIRECTION_SPRITE::COUNT) * static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT);
          i += static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT)) {
         polys.push_back(getCollisionMeshOfTexture(registry.renderGameLayer.get(entity).used_texture, i));
@@ -1272,6 +1284,26 @@ Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size
 
 	return entity;
 }
+
+Entity createMerchantBackground() {
+	const auto entity = Entity();
+
+	Stationary &position = registry.stationaries.emplace(entity);
+	position.position = {window_width_px/2, window_height_px/2};
+	position.scale = {window_width_px, window_height_px};
+
+	registry.renderBackground.insert(entity, {
+		{Stationary{}},
+		{},
+		Z_FOREGROUND,
+		TEXTURE_ASSET_ID::SHOP_MERCHANT,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
 
 RenderRequest createTextRenderRequest(const std::string &text, const vec2 scale, const FontType font) {
 	RenderRequest request{};

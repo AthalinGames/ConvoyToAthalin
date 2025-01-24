@@ -10,10 +10,10 @@
 class Player {
 	int health = 100;
 	int food = 10;
+	int coins = 0;
 
 	public:
     int maxHealth = 100;
-    int coins = 0;
 	int baseFoodGain = 5;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
@@ -23,9 +23,11 @@ class Player {
 
 	std::function<void(int new_hp, int old_hp)> health_update_callback = [](int ...){};
 	std::function<void(int new_food, int old_food)> food_update_callback = [](int ...){};
+	std::function<void(int new_coins, int old_coins)> coins_update_callback = [](int ...){};
 
 	int getHealth() const { return health; }
 	int getFood() const { return food; }
+	int getCoins() const { return coins; }
 
 	void updateHealth(const int new_hp) {
 		health_update_callback(new_hp, health);
@@ -35,6 +37,11 @@ class Player {
 	void updateFood(const int new_food) {
 		food_update_callback(new_food, food);
 		food = new_food;
+	}
+
+	void updateCoins(const int new_coins) {
+		coins_update_callback(new_coins, coins);
+		coins = new_coins;
 	}
 
 	~Player() {
@@ -62,6 +69,7 @@ public:
     float section_progress = 0.f;
     bool alive = true;
 	int damage = 10; // damage to player if enemy completes path
+	int coin_gain = 5;
     std::vector<Entity> spawns_enemies; // spawns these enemies (eg. on death)
 
 	explicit Enemy(const std::function<void()> &damage_callback) : damage_callback(damage_callback) {}
@@ -114,7 +122,9 @@ constexpr unsigned int item_type_count = consumable_type_count + tower_type_coun
 
 using ItemType = std::variant<TowerType, ConsumableType>;
 
-struct Item {};
+struct Item {
+	int gold_cost = 5;
+};
 
 // Tower components
 enum class EnemyPriority {
