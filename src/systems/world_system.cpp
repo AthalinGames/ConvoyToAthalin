@@ -194,6 +194,9 @@ bool WorldSystem::step(const float elapsed_ms) {
             case StatusType::FOOD:
                 position.position.x = TILE_WIDTH * 2 - TILE_WIDTH / 8;
                 break;
+        	case StatusType::COINS:
+        		position.position.x = TILE_WIDTH * 5.2;
+        	    break;
         }
 
 
@@ -473,7 +476,7 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 	if (!current_td_system->is_over()) {
 		current_td_system->on_mouse_move(pos, window);
 	} else if (!current_shop_system->is_over()) {
-		current_shop_system->on_mouse_move(pos, window);
+		current_shop_system->on_mouse_move(pos);
 	} else {
 		auto &overview_map_reg = registry.overviewMapLocations;
 
@@ -505,7 +508,7 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 	if (!current_td_system->is_over()) {
 		current_td_system->on_mouse_button(button, action, mods, window);
 	} else if (!current_shop_system->is_over()) {
-		current_shop_system->on_mouse_button(button, action, mods, window);
+		current_shop_system->on_mouse_button(button, action, mods);
 	} else {
 		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 			auto &clickables = registry.clickables;

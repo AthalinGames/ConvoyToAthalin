@@ -30,6 +30,8 @@ Entity createPlayer(RenderSystem *renderer) {
         std::string status_sign;
         if (new_hp - old_hp >= 0) {
             status_sign = "+";
+        } else {
+	        status_sign = "-";
         }
 		createStatusText(renderer, status_sign + std::to_string(new_hp - old_hp) + " HP", new_hp > old_hp, StatusType::HEALTH);
 	};
@@ -46,8 +48,28 @@ Entity createPlayer(RenderSystem *renderer) {
         std::string status_sign;
         if (new_food - old_food >= 0) {
             status_sign = "+";
+        } else {
+	        status_sign = "-";
         }
 		createStatusText(renderer, status_sign + std::to_string(new_food - old_food) + " Food", new_food > old_food, StatusType::FOOD);
+	};
+
+	const auto coins_text = createText(renderer, {TILE_WIDTH * 4 - TILE_WIDTH / 8, TILE_HEIGHT / 4}, text_scale, "Coins:",
+											 FontType::SLIM);
+	player.status_bar_entities.push_back(coins_text);
+
+	const auto coins_number = createText(renderer, {TILE_WIDTH * 5.2, TILE_HEIGHT / 4}, text_scale,
+		                                 std::to_string(player.getCoins()), FontType::SLIM);
+	player.status_bar_entities.push_back(coins_number);
+	player.coins_update_callback = [coins_number, &renderer](const int new_coins, const int old_coins) {
+		updateText(coins_number, std::to_string(new_coins));
+		std::string status_sign;
+		if (new_coins - old_coins >= 0) {
+			status_sign = "+";
+		} else {
+			status_sign = "-";
+		}
+		createStatusText(renderer, status_sign + std::to_string(new_coins - old_coins) + " Coins", new_coins > old_coins, StatusType::COINS);
 	};
 
 	return entity;

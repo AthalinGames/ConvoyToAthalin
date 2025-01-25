@@ -11,6 +11,9 @@ public:
 
     // starts the ShopSystem
     void init(RenderSystem* renderSystem, Entity player, LocationType location);
+
+    void check_if_buyable(const Player &player_stats);
+
     void restartShop();
 
     // Releases all associated resources
@@ -26,8 +29,8 @@ public:
 
     // Input callback functions
     void on_key(int key, int, int action, int mods);
-    void on_mouse_move(vec2 pos, GLFWwindow* window);
-    void on_mouse_button(int button, int action, int mods, GLFWwindow* window);
+    void on_mouse_move(const vec2 pos);
+    void on_mouse_button(int button, int action, int mods);
 private:
     bool over;
 

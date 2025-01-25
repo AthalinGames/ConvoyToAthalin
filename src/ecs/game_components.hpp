@@ -69,7 +69,7 @@ public:
     float section_progress = 0.f;
     bool alive = true;
 	int damage = 10; // damage to player if enemy completes path
-	int coin_gain = 5;
+	int coin_gain = 1;
     std::vector<Entity> spawns_enemies; // spawns these enemies (eg. on death)
 
 	explicit Enemy(const std::function<void()> &damage_callback) : damage_callback(damage_callback) {}
@@ -332,7 +332,8 @@ struct HitTimer {
 
 enum class StatusType {
     HEALTH = 0,
-    FOOD
+    FOOD,
+	COINS
 };
 
 struct StatusTextTimer {

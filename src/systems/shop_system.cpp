@@ -1,7 +1,8 @@
 #include "shop_system.hpp"
 
-#include "world_init.hpp"
 #include "ecs/tiny_ecs_registry.hpp"
+#include "common.hpp"
+#include "world_init.hpp"
 
 ShopSystem::ShopSystem(const unsigned int seed): location() {
     rng = std::default_random_engine(seed);
@@ -31,6 +32,17 @@ void ShopSystem::init(RenderSystem *renderSystem, const Entity player, const Loc
     this->location = location;
 
     restartShop();
+}
+
+void ShopSystem::check_if_buyable(const Player &player_stats) {
+    for (const Entity new_card : new_cards) {
+        const Item& item = registry.items.get(new_card);
+        Card& card = registry.cards.get(new_card);
+        if (item.gold_cost > player_stats.getCoins()) {
+            card.selectable = false;
+            registry.colors.insert(new_card, {0.5f, 0.5f, 0.5f, 1.0f});
+        }
+    }
 }
 
 void ShopSystem::restartShop() {
@@ -85,14 +97,7 @@ void ShopSystem::restartShop() {
     ));
     // Determine if Cards can be bought
     const Player& player_stats = registry.players.get(player);
-    for (const Entity new_card : new_cards) {
-        const Item& item = registry.items.get(new_card);
-        Card& card = registry.cards.get(new_card);
-        if (item.gold_cost > player_stats.getCoins()) {
-            card.selectable = false;
-            registry.colors.insert(new_card, {0.5f, 0.5f, 0.5f, 1.0f});
-        }
-    }
+    check_if_buyable(player_stats);
 }
 
 bool ShopSystem::step(float elapsed_ms) const {
@@ -116,12 +121,40 @@ void ShopSystem::on_key(const int key, const int, const int action, const int mo
     }
 }
 
-void ShopSystem::on_mouse_move(vec2 pos, GLFWwindow *window) {
+void ShopSystem::on_mouse_move(const vec2 pos) {
+    registry.clickables.clear();
 
+    for (const Entity card : new_cards) {
+        const auto& card_props = registry.cards.get(card);
+        if (!card_props.selectable) {
+            continue;
+        }
+        auto& card_pos = registry.stationaries.get(card);
+        const vec2 dp = card_pos.position - pos;
+        const float dist_squared = dot(dp, dp);
+        vec2 bounding_box = {abs(card_pos.position.x), abs(card_pos.position.y)};
+        bounding_box *= 0.1f;
+        const float card_squared = dot(bounding_box, bounding_box);
+        if (dist_squared < card_squared) {
+            card_pos.scale = vec2(1.2 * CARD_WIDTH, 1.2 * CARD_HEIGHT);
+            registry.clickables.emplace(card);
+        } else {
+            card_pos.scale = vec2(CARD_WIDTH, CARD_HEIGHT);
+        }
+    }
 }
 
-void ShopSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *window) {
-
+void ShopSystem::on_mouse_button(const int button, const int action, int) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        for (const Entity entity : registry.clickables.entities) {
+            returnCardToItem(entity);
+            const Item& item = registry.items.get(entity);
+            Player& player_stats = registry.players.get(player);
+            player_stats.updateCoins(player_stats.getCoins() - item.gold_cost);
+            std::erase(new_cards, entity);
+            check_if_buyable(player_stats);
+        }
+    }
 }
 
 
