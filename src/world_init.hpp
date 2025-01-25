@@ -89,6 +89,8 @@ Entity createStatusText(RenderSystem* renderer, const std::string &text, bool po
 
 Entity createGameOver(RenderSystem* renderer);
 
+Entity createGameEnd(RenderSystem* renderer);
+
 Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alpha);
 
 /// scale defines the scale of each character

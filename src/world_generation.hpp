@@ -24,6 +24,6 @@ typedef std::array<std::array<Entity, grid_width>, grid_height> overview_grid_en
 
 std::pair<overview_paths, overview_grid_visited> generate_overview_paths(std::default_random_engine &rng);
 overview_grid_entities create_fight_locations(RenderSystem *renderer, std::default_random_engine &rng, const overview_grid_visited &visited);
-Entity build_overview_graph(RenderSystem *renderer, const overview_paths &paths, const overview_grid_entities &locations);
+std::pair<Entity, Entity> build_overview_graph(RenderSystem *renderer, const overview_paths &paths, const overview_grid_entities &locations);
 
 std::vector<vec2> generateMapCheckpoints(std::default_random_engine rng, uint path_length);

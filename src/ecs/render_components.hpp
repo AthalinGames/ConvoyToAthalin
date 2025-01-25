@@ -99,6 +99,7 @@ enum class TEXTURE_ASSET_ID {
 	BLACK_PIXEL,
     PLACEMENT_MARKER,
 	GAME_OVER,
+    GAME_END,
 	TD_MAP_DECORATION_ATLAS,
     TD_MAP_ATLAS,
 	OVERVIEW_ICONS_ATLAS,
@@ -132,6 +133,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::BLACK_PIXEL: return "blackPixel.png";
         case TEXTURE_ASSET_ID::PLACEMENT_MARKER: return "placement_marker.png";
 		case TEXTURE_ASSET_ID::GAME_OVER: return "game_over.png";
+        case TEXTURE_ASSET_ID::GAME_END: return "endscreen.png";
 		case TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS: return "TDMapDecorationAtlas.png";
 		case TEXTURE_ASSET_ID::TD_MAP_ATLAS: return "TDMapAtlas.png";
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: return "overviewIconsAtlas.png";

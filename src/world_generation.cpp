@@ -93,7 +93,7 @@ overview_grid_entities create_fight_locations(RenderSystem *renderer, std::defau
     return locations;
 }
 
-Entity build_overview_graph(RenderSystem *renderer, const overview_paths &paths, const overview_grid_entities &locations) {
+std::pair<Entity, Entity> build_overview_graph(RenderSystem *renderer, const overview_paths &paths, const overview_grid_entities &locations) {
     const Entity starting_location = createStartIcon(renderer);
     const Entity goal_location = createGoalIcon(renderer);
     OverviewMapLocation& start_loc_props = registry.overviewMapLocations.get(starting_location);
@@ -134,7 +134,7 @@ Entity build_overview_graph(RenderSystem *renderer, const overview_paths &paths,
         createOverviewLine(renderer, last_loc_pos, vec2{GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y});
     }
 
-    return starting_location;
+    return {starting_location, goal_location};
 }
 
 int mod(int k, const int n) {

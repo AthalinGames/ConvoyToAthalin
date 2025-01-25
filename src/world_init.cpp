@@ -1056,6 +1056,28 @@ Entity createGameOver(RenderSystem *renderer) {
 	return entity;
 }
 
+Entity createGameEnd(RenderSystem *renderer) {
+    const auto entity = Entity();
+
+    Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+    registry.meshPtrs.emplace(entity, &mesh);
+
+    Stationary &gameend_texture = registry.stationaries.emplace(entity);
+    gameend_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
+    gameend_texture.position = vec2({window_width_px / 2, window_height_px / 2});
+
+    registry.renderForeground.insert(entity, {
+            {Stationary{}},
+            {0},
+            Z_FOREGROUND,
+            TEXTURE_ASSET_ID::GAME_END,
+            EFFECT_ASSET_ID::TEXTURED,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+
+    return entity;
+}
+
 
 Entity createOverviewMap(RenderSystem *renderer) {
 	const auto entity = Entity();
@@ -1139,7 +1161,9 @@ Entity createGoalIcon(RenderSystem *renderer) {
 	goal_icon.position = vec2(GOAL_ICON_LOC_X, GOAL_ICON_LOC_Y);
 	goal_icon.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
 
-	registry.overviewMapLocations.emplace(entity);
+    auto &properties = registry.overviewMapLocations.emplace(entity);
+    properties.active = true;
+    properties.overview_selection = createOverviewSelection(renderer, goal_icon.position);
 
 	registry.renderBackground.insert(entity, {
 		                                 {Stationary{}},

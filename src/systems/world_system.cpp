@@ -173,6 +173,10 @@ bool WorldSystem::step(const float elapsed_ms) {
 	// reduce window brightness if any of the present salmons is dying
 	screen.screen_darken_factor = 1 - min_timer_ms / 4000;
 
+    if (goal_reached) {
+        return true;
+    }
+
 	for (const Entity entity : registry.statusTextTimers.entities) {
 		constexpr float status_time_length = 2000.f;
 		StatusTextTimer &timer = registry.statusTextTimers.get(entity);
@@ -261,6 +265,11 @@ bool WorldSystem::step(const float elapsed_ms) {
 		}
 		auto &next_map_pos_props = registry.overviewMapLocations.get(next_map_pos);
 		registry.invisibles.remove(next_map_pos_props.overview_selection);
+
+        if (next_map_pos_props.next_locations.empty()) {
+            printf("end\n");
+        }
+
 		for (const Entity next_location : next_map_pos_props.next_locations) {
 			auto &location_props = registry.overviewMapLocations.get(next_location);
 			location_props.selectable = true;
@@ -336,7 +345,8 @@ void WorldSystem::restart_game() {
 	const overview_grid_entities location_entities = create_fight_locations(renderer, rng, visited);
 
 	// Add Start and Goal
-	current_map_pos = build_overview_graph(renderer, paths, location_entities);
+    map_start_goal = build_overview_graph(renderer, paths, location_entities);
+	current_map_pos = map_start_goal.first;
 
 	tutorial_hint = createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial", FontType::SQUARE);
 }
@@ -491,10 +501,15 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 			auto &clickables = registry.clickables;
 			for (const auto entity : clickables.entities) {
 				if (registry.overviewMapLocations.has(entity)) {
-					current_td_system.reset( new TDSystem(rng()));
-					current_td_system->init(renderer, player);
 					registry.invisibles.emplace(tutorial_hint);
-					td_fight_launched = true;
+                    if (entity == map_start_goal.second) {
+                        goal_reached = true;
+                        const Entity gameEnd = createGameEnd(renderer);
+                    } else {
+                        current_td_system.reset( new TDSystem(rng()));
+                        current_td_system->init(renderer, player);
+                        td_fight_launched = true;
+                    }
 					next_map_pos = entity;
 				}
 			}

@@ -62,10 +62,12 @@ private:
     float current_speed;
 
     Entity player;
+    std::pair<Entity, Entity> map_start_goal;
     Entity overview_map;
     Entity current_map_pos;
     Entity next_map_pos;
     bool td_fight_launched = false;
+    bool goal_reached = false;
 
     // Tutorial entity;
     Entity tutorial_hint;
