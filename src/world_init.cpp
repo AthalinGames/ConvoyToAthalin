@@ -280,6 +280,22 @@ void createArcherFromCard(RenderSystem *renderer, const Entity card, Motion &mot
 		                                EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		                                GEOMETRY_BUFFER_ID::SPRITE,
 	                                });
+
+    const auto visualization = Entity();
+    registry.towerVisualizations.emplace(visualization);
+    auto &stationary_corner = registry.stationaries.emplace(visualization);
+    stationary_corner.position = motion_pos;
+    stationary_corner.scale = vec2(TOWER_WIDTH, TOWER_HEIGHT);
+    registry.renderForeground.insert(visualization, {
+            {Stationary{}},
+            {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
+            Z_FOREGROUND,
+            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+            EFFECT_ASSET_ID::TEXTURED_ATLAS,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+    registry.invisibles.emplace(visualization);
+
 }
 
 void createKnightFromCard(RenderSystem *renderer, const Entity card, Motion &motion) {
@@ -322,6 +338,21 @@ void createKnightFromCard(RenderSystem *renderer, const Entity card, Motion &mot
                                                                         GEOMETRY_BUFFER_ID::SPRITE,
                                                                     });
     createHitboxVisualization(renderer, sword, {getCollisionMeshOfTexture(sword_request.used_texture)});
+
+    const auto visualization = Entity();
+    registry.towerVisualizations.emplace(visualization);
+    auto &stationary_corner = registry.stationaries.emplace(visualization);
+    stationary_corner.position = motion_pos;
+    stationary_corner.scale = vec2(TOWER_WIDTH, TOWER_HEIGHT);
+    registry.renderForeground.insert(visualization, {
+            {Stationary{}},
+            {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
+            Z_FOREGROUND,
+            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+            EFFECT_ASSET_ID::TEXTURED_ATLAS,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+    registry.invisibles.emplace(visualization);
 }
 
 void createTowerFromCard(RenderSystem *renderer, const Entity card) {
@@ -822,8 +853,19 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2> &checkpoints,
 	map_texture.position = vec2(0, 0);
 
 	Map &map_attributes = registry.maps.emplace(entity);
-	const std::vector<vec2> map_coordinates = grid_to_coordinates(checkpoints);
-	map_attributes.checkpoints = map_coordinates;
+	std::vector<vec2> map_coordinates = grid_to_coordinates(checkpoints);
+
+    // delete unnecessary checkpoints on straights
+    for (int i = 0; i < map_coordinates.size()-2; ++i) {
+        auto first = map_coordinates[i];
+        auto second = map_coordinates[i + 1];
+        auto third = map_coordinates[i + 2];
+        if ((first.x == second.x && second.x == third.x) || (first.y == second.y && second.y == third.y)) {
+            map_coordinates.erase(map_coordinates.begin() + i + 1);
+            i--;
+        }
+    }
+    map_attributes.checkpoints = map_coordinates;
 
 	//calculate path length
 	float path_length = 0;
@@ -931,28 +973,100 @@ Entity createMap(RenderSystem *renderer, const std::vector<vec2> &checkpoints,
 	return entity;
 }
 
-Entity createPlacementMarker(RenderSystem *renderer) {
-	const auto entity = Entity();
-	registry.placementMarkers.emplace(entity);
+std::vector<Entity> createPlacementMarker(RenderSystem *renderer) {
+	const auto range_entity = Entity();
+	registry.placementMarkers.emplace(range_entity);
 	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
-	registry.meshPtrs.emplace(entity, &mesh);
+	registry.meshPtrs.emplace(range_entity, &mesh);
 
-	Stationary &placement_marker = registry.stationaries.emplace(entity);
-	placement_marker.scale = vec2({2 * TOWER_WIDTH, 2 * TOWER_HEIGHT});
+	Stationary &range_marker = registry.stationaries.emplace(range_entity);
+    range_marker.scale = vec2({2 * TOWER_WIDTH, 2 * TOWER_HEIGHT});
 
-	registry.renderForeground.insert(entity, {
+	registry.renderForeground.insert(range_entity, {
 		                                 {Stationary{}},
-		                                 {0},
+                                         {static_cast<uint>(PLACEMENT_MARKER::RANGE)},
 		                                 Z_FOREGROUND,
 		                                 TEXTURE_ASSET_ID::PLACEMENT_MARKER,
-		                                 EFFECT_ASSET_ID::TEXTURED,
+		                                 EFFECT_ASSET_ID::TEXTURED_ATLAS,
 		                                 GEOMETRY_BUFFER_ID::SPRITE,
 	                                 });
 
-	registry.invisibles.emplace(entity);
+	registry.invisibles.emplace(range_entity);
 
-	return entity;
+    const auto place_entity = Entity();
+    Stationary &placement_marker = registry.stationaries.emplace(place_entity);
+    placement_marker.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
+
+    registry.renderForeground.insert(place_entity, {
+            {Stationary{}},
+            {static_cast<uint>(PLACEMENT_MARKER::PLACEMENT)},
+            Z_FOREGROUND,
+            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+            EFFECT_ASSET_ID::TEXTURED_ATLAS,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+
+    registry.invisibles.emplace(place_entity);
+
+	return {range_entity, place_entity};
 }
+
+void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoints) {
+    for (int i = 0; i < checkpoints.size() - 1; ++i) {
+        vec2 curr = checkpoints[i];
+        vec2 next = checkpoints[i+1];
+        vec2 diff = next - curr;
+        vec2 step = vec2((diff.x == 0.f ? 0 : TILE_WIDTH), diff.y == 0.f ? 0 : TILE_HEIGHT);
+
+        Entity corner_tile_entity = Entity();
+        auto &stationary_corner = registry.stationaries.emplace(corner_tile_entity);
+        stationary_corner.position = curr;
+        stationary_corner.scale = vec2(TILE_WIDTH, TILE_HEIGHT);
+        registry.renderForeground.insert(corner_tile_entity, {
+                {Stationary{}},
+                {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
+                Z_FOREGROUND,
+                TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+                EFFECT_ASSET_ID::TEXTURED_ATLAS,
+                GEOMETRY_BUFFER_ID::SPRITE,
+        });
+        registry.invisibles.emplace(corner_tile_entity);
+        registry.pathVisualizations.emplace(corner_tile_entity);
+        int steps_num = floor(diff.x == 0 ? diff.y/TILE_HEIGHT : diff.x/TILE_WIDTH);
+        for (int j = steps_num / abs(steps_num); abs(j) < abs((diff.x == 0 ? diff.y/TILE_HEIGHT : diff.x/TILE_WIDTH)); j+=steps_num / abs(steps_num)) {
+            Entity new_tile_entity = Entity();
+            auto &stationary = registry.stationaries.emplace(new_tile_entity);
+            stationary.position = curr + static_cast<float>(j) * step;
+            stationary.scale = vec2(TILE_WIDTH, TILE_HEIGHT);
+            registry.renderForeground.insert(new_tile_entity, {
+                                            {Stationary{}},
+                                            {static_cast<uint>(PLACEMENT_MARKER::PATH_SQUARE)},
+                                            Z_FOREGROUND,
+                                            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+                                            EFFECT_ASSET_ID::TEXTURED_ATLAS,
+                                            GEOMETRY_BUFFER_ID::SPRITE,
+                                        });
+            registry.invisibles.emplace(new_tile_entity);
+            registry.pathVisualizations.emplace(new_tile_entity);
+        }
+    }
+
+    Entity last_tile_entity = Entity();
+    auto &stationary_corner = registry.stationaries.emplace(last_tile_entity);
+    stationary_corner.position = checkpoints.back();
+    stationary_corner.scale = vec2(TILE_WIDTH, TILE_HEIGHT);
+    registry.renderForeground.insert(last_tile_entity, {
+            {Stationary{}},
+            {static_cast<uint>(PLACEMENT_MARKER::PATH_CIRCLE)},
+            Z_FOREGROUND,
+            TEXTURE_ASSET_ID::PLACEMENT_MARKER,
+            EFFECT_ASSET_ID::TEXTURED_ATLAS,
+            GEOMETRY_BUFFER_ID::SPRITE,
+    });
+    registry.invisibles.emplace(last_tile_entity);
+    registry.pathVisualizations.emplace(last_tile_entity);
+}
+
 
 Entity createGameOver(RenderSystem *renderer) {
 	const auto entity = Entity();

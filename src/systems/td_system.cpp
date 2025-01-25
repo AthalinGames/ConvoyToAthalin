@@ -8,7 +8,7 @@
 #include "world_generation.hpp"
 #include "world_system.hpp"
 
-TDSystem::TDSystem(const unsigned int seed) : dragging(false) {
+TDSystem::TDSystem(const unsigned int seed) : dragging(false), show_visualizations(false) {
     rng = std::default_random_engine(seed);
 }
 
@@ -27,6 +27,12 @@ void TDSystem::cleanup_ecs() {
         }
     }
     registry.hitboxVisualizations.clear();
+    for (const auto visualization : registry.pathVisualizations.entities) {
+        registry.remove_all_components_of(visualization);
+    }
+    for (const auto visualization : registry.towerVisualizations.entities) {
+        registry.remove_all_components_of(visualization);
+    }
     for (const auto card: cards) {
         if (registry.cards.has(card)){//TODO: if you stop dragging just when combat ends, Entity can lose card component before being erased from cards vector
             returnCardToItem(card);
@@ -76,6 +82,29 @@ void TDSystem::init(RenderSystem *renderer, const Entity player) {
 
 bool TDSystem::step(const float elapsed_ms) {
     Map &td_map = registry.maps.get(map);
+
+    if (show_visualizations) {
+        for (const auto entity : registry.hitboxVisualizations.entities) {
+            if (registry.enemies.has(entity)) {
+                if (registry.enemies.get(entity).spawned) {
+                    auto visualization = registry.hitboxVisualizations.get(entity);
+                    for (const auto &line_entity: visualization.lines[visualization.active_poly]) {
+                        registry.invisibles.remove(line_entity);
+                    }
+                }
+            } else if (registry.arrows.has(entity) || registry.swords.has(entity) || registry.barriers.has(entity) || registry.spikes.has(entity)) {
+                auto visualization = registry.hitboxVisualizations.get(entity);
+                for (const auto &line_entity: visualization.lines[visualization.active_poly]) {
+                    registry.invisibles.remove(line_entity);
+                }
+            }
+        }
+        if (!dragging) {
+            for (const auto entity: registry.towerVisualizations.entities) {
+                registry.invisibles.remove(entity);
+            }
+        }
+    }
 
     switch (current_phase) {
         case GamePhase::SETUP: {
@@ -263,6 +292,12 @@ bool TDSystem::step(const float elapsed_ms) {
                         walk_timer.start_time *= 1.7f;
                     }
                     walk_timer.time = walk_timer.start_time * 100.f / next_enemy.speed; // scale original time of walkTimer to enemy speed
+                    if (show_visualizations) {
+                        auto visualization = registry.hitboxVisualizations.get(td_map.enemies[0]);
+                        for (const auto &entity: visualization.lines[visualization.active_poly]) {
+                            registry.invisibles.remove(entity);
+                        }
+                    }
                     td_map.enemies.erase(td_map.enemies.begin());
                 }
             }
@@ -302,10 +337,26 @@ bool TDSystem::step(const float elapsed_ms) {
                 dragging = false;
                 registry.cards.get(dragged_entity).dragged = false;
                 registry.invisibles.remove(dragged_entity);
-                if (!registry.invisibles.has(placement_marker)) {
-                    registry.invisibles.emplace(placement_marker);
+                if (!registry.invisibles.has(placement_marker[0])) {
+                    registry.invisibles.emplace(placement_marker[0]);
+                }
+                if (!registry.invisibles.has(placement_marker[1])) {
+                    registry.invisibles.emplace(placement_marker[1]);
                 }
                 realignCards();
+                if (!show_visualizations) {
+                    for (const auto entity : registry.towerVisualizations.entities) {
+                        if (!registry.invisibles.has(entity)) {
+                            registry.invisibles.emplace(entity);
+                        }
+
+                    }
+                    for (const auto entity : registry.pathVisualizations.entities) {
+                        if (!registry.invisibles.has(entity)) {
+                            registry.invisibles.emplace(entity);
+                        }
+                    }
+                }
             }
 
             // Add gathered food
@@ -486,7 +537,7 @@ Entity TDSystem::generate_map(const int difficulty) const {
 
     const auto generated_path = generateMapCheckpoints(rng, difficulty_to_path_length.at(difficulty));
     const Entity new_map = createMap(renderer, generated_path, rng, uniform_dist);
-    //TODO: create lines to make blocked path visible
+    createPathVisualization(renderer, registry.maps.get(new_map).checkpoints);
     return  new_map;
 }
 
@@ -560,6 +611,12 @@ void TDSystem::handle_enemy_death(const Entity enemy_entity, Enemy &enemy) {
             registry.invisibles.remove(spawn_entity);
             auto &walk_timer = registry.enemyWalkTimers.emplace(spawn_entity);
             walk_timer.time = walk_timer.start_time * 100.f / spawn_enemy.speed; // scale original time of walkTimer to enemy speed
+            if (show_visualizations) {
+                auto visualization = registry.hitboxVisualizations.get(spawn_entity);
+                for (const auto &entity: visualization.lines[visualization.active_poly]) {
+                    registry.invisibles.remove(entity);
+                }
+            }
         }
     }
     // clear tower aiming
@@ -778,22 +835,36 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
             break;
         }
         case GLFW_KEY_M:
-            if (action == GLFW_RELEASE) {
-                for (auto &enemy_entity : enemies) {
-                    if (registry.enemies.get(enemy_entity).spawned) {
-                        auto &hitbox_visualization = registry.hitboxVisualizations.get(enemy_entity);
-                        for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
-                            if (!registry.invisibles.has(line_entity)) {
-                                registry.invisibles.emplace(line_entity);
+            // TODO: show_visualizations switch to toggle visualizations
+            if (action == GLFW_PRESS) {
+                if (!show_visualizations) {
+                    show_visualizations = true;
+                    for (auto &enemy_entity : enemies) {
+                        if (registry.enemies.get(enemy_entity).spawned) {
+                            auto &hitbox_visualization = registry.hitboxVisualizations.get(enemy_entity);
+                            for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                                registry.invisibles.remove(line_entity);
+                            }
+                        }
+
+                    }
+                    for (auto &consumable_entity : consumables) {
+                        if (registry.barriers.has(consumable_entity) || registry.spikes.has(consumable_entity)) {
+                            if (registry.consumables.get(consumable_entity).placed) {
+                                auto &hitbox_visualization = registry.hitboxVisualizations.get(consumable_entity);
+                                for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                                    registry.invisibles.remove(line_entity);
+                                }
                             }
                         }
                     }
-
-                }
-                for (auto &consumable_entity : consumables) {
-                    if (registry.barriers.has(consumable_entity) || registry.spikes.has(consumable_entity)) {
-                        if (registry.consumables.get(consumable_entity).placed) {
-                            auto &hitbox_visualization = registry.hitboxVisualizations.get(consumable_entity);
+                    for (auto &sword_entity : registry.swords.entities) {
+                        auto &hitbox_visualization = registry.hitboxVisualizations.get(sword_entity);
+                        if (registry.swords.get(sword_entity).has_collision) {
+                            for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                                registry.invisibles.remove(line_entity);
+                            }
+                        } else {
                             for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
                                 if (!registry.invisibles.has(line_entity)) {
                                     registry.invisibles.emplace(line_entity);
@@ -801,63 +872,71 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
                             }
                         }
                     }
-                }
-                for (auto &sword_entity : registry.swords.entities) {
-                    auto &hitbox_visualization = registry.hitboxVisualizations.get(sword_entity);
-                    for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
-                        if (!registry.invisibles.has(line_entity)) {
-                            registry.invisibles.emplace(line_entity);
-                        }
-                    }
-                }
-                for (auto &arrow_entity : registry.arrows.entities) {
-                    auto &hitbox_visualization = registry.hitboxVisualizations.get(arrow_entity);
-                    for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
-                        if (!registry.invisibles.has(line_entity)) {
-                            registry.invisibles.emplace(line_entity);
-                        }
-                    }
-                }
-            } else { // GLFW_PRESS and on windows also GLFW_REPEAT
-                for (auto &enemy_entity : enemies) {
-                    if (registry.enemies.get(enemy_entity).spawned) {
-                        auto &hitbox_visualization = registry.hitboxVisualizations.get(enemy_entity);
+                    for (auto &arrow_entity : registry.arrows.entities) {
+                        auto &hitbox_visualization = registry.hitboxVisualizations.get(arrow_entity);
                         for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
                             registry.invisibles.remove(line_entity);
                         }
                     }
-
-                }
-                for (auto &consumable_entity : consumables) {
-                    if (registry.barriers.has(consumable_entity) || registry.spikes.has(consumable_entity)) {
-                        if (registry.consumables.get(consumable_entity).placed) {
-                            auto &hitbox_visualization = registry.hitboxVisualizations.get(consumable_entity);
+                    for (auto tile_entity : registry.pathVisualizations.entities) {
+                        registry.invisibles.remove(tile_entity);
+                    }
+                    for (auto tile_entity : registry.towerVisualizations.entities) {
+                        registry.invisibles.remove(tile_entity);
+                    }
+                } else {
+                    show_visualizations = false;
+                    for (auto &enemy_entity : enemies) {
+                        if (registry.enemies.get(enemy_entity).spawned) {
+                            auto &hitbox_visualization = registry.hitboxVisualizations.get(enemy_entity);
                             for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
-                                registry.invisibles.remove(line_entity);
+                                if (!registry.invisibles.has(line_entity)) {
+                                    registry.invisibles.emplace(line_entity);
+                                }
+                            }
+                        }
+
+                    }
+                    for (auto &consumable_entity : consumables) {
+                        if (registry.barriers.has(consumable_entity) || registry.spikes.has(consumable_entity)) {
+                            if (registry.consumables.get(consumable_entity).placed) {
+                                auto &hitbox_visualization = registry.hitboxVisualizations.get(consumable_entity);
+                                for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                                    if (!registry.invisibles.has(line_entity)) {
+                                        registry.invisibles.emplace(line_entity);
+                                    }
+                                }
                             }
                         }
                     }
-                }
-                for (auto &sword_entity : registry.swords.entities) {
-                    auto &hitbox_visualization = registry.hitboxVisualizations.get(sword_entity);
-                    if (registry.swords.get(sword_entity).has_collision) {
-                        for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
-                            registry.invisibles.remove(line_entity);
-                        }
-                    } else {
+                    for (auto &sword_entity : registry.swords.entities) {
+                        auto &hitbox_visualization = registry.hitboxVisualizations.get(sword_entity);
                         for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
                             if (!registry.invisibles.has(line_entity)) {
                                 registry.invisibles.emplace(line_entity);
                             }
                         }
                     }
-                }
-                for (auto &arrow_entity : registry.arrows.entities) {
-                    auto &hitbox_visualization = registry.hitboxVisualizations.get(arrow_entity);
-                    for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
-                        registry.invisibles.remove(line_entity);
+                    for (auto &arrow_entity : registry.arrows.entities) {
+                        auto &hitbox_visualization = registry.hitboxVisualizations.get(arrow_entity);
+                        for (auto &line_entity: hitbox_visualization.lines[hitbox_visualization.active_poly]) {
+                            if (!registry.invisibles.has(line_entity)) {
+                                registry.invisibles.emplace(line_entity);
+                            }
+                        }
+                    }
+                    for (auto tile_entity : registry.pathVisualizations.entities) {
+                        if (!registry.invisibles.has(tile_entity)) {
+                            registry.invisibles.emplace(tile_entity);
+                        }
+                    }
+                    for (auto tile_entity : registry.towerVisualizations.entities) {
+                        if (!registry.invisibles.has(tile_entity)) {
+                            registry.invisibles.emplace(tile_entity);
+                        }
                     }
                 }
+
             }
             break;
         case GLFW_KEY_R: {
@@ -891,7 +970,8 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
         if (dragging) {
             if (registry.cards.has(dragged_entity)) {
                 registry.stationaries.get(dragged_entity).position = pos;
-                registry.stationaries.get(placement_marker).position = pos;
+                registry.stationaries.get(placement_marker[0]).position = pos;
+                registry.stationaries.get(placement_marker[1]).position = pos;
                 //registry.stationaries.get(dragged_entity).scale = vec2(0.5 * CARD_WIDTH, 0.5 * CARD_HEIGHT);
             }
         } else if (pos[1] > (CARD_AXIS_HEIGHT - CARD_HEIGHT / 2) && pos[1] < (CARD_AXIS_HEIGHT + CARD_HEIGHT / 2) &&
@@ -972,10 +1052,26 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                 dragging = false;
                 registry.cards.get(dragged_entity).dragged = false;
                 registry.invisibles.remove(dragged_entity);
-                if (!registry.invisibles.has(placement_marker)) {
-                    registry.invisibles.emplace(placement_marker);
+                if (!registry.invisibles.has(placement_marker[0])) {
+                    registry.invisibles.emplace(placement_marker[0]);
+                }
+                if (!registry.invisibles.has(placement_marker[1])) {
+                    registry.invisibles.emplace(placement_marker[1]);
                 }
                 realignCards();
+                if (!show_visualizations) {
+                    for (const auto entity : registry.towerVisualizations.entities) {
+                        if (!registry.invisibles.has(entity)) {
+                            registry.invisibles.emplace(entity);
+                        }
+
+                    }
+                    for (const auto entity : registry.pathVisualizations.entities) {
+                        if (!registry.invisibles.has(entity)) {
+                            registry.invisibles.emplace(entity);
+                        }
+                    }
+                }
             }
             //if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) { //TODO move this to on_mouse_move
             //    if (registry.cards.has(dragged_entity)) {
@@ -990,13 +1086,16 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                 const auto &mapProperties = maps.get(map);
                 vec2 card_pos = registry.stationaries.get(dragged_entity).position;
                 registry.invisibles.remove(dragged_entity);
-                if (!registry.invisibles.has(placement_marker)) {
-                    registry.invisibles.emplace(placement_marker);
+                if (!registry.invisibles.has(placement_marker[0])) {
+                    registry.invisibles.emplace(placement_marker[0]);
+                }
+                if (!registry.invisibles.has(placement_marker[1])) {
+                    registry.invisibles.emplace(placement_marker[1]);
                 }
 
                 // block placement on other towers
                 bool place_occupied = false;
-                constexpr float tower_blocked_radius = TOWER_HEIGHT;
+                constexpr float tower_blocked_radius = TILE_HEIGHT;
                 //abs(distance(vec2(0, 0), vec2(TOWER_WIDTH, TOWER_HEIGHT)));
                 for (std::size_t tower_index = 0; tower_index < registry.towers.size(); ++tower_index) {
                     if (!registry.towers.components[tower_index].placed) {
@@ -1010,7 +1109,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                 }
 
                 // block placement on enemy path
-                float path_blocked_radius = TOWER_WIDTH / 1.5f;//window_height_px * 0.05;
+                float path_blocked_radius = TILE_WIDTH / 2 + TOWER_WIDTH / 2;//window_height_px * 0.05;
                 if (abs(distance(mapProperties.checkpoints[0], card_pos)) < path_blocked_radius) {
                     place_occupied = true;
                 }
@@ -1052,7 +1151,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         registry.cards.get(dragged_entity).dragged = false;
                     }
                 } else {
-                    // successfully place card as tower or bomb
+                    // successfully place card as tower or consumable
                     std::erase(cards, dragged_entity); // C++20 is nice
                     if (registry.towers.has(dragged_entity)) {
                         createTowerFromCard(renderer, dragged_entity);
@@ -1074,12 +1173,37 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                                 }
                             }
                         }
+
+                        if (registry.knights.has(dragged_entity)) {
+                            if (show_visualizations) {
+                                auto visualization = registry.hitboxVisualizations.get(registry.knights.get(dragged_entity).sword);
+                                for (const auto &entity: visualization.lines[visualization.active_poly]) {
+                                    registry.invisibles.remove(entity);
+                                }
+                            }
+                        }
+
+
+
                     } else if (registry.consumables.has(dragged_entity)) {
                         createConsumableFromCard(renderer, dragged_entity, player, consumables);
                         //auto consumable_motion = registry.motions.get(dragged_entity);
                     }
                 }
                 realignCards();
+                if (!show_visualizations) {
+                    for (const auto entity : registry.towerVisualizations.entities) {
+                        if (!registry.invisibles.has(entity)) {
+                            registry.invisibles.emplace(entity);
+                        }
+
+                    }
+                    for (const auto entity : registry.pathVisualizations.entities) {
+                        if (!registry.invisibles.has(entity)) {
+                            registry.invisibles.emplace(entity);
+                        }
+                    }
+                }
             }
         } else {
             //TODO: move start of dragging here
@@ -1092,7 +1216,9 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         printf("z:%f\n", registry.renderForeground.get(dragged_entity).z_position);
                         if (!registry.healthPotions.has(dragged_entity)) {
                             registry.invisibles.emplace(dragged_entity);
-                            registry.stationaries.get(placement_marker).position = registry.stationaries.get(
+                            registry.stationaries.get(placement_marker[0]).position = registry.stationaries.get(
+                                    dragged_entity).position;
+                            registry.stationaries.get(placement_marker[1]).position = registry.stationaries.get(
                                     dragged_entity).position;
                             float marker_scale = 2 * TOWER_WIDTH;
                             if (registry.towers.has(dragged_entity)) {
@@ -1100,8 +1226,15 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                             } else if (registry.consumables.has(dragged_entity)) {
                                 marker_scale = 2 * registry.consumables.get(dragged_entity).range;
                             }
-                            registry.stationaries.get(placement_marker).scale = vec2(marker_scale, marker_scale);
-                            registry.invisibles.remove(placement_marker);
+                            registry.stationaries.get(placement_marker[0]).scale = vec2(marker_scale, marker_scale);
+                            registry.invisibles.remove(placement_marker[0]);
+                            registry.invisibles.remove(placement_marker[1]);
+                        }
+                        for (const auto entity : registry.towerVisualizations.entities) {
+                            registry.invisibles.remove(entity);
+                        }
+                        for (const auto entity : registry.pathVisualizations.entities) {
+                            registry.invisibles.remove(entity);
                         }
                     }
                 }

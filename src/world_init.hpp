@@ -63,7 +63,9 @@ void returnCardToItem(Entity card);
 Entity createMap(RenderSystem* renderer, const std::vector<vec2>& checkpoints,
                  std::default_random_engine rng, std::uniform_real_distribution<float> dist);
 // marker to place cards on combat map
-Entity createPlacementMarker(RenderSystem *renderer);
+std::vector<Entity> createPlacementMarker(RenderSystem *renderer);
+// shows where placement on path is blocked
+void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoints);
 // the overview map
 Entity createOverviewMap(RenderSystem* renderer);
 // location on the overview map

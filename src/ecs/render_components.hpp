@@ -46,6 +46,12 @@ struct HitboxVisualization {
     uint active_poly = 0;
 };
 
+struct PathVisualization {
+};
+
+struct TowerVisualization {
+};
+
 
 /**
  * The following enumerators represent global identifiers refering to graphic
@@ -164,6 +170,7 @@ const std::set texture_atlases = {
 	TEXTURE_ASSET_ID::TD_MAP_ATLAS,
 	TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS,
 	TEXTURE_ASSET_ID::BUTTONS,
+    TEXTURE_ASSET_ID::PLACEMENT_MARKER,
 };
 
 enum class FontType {
@@ -280,6 +287,13 @@ enum class BUTTONS {
 	START_DOWN,
 };
 
+enum class PLACEMENT_MARKER {
+	RANGE = 0,
+	PATH_SQUARE,
+	PATH_CIRCLE,
+	PLACEMENT,
+};
+
 inline std::vector<AtlasTexture> generate_atlas_lookup(const uint cols, const uint rows) {
 	const float tex_width = 1.f / cols, tex_height = 1.f / rows;
 	const uint count = cols * rows;
@@ -379,6 +393,9 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
             atlasLookup.emplace(atlas_id, generate_atlas_lookup(2, 2));
 			break;
 		}
+        case TEXTURE_ASSET_ID::PLACEMENT_MARKER: {
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(4, 1));
+        }
 		default:
 			assert(false && "Texture atlas has no textures defined");
 	}
