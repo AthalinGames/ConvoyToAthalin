@@ -285,6 +285,12 @@ enum class SLIME_WALK_FRAME {
 enum class BUTTONS {
 	START_UP = 0,
 	START_DOWN,
+	GENERIC_LEFT_UP,
+	GENERIC_LEFT_DOWN,
+	GENERIC_MIDDLE_UP,
+	GENERIC_MIDDLE_DOWN,
+	GENERIC_RIGHT_UP,
+	GENERIC_RIGHT_DOWN,
 };
 
 enum class PLACEMENT_MARKER {
@@ -390,11 +396,12 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
             break;
         }
 		case TEXTURE_ASSET_ID::BUTTONS: {
-            atlasLookup.emplace(atlas_id, generate_atlas_lookup(2, 2));
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(3, 3));
 			break;
 		}
         case TEXTURE_ASSET_ID::PLACEMENT_MARKER: {
             atlasLookup.emplace(atlas_id, generate_atlas_lookup(4, 1));
+			break;
         }
 		default:
 			assert(false && "Texture atlas has no textures defined");

@@ -340,3 +340,14 @@ struct StatusTextTimer {
 	float timer_ms = 2000.f;
     StatusType type = StatusType::HEALTH;
 };
+
+struct Button {
+	std::vector<std::function<void(bool)>> on_click_listeners{};
+	std::vector<Entity> cleanup_entities{};
+
+	void click(const bool pressing) {
+		for (const auto & on_click_listener : on_click_listeners) {
+			on_click_listener(pressing);
+		}
+	}
+};

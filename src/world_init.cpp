@@ -1440,6 +1440,100 @@ Entity createMerchantBackground() {
 	return entity;
 }
 
+Entity createButton(RenderSystem *renderer, const vec2 pos, const vec2 size, const std::string &text) {
+	const auto entity = Entity();
+
+	Button& button = registry.buttons.emplace(entity);
+
+	int tile_count = size.x/size.y;
+	if (tile_count < 2) {
+		tile_count = 2;
+	}
+	const vec2 tile_scale = {size.x/tile_count, size.y};
+
+	Stationary &position = registry.stationaries.emplace(entity);
+	position.position = pos;
+	position.scale = tile_scale;
+
+	const float x_offset = tile_scale.x;
+	std::vector<Stationary> stationaries{};
+	std::vector<uint> texture_ids{};
+	stationaries.push_back({
+		.position = {x_offset - size.x/2, pos.y},
+		.angle = 0,
+		.use_direction_sprite = false,
+		.scale = {}
+	});
+	texture_ids.push_back(static_cast<uint>(BUTTONS::GENERIC_LEFT_UP));
+	for (uint i = 0; i < tile_count - 2; ++i) {
+		stationaries.push_back({
+			.position = {(x_offset * (i + 1)) - size.x/2, pos.y},
+			.angle = 0,
+			.use_direction_sprite = false,
+			.scale = {}
+		});
+		texture_ids.push_back(static_cast<uint>(BUTTONS::GENERIC_MIDDLE_UP));
+	}
+	stationaries.push_back({
+		.position = {(x_offset * tile_count) - size.x/2, pos.y},
+		.angle = 0,
+		.use_direction_sprite = false,
+		.scale = {}
+	});
+	texture_ids.push_back(static_cast<uint>(BUTTONS::GENERIC_RIGHT_UP));
+
+	registry.renderForeground.insert(entity, {
+		.offset_positions = stationaries,
+		.atlas_ids = texture_ids,
+		.z_position = Z_MIDDLE,
+		.used_texture = TEXTURE_ASSET_ID::BUTTONS,
+		.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		.used_geometry = GEOMETRY_BUFFER_ID::SPRITE
+	});
+
+	button.cleanup_entities.push_back(createText(renderer, pos, {size.y/2, size.y}, text, FontType::SLIM));
+
+	button.on_click_listeners.push_back([&texture_ids] (const bool pressed) {
+		for (uint i = 0; i < texture_ids.size(); ++i) {
+			switch (static_cast<BUTTONS>(texture_ids[i])) {
+				case BUTTONS::GENERIC_LEFT_UP:
+					if (pressed) {
+						texture_ids[i] = static_cast<uint>(BUTTONS::GENERIC_LEFT_DOWN);
+					}
+					break;
+				case BUTTONS::GENERIC_MIDDLE_UP:
+					if (pressed) {
+						texture_ids[i] = static_cast<uint>(BUTTONS::GENERIC_MIDDLE_DOWN);
+					}
+					break;
+				case BUTTONS::GENERIC_RIGHT_UP:
+					if (pressed) {
+						texture_ids[i] = static_cast<uint>(BUTTONS::GENERIC_RIGHT_DOWN);
+					}
+					break;
+				case BUTTONS::GENERIC_LEFT_DOWN:
+					if (!pressed) {
+						texture_ids[i] = static_cast<uint>(BUTTONS::GENERIC_LEFT_UP);
+					}
+					break;
+				case BUTTONS::GENERIC_MIDDLE_DOWN:
+					if (!pressed) {
+						texture_ids[i] = static_cast<uint>(BUTTONS::GENERIC_MIDDLE_UP);
+					}
+					break;
+				case BUTTONS::GENERIC_RIGHT_DOWN:
+					if (!pressed) {
+						texture_ids[i] = static_cast<uint>(BUTTONS::GENERIC_RIGHT_UP);
+					}
+					break;
+				default:
+			}
+		}
+	});
+
+	return entity;
+}
+
 
 RenderRequest createTextRenderRequest(const std::string &text, const vec2 scale, const FontType font) {
 	RenderRequest request{};

@@ -60,6 +60,7 @@ public:
     ComponentContainer<HitboxVisualization> hitboxVisualizations;
     ComponentContainer<PathVisualization> pathVisualizations;
     ComponentContainer<TowerVisualization> towerVisualizations;
+	ComponentContainer<Button> buttons;
 
 	// constructor that adds all containers for looping over them
 	// IMPORTANT: Don't forget to add any newly added containers!
@@ -110,6 +111,7 @@ public:
         registry_list.push_back(&hitboxVisualizations);
         registry_list.push_back(&pathVisualizations);
         registry_list.push_back(&towerVisualizations);
+		registry_list.push_back(&buttons);
 	}
 
 	void clear_all_components() {

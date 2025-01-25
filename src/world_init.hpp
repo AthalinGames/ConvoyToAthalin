@@ -96,5 +96,7 @@ Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alph
 
 Entity createMerchantBackground();
 
+Entity createButton(RenderSystem* renderer, vec2 pos, vec2 size, const std::string &text);
+
 /// scale defines the scale of each character
 RenderRequest createTextRenderRequest(const std::string& text, vec2 scale, FontType font);
