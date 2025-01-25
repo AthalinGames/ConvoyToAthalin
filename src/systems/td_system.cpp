@@ -165,7 +165,7 @@ bool TDSystem::step(const float elapsed_ms) {
                         const float pos_angle = tower_motion.angle - 2 * M_PI * shot_timer.time / knight.swing_time - M_PI_2;
                         sword_motion.angle = pos_angle - M_PI_2 - M_PI_2 / 2;
                         const float radius = registry.towers.get(tower_entity).range - 0.5f * TOWER_WIDTH;
-                        sword_motion.position = tower_motion.position - radius * vec2(cos(pos_angle), sin(pos_angle)) + vec2(0, TOWER_HEIGHT * 0.25);
+                        sword_motion.position = tower_motion.position - radius * vec2(cos(pos_angle), sin(pos_angle));// + vec2(0, TOWER_HEIGHT * 0.25);
                     }
                     else {
                         if (!sword_motion.use_direction_sprite) {
@@ -1093,7 +1093,7 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
 
                 // block placement on other towers
                 bool place_occupied = false;
-                constexpr float tower_blocked_radius = TILE_HEIGHT;
+                constexpr float tower_blocked_radius = TOWER_HEIGHT;
                 //abs(distance(vec2(0, 0), vec2(TOWER_WIDTH, TOWER_HEIGHT)));
                 for (std::size_t tower_index = 0; tower_index < registry.towers.size(); ++tower_index) {
                     if (!registry.towers.components[tower_index].placed) {
