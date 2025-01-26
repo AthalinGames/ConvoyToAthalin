@@ -78,9 +78,7 @@ struct TowerVisualization {
  */
 
 enum class TEXTURE_ASSET_ID {
-	FISH = 0,
-	TURTLE,
-	ARCHER,
+	ARCHER = 0,
     KNIGHT,
     BOMB,
     SPIKES,
@@ -107,13 +105,12 @@ enum class TEXTURE_ASSET_ID {
 	SLIM_ASCII_CHAR_ATLAS,
 	BUTTONS,
     HITBOX_LINE,
+	SHOP_MERCHANT,
 	TEXTURE_COUNT
 };
 
 constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 	switch (id) {
-		case TEXTURE_ASSET_ID::FISH: return "fish.png";
-		case TEXTURE_ASSET_ID::TURTLE: return "turtle.png";
 		case TEXTURE_ASSET_ID::ARCHER: return "archer.png";
         case TEXTURE_ASSET_ID::KNIGHT: return "knight.png";
         case TEXTURE_ASSET_ID::BOMB: return "items/bomb.png";
@@ -141,6 +138,7 @@ constexpr const char* TextureAssetIDToString(const TEXTURE_ASSET_ID id) {
 		case TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS: return "font.png";
 		case TEXTURE_ASSET_ID::BUTTONS: return "buttons.png";
         case TEXTURE_ASSET_ID::HITBOX_LINE: return "hitbox_line.png";
+		case TEXTURE_ASSET_ID::SHOP_MERCHANT: return "shop.png";
 		default: {
 			fprintf(stderr, "Invalid TEXTURE_ASSET_ID: %d", static_cast<int>(id));
 			assert(false);
@@ -194,6 +192,8 @@ enum class OVERVIEW_ICON_TEXTURES {
 	SELECTION,
 	END,
 	FIGHT,
+	MERCHANT,
+	GARRISON,
 	COUNT
 };
 
@@ -287,74 +287,58 @@ enum class SLIME_WALK_FRAME {
 enum class BUTTONS {
 	START_UP = 0,
 	START_DOWN,
+	GENERIC_LEFT_UP,
+	GENERIC_LEFT_DOWN,
+	GENERIC_MIDDLE_UP,
+	GENERIC_MIDDLE_DOWN,
+	GENERIC_RIGHT_UP,
+	GENERIC_RIGHT_DOWN,
 };
 
 enum class PLACEMENT_MARKER {
-    RANGE = 0,
-    PATH_SQUARE,
-    PATH_CIRCLE,
-    PLACEMENT,
+	RANGE = 0,
+	PATH_SQUARE,
+	PATH_CIRCLE,
+	PLACEMENT,
 };
+
+inline std::vector<AtlasTexture> generate_atlas_lookup(const uint cols, const uint rows) {
+	const float tex_width = 1.f / cols, tex_height = 1.f / rows;
+	const uint count = cols * rows;
+	std::vector<AtlasTexture> atlas_textures{};
+	for (uint i = 0; i < count; ++i) {
+		const float x_start = (i % cols) * tex_width;
+		const float y_start = (i / cols) * tex_height;
+		AtlasTexture& texDef = atlas_textures.emplace_back();
+		texDef.tex_pos = vec2(x_start, y_start);
+		texDef.tex_size = vec2(tex_width, tex_height);
+	}
+	return atlas_textures;
+}
 
 inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<TEXTURE_ASSET_ID, std::vector<AtlasTexture>>& atlasLookup) {
 	// here the texture positions are defined
 	switch (atlas_id) {
 		case TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS: {
-			constexpr unsigned int cols = 3, rows = 3, maxCount = cols * rows;
-			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-			constexpr auto definedCount = static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::COUNT);
-			assert(definedCount <= maxCount); // Atlas cannot have more defined textures than available space
-			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-			for (unsigned int i = 0; i < definedCount; i++) {
-				const float x_start = (i % cols) * tex_width;
-				const float y_start = (i / cols) * tex_height;
-				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-				texDef.tex_pos = vec2(x_start, y_start);
-				texDef.tex_size = vec2(tex_width, tex_height);
-			}
+			atlasLookup.emplace(atlas_id, generate_atlas_lookup(3, 3));
 			break;
 		}
 		// TODO think about a collective font system
 		case TEXTURE_ASSET_ID::SLIM_ASCII_CHAR_ATLAS: {
 			// TODO remember that the char offset is 0x20, so to get the correct char you need to subtract 0x20
-			constexpr unsigned int cols = 18, rows = 6, maxCount = cols * rows;
-			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-			for (unsigned int i = 0; i < maxCount; i++) {
-				const float x_start = (i % cols) * tex_width;
-				const float y_start = (i / cols) * tex_height;
-				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-				texDef.tex_pos = vec2(x_start, y_start);
-				texDef.tex_size = vec2(tex_width, tex_height);
-			}
+			atlasLookup.emplace(atlas_id, generate_atlas_lookup(18, 6));
 			break;
 		}
 		case TEXTURE_ASSET_ID::ASCII_CHAR_ATLAS: {
 			// TODO remember that the char offset is 0x20, so to get the correct char you need to subtract 0x20
-			constexpr unsigned int cols = 18, rows = 7, maxCount = cols * rows;
-			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-			for (unsigned int i = 0; i < maxCount; i++) {
-				const float x_start = (i % cols) * tex_width;
-				const float y_start = (i / cols) * tex_height;
-				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-				texDef.tex_pos = vec2(x_start, y_start);
-				texDef.tex_size = vec2(tex_width, tex_height);
-			}
+			atlasLookup.emplace(atlas_id, generate_atlas_lookup(18, 7));
 			break;
 		}
 		case TEXTURE_ASSET_ID::TD_MAP_ATLAS: {
-			constexpr unsigned int cols = 4, rows = 4, maxCount = cols * rows;
+			constexpr unsigned int cols = 4, rows = 4;
 			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
 			// insert actual texture positions
-			for (unsigned int i = 0; i < maxCount; i++) {
-				const float x_start = (i % cols) * tex_width;
-				const float y_start = (i / cols) * tex_height;
-				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-				texDef.tex_pos = vec2(x_start, y_start);
-				texDef.tex_size = vec2(tex_width, tex_height);
-			}
+			atlasLookup.emplace(atlas_id, generate_atlas_lookup(cols, rows));
 			// insert mirrored texture positions
 			AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
 			texDef.tex_pos = vec2(3 * tex_width, 0);
@@ -374,162 +358,52 @@ inline void initTextureAtlasTextures(const TEXTURE_ASSET_ID atlas_id, std::map<T
 			break;
 		}
 		case TEXTURE_ASSET_ID::TD_MAP_DECORATION_ATLAS: {
-			constexpr unsigned int cols = 3, rows = 3, maxCount = cols * rows;
-			constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-			constexpr auto definedCount = static_cast<unsigned int>(TD_MAP_DECORATION_TEXTURES::COUNT);
-			assert(definedCount <= maxCount); // Atlas cannot have more defined textures than available space
-			atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-			for (unsigned int i = 0; i < definedCount; i++) {
-				const float x_start = (i % cols) * tex_width;
-				const float y_start = (i / cols) * tex_height;
-				AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-				texDef.tex_pos = vec2(x_start, y_start);
-				texDef.tex_size = vec2(tex_width, tex_height);
-			}
+			atlasLookup.emplace(atlas_id, generate_atlas_lookup(3, 3));
 			break;
 		}
         case TEXTURE_ASSET_ID::ARCHER: {
-            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(2, 2));
             break;
         }
         case TEXTURE_ASSET_ID::BOW: {
-            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(2, 2));
             break;
         }
         case TEXTURE_ASSET_ID::KNIGHT: {
-            constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(2, 2));
             break;
         }
         case TEXTURE_ASSET_ID::SWORD: {
-            constexpr unsigned int cols = 2, rows = 3, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(2, 3));
             break;
         }
         case TEXTURE_ASSET_ID::BOMB: {
-            constexpr unsigned int cols = 4, rows = 2, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(4, 2));
             break;
         }
         case TEXTURE_ASSET_ID::SPIKES: {
-            constexpr unsigned int cols = 3, rows = 1, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(3, 1));
             break;
         }
         case TEXTURE_ASSET_ID::BARRIER: {
-            constexpr unsigned int cols = 3, rows = 1, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(3, 1));
             break;
         }
         case TEXTURE_ASSET_ID::SLIME: {
-            constexpr unsigned int cols = 3, rows = 4, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(3, 4));
             break;
         }
         case TEXTURE_ASSET_ID::SLIME_BIG: {
-            constexpr unsigned int cols = 3, rows = 4, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(3, 4));
             break;
         }
 		case TEXTURE_ASSET_ID::BUTTONS: {
-			constexpr unsigned int cols = 2, rows = 2, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(3, 3));
 			break;
 		}
         case TEXTURE_ASSET_ID::PLACEMENT_MARKER: {
-            constexpr unsigned int cols = 4, rows = 1, maxCount = cols * rows;
-            constexpr float tex_width = 1.f / cols, tex_height = 1.f / rows;
-            atlasLookup.emplace(atlas_id, std::vector<AtlasTexture>{});
-            for (unsigned int i = 0; i < maxCount; i++) {
-                const float x_start = (i % cols) * tex_width;
-                const float y_start = (i / cols) * tex_height;
-                AtlasTexture& texDef = atlasLookup.at(atlas_id).emplace_back();
-                texDef.tex_pos = vec2(x_start, y_start);
-                texDef.tex_size = vec2(tex_width, tex_height);
-            }
-            break;
+            atlasLookup.emplace(atlas_id, generate_atlas_lookup(4, 1));
+			break;
         }
 		default:
 			assert(false && "Texture atlas has no textures defined");
