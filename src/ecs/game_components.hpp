@@ -10,10 +10,10 @@
 class Player {
 	int health = 100;
 	int food = 10;
+	int coins = 0;
 
 	public:
     int maxHealth = 100;
-    int coins = 0;
 	int baseFoodGain = 5;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
@@ -23,9 +23,11 @@ class Player {
 
 	std::function<void(int new_hp, int old_hp)> health_update_callback = [](int ...){};
 	std::function<void(int new_food, int old_food)> food_update_callback = [](int ...){};
+	std::function<void(int new_coins, int old_coins)> coins_update_callback = [](int ...){};
 
 	int getHealth() const { return health; }
 	int getFood() const { return food; }
+	int getCoins() const { return coins; }
 
 	void updateHealth(const int new_hp) {
 		health_update_callback(new_hp, health);
@@ -35,6 +37,11 @@ class Player {
 	void updateFood(const int new_food) {
 		food_update_callback(new_food, food);
 		food = new_food;
+	}
+
+	void updateCoins(const int new_coins) {
+		coins_update_callback(new_coins, coins);
+		coins = new_coins;
 	}
 
 	~Player() {
@@ -62,6 +69,7 @@ public:
     float section_progress = 0.f;
     bool alive = true;
 	int damage = 10; // damage to player if enemy completes path
+	int coin_gain = 1;
     std::vector<Entity> spawns_enemies; // spawns these enemies (eg. on death)
 
 	explicit Enemy(const std::function<void()> &damage_callback) : damage_callback(damage_callback) {}
@@ -114,7 +122,9 @@ constexpr unsigned int item_type_count = consumable_type_count + tower_type_coun
 
 using ItemType = std::variant<TowerType, ConsumableType>;
 
-struct Item {};
+struct Item {
+	int gold_cost = 5;
+};
 
 // Tower components
 enum class EnemyPriority {
@@ -270,10 +280,17 @@ struct Map
 	}
 };
 
+enum class LocationType {
+	FIGHT = 0,
+	GARRISON,
+	MERCHANT,
+};
+
 struct OverviewMapLocation {
 	std::vector<Entity> next_locations{};
 	std::vector<Entity> previous_locations{};
 	Entity overview_selection;
+	LocationType type;
 	bool selectable = false;
 	bool active = false;
 };
@@ -315,10 +332,26 @@ struct HitTimer {
 
 enum class StatusType {
     HEALTH = 0,
-    FOOD
+    FOOD,
+	COINS
 };
 
 struct StatusTextTimer {
 	float timer_ms = 2000.f;
     StatusType type = StatusType::HEALTH;
+};
+
+struct Button {
+	std::vector<std::function<void(bool)>> on_click_listeners{};
+	std::function<void()> cleanup_func = []{};
+
+	void click(const bool pressing) {
+		for (const auto & on_click_listener : on_click_listeners) {
+			on_click_listener(pressing);
+		}
+	}
+
+	~Button() {
+		cleanup_func();
+	}
 };

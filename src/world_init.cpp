@@ -30,6 +30,8 @@ Entity createPlayer(RenderSystem *renderer) {
         std::string status_sign;
         if (new_hp - old_hp >= 0) {
             status_sign = "+";
+        } else {
+	        status_sign = "-";
         }
 		createStatusText(renderer, status_sign + std::to_string(new_hp - old_hp) + " HP", new_hp > old_hp, StatusType::HEALTH);
 	};
@@ -46,8 +48,28 @@ Entity createPlayer(RenderSystem *renderer) {
         std::string status_sign;
         if (new_food - old_food >= 0) {
             status_sign = "+";
+        } else {
+	        status_sign = "-";
         }
 		createStatusText(renderer, status_sign + std::to_string(new_food - old_food) + " Food", new_food > old_food, StatusType::FOOD);
+	};
+
+	const auto coins_text = createText(renderer, {TILE_WIDTH * 4 - TILE_WIDTH / 8, TILE_HEIGHT / 4}, text_scale, "Coins:",
+											 FontType::SLIM);
+	player.status_bar_entities.push_back(coins_text);
+
+	const auto coins_number = createText(renderer, {TILE_WIDTH * 5.2, TILE_HEIGHT / 4}, text_scale,
+		                                 std::to_string(player.getCoins()), FontType::SLIM);
+	player.status_bar_entities.push_back(coins_number);
+	player.coins_update_callback = [coins_number, &renderer](const int new_coins, const int old_coins) {
+		updateText(coins_number, std::to_string(new_coins));
+		std::string status_sign;
+		if (new_coins - old_coins >= 0) {
+			status_sign = "+";
+		} else {
+			status_sign = "-";
+		}
+		createStatusText(renderer, status_sign + std::to_string(new_coins - old_coins) + " Coins", new_coins > old_coins, StatusType::COINS);
 	};
 
 	return entity;
@@ -109,17 +131,29 @@ Entity createItem(const ItemType item) {
 	return entity;
 }
 
-Entity createRandomItem(std::default_random_engine &rng) {
+Entity createRandomItem(std::default_random_engine &rng, const std::optional<ItemType> itemType) {
+	if (itemType.has_value()) {
+		return std::visit(overloaded{
+			[&rng] (const TowerType) {
+				std::uniform_int_distribution<uint> dist(0, tower_type_count - 1);
+				return createItem(static_cast<TowerType>(dist(rng)));
+			},
+			[&rng] (const ConsumableType) {
+				std::uniform_int_distribution<uint> dist(0, consumable_type_count - 1);
+				return createItem(static_cast<ConsumableType>(dist(rng)));
+			}
+		}, itemType.value());
+	}
 	std::uniform_int_distribution<unsigned int> distribution(0, item_type_count - 1);
 	const unsigned int item_id = distribution(rng);
 	if (item_id < tower_type_count) {
 		return createItem(static_cast<TowerType>(item_id));
-	} else if (item_id < consumable_type_count + tower_type_count) {
-		return createItem(static_cast<ConsumableType>(item_id - tower_type_count));
-	} else {
-		assert(false && "Invalid item type");
-		return Entity();
 	}
+	if (item_id < consumable_type_count + tower_type_count) {
+		return createItem(static_cast<ConsumableType>(item_id - tower_type_count));
+	}
+	assert(false && "Invalid item type");
+	return Entity();
 }
 
 void createHitboxVisualization(RenderSystem *renderer, const Entity entity, const std::vector<std::vector<vec2>> polys) {
@@ -138,7 +172,7 @@ void createHitboxVisualization(RenderSystem *renderer, const Entity entity, cons
         std::vector<vec2> offsets;
         std::vector<float> angles;
 
-        for (int i = 0; i < poly.size() - 1; ++i) {
+        for (uint i = 0; i < poly.size() - 1; ++i) {
             vec2 vert_curr = poly[i];
             vec2 vert_next = poly[i + 1];
             vec2 middle = 0.5f * (vert_next + vert_curr);
@@ -566,7 +600,7 @@ Entity createEnemy(RenderSystem *renderer, const vec2 pos, const EnemyType enemy
 
     //TODO: for each collision poly
     std::vector<std::vector<vec2>> polys;
-    for (int i = 0;
+    for (uint i = 0;
          i < static_cast<unsigned int>(DIRECTION_SPRITE::COUNT) * static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT);
          i += static_cast<unsigned int>(SLIME_WALK_FRAME::COUNT)) {
         polys.push_back(getCollisionMeshOfTexture(registry.renderGameLayer.get(entity).used_texture, i));
@@ -1092,6 +1126,7 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 	auto &properties = registry.overviewMapLocations.emplace(entity);
 	properties.active = true;
 	properties.overview_selection = createOverviewSelection(renderer, pos);
+	properties.type = LocationType::FIGHT;
 
 	registry.renderBackground.insert(entity, {
 		                                 {Stationary{}},
@@ -1104,6 +1139,62 @@ Entity createFightLocation(RenderSystem *renderer, const vec2 pos) {
 
 	return entity;
 }
+
+Entity createGarrisonLocation(RenderSystem *renderer, const vec2 pos) {
+	const auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary &garrison_location_pos = registry.stationaries.emplace(entity);
+	garrison_location_pos.position = pos;
+	garrison_location_pos.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
+
+	auto &properties = registry.overviewMapLocations.emplace(entity);
+	properties.active = true;
+	properties.overview_selection = createOverviewSelection(renderer, pos);
+	properties.type = LocationType::GARRISON;
+
+	registry.renderBackground.insert(entity, {
+		{Stationary{}},
+		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::GARRISON)},
+		Z_BACKGROUND / 2,
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+Entity createShopLocation(RenderSystem *renderer, const vec2 pos) {
+	const auto entity = Entity();
+
+	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
+	registry.meshPtrs.emplace(entity, &mesh);
+
+	Stationary &garrison_location_pos = registry.stationaries.emplace(entity);
+	garrison_location_pos.position = pos;
+	garrison_location_pos.scale = vec2({OVERVIEW_ICON_WIDTH, OVERVIEW_ICON_HEIGHT});
+
+	auto &properties = registry.overviewMapLocations.emplace(entity);
+	properties.active = true;
+	properties.overview_selection = createOverviewSelection(renderer, pos);
+	properties.type = LocationType::MERCHANT;
+
+	registry.renderBackground.insert(entity, {
+		{Stationary{}},
+		{static_cast<unsigned int>(OVERVIEW_ICON_TEXTURES::MERCHANT)},
+		Z_BACKGROUND / 2,
+		TEXTURE_ASSET_ID::OVERVIEW_ICONS_ATLAS,
+		EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+
 
 Entity createStartIcon(RenderSystem *renderer) {
 	const auto entity = Entity();
@@ -1329,6 +1420,129 @@ Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size
 
 	return entity;
 }
+
+Entity createMerchantBackground() {
+	const auto entity = Entity();
+
+	Stationary &position = registry.stationaries.emplace(entity);
+	position.position = {window_width_px/2, window_height_px/2};
+	position.scale = {window_width_px, window_height_px};
+
+	registry.renderBackground.insert(entity, {
+		{Stationary{}},
+		{},
+		Z_FOREGROUND,
+		TEXTURE_ASSET_ID::SHOP_MERCHANT,
+		EFFECT_ASSET_ID::TEXTURED,
+		GEOMETRY_BUFFER_ID::SPRITE,
+	});
+
+	return entity;
+}
+
+Entity createButton(RenderSystem *renderer, const vec2 pos, const vec2 size, const std::string &text) {
+	const auto entity = Entity();
+
+	Button& button = registry.buttons.emplace(entity);
+
+	uint tile_count = size.x/size.y;
+	if (tile_count < 2) {
+		tile_count = 2;
+	}
+	const vec2 tile_scale = {size.x/tile_count, size.y};
+
+	Stationary &position = registry.stationaries.emplace(entity);
+	position.position = pos;
+	position.scale = tile_scale;
+
+	const float x_offset = tile_scale.x;
+	const float x_offset_total = size.x/2 - x_offset/2;
+	std::vector<Stationary> stationaries{};
+	std::vector<uint> texture_ids{};
+	stationaries.push_back({
+		.position = {- x_offset_total, 0},
+		.angle = 0,
+		.use_direction_sprite = false,
+		.scale = tile_scale
+	});
+	texture_ids.push_back(static_cast<uint>(BUTTONS::GENERIC_LEFT_UP));
+	for (uint i = 0; i < tile_count - 2; ++i) {
+		stationaries.push_back({
+			.position = {(x_offset * (i + 1)) - x_offset_total, 0},
+			.angle = 0,
+			.use_direction_sprite = false,
+			.scale = tile_scale
+		});
+		texture_ids.push_back(static_cast<uint>(BUTTONS::GENERIC_MIDDLE_UP));
+	}
+	stationaries.push_back({
+		.position = {(x_offset * (tile_count - 1)) - x_offset_total, 0},
+		.angle = 0,
+		.use_direction_sprite = false,
+		.scale = tile_scale
+	});
+	texture_ids.push_back(static_cast<uint>(BUTTONS::GENERIC_RIGHT_UP));
+
+	registry.renderForeground.insert(entity, {
+		.offset_positions = stationaries,
+		.atlas_ids = texture_ids,
+		.z_position = Z_MIDDLE,
+		.used_texture = TEXTURE_ASSET_ID::BUTTONS,
+		.used_effect = EFFECT_ASSET_ID::TEXTURED_ATLAS,
+		.used_geometry = GEOMETRY_BUFFER_ID::SPRITE
+	});
+
+	const vec2 font_scale = {size.y * 0.3, size.y * 0.6};
+
+	const Entity text_entity = createText(renderer, pos - vec2{(font_scale.x * text.size())/2, 0}, font_scale, text, FontType::SLIM);
+
+	button.on_click_listeners.push_back([entity] (const bool pressed) {
+		std::vector<uint> &atlas_ids = registry.renderForeground.get(entity).atlas_ids;
+		for (uint i = 0; i < atlas_ids.size(); ++i) {
+			switch (static_cast<BUTTONS>(atlas_ids[i])) {
+				case BUTTONS::GENERIC_LEFT_UP:
+					if (pressed) {
+						atlas_ids[i] = static_cast<uint>(BUTTONS::GENERIC_LEFT_DOWN);
+					}
+					break;
+				case BUTTONS::GENERIC_MIDDLE_UP:
+					if (pressed) {
+						atlas_ids[i] = static_cast<uint>(BUTTONS::GENERIC_MIDDLE_DOWN);
+					}
+					break;
+				case BUTTONS::GENERIC_RIGHT_UP:
+					if (pressed) {
+						atlas_ids[i] = static_cast<uint>(BUTTONS::GENERIC_RIGHT_DOWN);
+					}
+					break;
+				case BUTTONS::GENERIC_LEFT_DOWN:
+					if (!pressed) {
+						atlas_ids[i] = static_cast<uint>(BUTTONS::GENERIC_LEFT_UP);
+					}
+					break;
+				case BUTTONS::GENERIC_MIDDLE_DOWN:
+					if (!pressed) {
+						atlas_ids[i] = static_cast<uint>(BUTTONS::GENERIC_MIDDLE_UP);
+					}
+					break;
+				case BUTTONS::GENERIC_RIGHT_DOWN:
+					if (!pressed) {
+						atlas_ids[i] = static_cast<uint>(BUTTONS::GENERIC_RIGHT_UP);
+					}
+					break;
+				default:
+					break;
+			}
+		}
+	});
+
+	button.cleanup_func = [text_entity] {
+		registry.remove_all_components_of(text_entity);
+	};
+
+	return entity;
+}
+
 
 RenderRequest createTextRenderRequest(const std::string &text, const vec2 scale, const FontType font) {
 	RenderRequest request{};

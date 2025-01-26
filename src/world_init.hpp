@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <random>
 
 #include "common.hpp"
@@ -44,7 +45,7 @@ constexpr float Z_FOREGROUND = 1;
 Entity createPlayer(RenderSystem *renderer);
 // item
 Entity createItem(ItemType item);
-Entity createRandomItem(std::default_random_engine& rng);
+Entity createRandomItem(std::default_random_engine& rng, std::optional<ItemType> itemType = std::nullopt);
 // tower creation
 void createTowerFromCard(RenderSystem* renderer, Entity card);
 void returnTowerToItem(Entity tower);
@@ -69,6 +70,8 @@ void createPathVisualization(RenderSystem *renderer, std::vector<vec2> checkpoin
 Entity createOverviewMap(RenderSystem* renderer);
 // location on the overview map
 Entity createFightLocation(RenderSystem* renderer, vec2 pos);
+Entity createGarrisonLocation(RenderSystem* renderer, vec2 pos);
+Entity createShopLocation(RenderSystem* renderer, vec2 pos);
 // line between locations on the overview map
 Entity createOverviewLine(RenderSystem* renderer, vec2 firstPos, vec2 secondPos);
 // a red line for debugging purposes
@@ -90,6 +93,10 @@ Entity createStatusText(RenderSystem* renderer, const std::string &text, bool po
 Entity createGameOver(RenderSystem* renderer);
 
 Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alpha);
+
+Entity createMerchantBackground();
+
+Entity createButton(RenderSystem* renderer, vec2 pos, vec2 size, const std::string &text);
 
 /// scale defines the scale of each character
 RenderRequest createTextRenderRequest(const std::string& text, vec2 scale, FontType font);
