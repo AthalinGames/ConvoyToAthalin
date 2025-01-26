@@ -455,14 +455,14 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 		// Control the current speed with `<` `>`
 		case GLFW_KEY_COMMA: {
 			if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT)) {
-				current_speed -= 0.1f;
+                registry.players.get(player).game_speed -= 0.1f;
 				printf("Current speed = %f\n", registry.players.get(player).game_speed);
 			}
 			break;
 		}
 		case GLFW_KEY_PERIOD: {
 			if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT)) {
-				current_speed += 0.1f;
+                registry.players.get(player).game_speed += 0.1f;
 				printf("Current speed = %f\n", registry.players.get(player).game_speed);
 			}
 			break;
