@@ -40,6 +40,8 @@ private:
     Entity player;
     LocationType location;
 
+    Entity button;
+
     std::vector<Entity> new_cards;
 
     std::vector<Entity> cleanup_entities;

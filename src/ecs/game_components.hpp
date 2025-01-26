@@ -343,11 +343,15 @@ struct StatusTextTimer {
 
 struct Button {
 	std::vector<std::function<void(bool)>> on_click_listeners{};
-	std::vector<Entity> cleanup_entities{};
+	std::function<void()> cleanup_func = []{};
 
 	void click(const bool pressing) {
 		for (const auto & on_click_listener : on_click_listeners) {
 			on_click_listener(pressing);
 		}
+	}
+
+	~Button() {
+		cleanup_func();
 	}
 };

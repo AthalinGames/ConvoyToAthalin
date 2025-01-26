@@ -98,6 +98,9 @@ void ShopSystem::restartShop() {
     // Determine if Cards can be bought
     const Player& player_stats = registry.players.get(player);
     check_if_buyable(player_stats);
+
+    button = createButton(renderSystem, {window_width_px / 2, 2.1 * (window_height_px / 3)}, {CARD_WIDTH * 0.8, CARD_WIDTH * 0.25}, "Continue");
+    cleanup_entities.push_back(button);
 }
 
 bool ShopSystem::step(float elapsed_ms) const {
@@ -121,6 +124,15 @@ void ShopSystem::on_key(const int key, const int, const int action, const int mo
     }
 }
 
+bool check_mouse_collision(const vec2 pos, const Stationary& elem_pos) {
+    const vec2 dp = elem_pos.position - pos;
+    const float dist_squared = dot(dp, dp);
+    vec2 bounding_box = {abs(elem_pos.position.x), abs(elem_pos.position.y)};
+    bounding_box *= 0.1f;
+    const float card_squared = dot(bounding_box, bounding_box);
+    return dist_squared < card_squared;
+}
+
 void ShopSystem::on_mouse_move(const vec2 pos) {
     registry.clickables.clear();
 
@@ -130,23 +142,25 @@ void ShopSystem::on_mouse_move(const vec2 pos) {
             continue;
         }
         auto& card_pos = registry.stationaries.get(card);
-        const vec2 dp = card_pos.position - pos;
-        const float dist_squared = dot(dp, dp);
-        vec2 bounding_box = {abs(card_pos.position.x), abs(card_pos.position.y)};
-        bounding_box *= 0.1f;
-        const float card_squared = dot(bounding_box, bounding_box);
-        if (dist_squared < card_squared) {
+        if (check_mouse_collision(pos, card_pos)) {
             card_pos.scale = vec2(1.2 * CARD_WIDTH, 1.2 * CARD_HEIGHT);
             registry.clickables.emplace(card);
         } else {
             card_pos.scale = vec2(CARD_WIDTH, CARD_HEIGHT);
         }
     }
+    if (check_mouse_collision(pos, registry.stationaries.get(button))) {
+        registry.clickables.emplace(button);
+    }
 }
 
 void ShopSystem::on_mouse_button(const int button, const int action, int) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         for (const Entity entity : registry.clickables.entities) {
+            if (entity == this->button) {
+                registry.buttons.get(entity).click(true);
+                continue;
+            }
             returnCardToItem(entity);
             const Item& item = registry.items.get(entity);
             Player& player_stats = registry.players.get(player);
@@ -154,6 +168,11 @@ void ShopSystem::on_mouse_button(const int button, const int action, int) {
             std::erase(new_cards, entity);
             check_if_buyable(player_stats);
         }
+    } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        if (registry.clickables.has(this->button)) {
+            over = true;
+        }
+        registry.buttons.get(this->button).click(false);
     }
 }
 
