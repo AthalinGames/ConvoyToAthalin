@@ -162,9 +162,11 @@ void WorldSystem::init(RenderSystem* renderer) {
 }
 
 // Update our game world
-bool WorldSystem::step(const float elapsed_ms) {
+bool WorldSystem::step(const float elapsed_ms_raw) {
 	assert(registry.screenStates.components.size() <= 1);
 	ScreenState &screen = registry.screenStates.components[0];
+
+    const float elapsed_ms = elapsed_ms_raw * registry.players.get(player).game_speed;
 
 	float min_timer_ms = 4000.f;
 	for (const Entity entity: registry.deathTimers.entities) {
@@ -454,14 +456,14 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 		case GLFW_KEY_COMMA: {
 			if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT)) {
 				current_speed -= 0.1f;
-				printf("Current speed = %f\n", current_speed);
+				printf("Current speed = %f\n", registry.players.get(player).game_speed);
 			}
 			break;
 		}
 		case GLFW_KEY_PERIOD: {
 			if (action == GLFW_RELEASE && (mod & GLFW_MOD_SHIFT)) {
 				current_speed += 0.1f;
-				printf("Current speed = %f\n", current_speed);
+				printf("Current speed = %f\n", registry.players.get(player).game_speed);
 			}
 			break;
 		}
@@ -469,7 +471,7 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	}
 
 	// Enforce that the speed cannot be less than 0
-	current_speed = fmax(0.f, current_speed);
+    registry.players.get(player).game_speed = fmax(0.f, registry.players.get(player).game_speed);
 }
 
 void WorldSystem::on_mouse_move(const vec2 pos) {

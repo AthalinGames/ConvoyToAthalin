@@ -60,11 +60,11 @@ int main(const int argc, char* argv[]) {
 		// Calculating elapsed times in milliseconds from the previous iteration
 		auto now = Clock::now();
 		const float elapsed_ms =
-			static_cast<float>((std::chrono::duration_cast<std::chrono::microseconds>(now - t)).count()) / 1000 * 2;
+			static_cast<float>((std::chrono::duration_cast<std::chrono::microseconds>(now - t)).count()) / 1000;
 		t = now;
 
 		world_system.step(elapsed_ms);
-		physics_system.step(elapsed_ms);
+		physics_system.step(elapsed_ms, registry.players.get(world_system.getPlayer()).game_speed);
 
 		world_system.handle_collisions();
 		world_system.handle_post_collision_actions();

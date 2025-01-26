@@ -12,6 +12,7 @@ class Player {
 	int food = 10;
 
 	public:
+    float game_speed = 1.f;
     int maxHealth = 100;
     int coins = 0;
 	int baseFoodGain = 5;

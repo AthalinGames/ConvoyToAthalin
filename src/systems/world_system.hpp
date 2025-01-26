@@ -32,7 +32,7 @@ public:
     ~WorldSystem();
 
     // Steps the game ahead by ms milliseconds
-    bool step(float elapsed_ms);
+    bool step(float elapsed_ms_raw);
 
     // Check for collisions
     void handle_collisions() const;
@@ -42,6 +42,8 @@ public:
 
     // Should the game be over ?
     bool is_over()const;
+
+    Entity getPlayer()const {return player;};
 private:
     // Input callback functions
     void on_key(int key, int, int action, int mod);

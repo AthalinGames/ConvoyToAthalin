@@ -111,8 +111,9 @@ bool enemyPolyInBombRange(const Motion& bomb_motion, const float range, const Mo
     return false;
 }
 
-void PhysicsSystem::step(float elapsed_ms)
+void PhysicsSystem::step(float elapsed_ms_raw, const float game_speed)
 {
+    const float elapsed_ms = elapsed_ms_raw * game_speed;
 	// Move fish based on how much time has passed, this is to (partially) avoid
 	// having entities move at different speed based on the machine.
 	auto& motion_container = registry.motions;

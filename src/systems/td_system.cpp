@@ -943,9 +943,28 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
             }
             break;
         }
+            // Control the current speed with `<` `>`
+        case GLFW_KEY_COMMA: {
+            if (action == GLFW_RELEASE && (mods & GLFW_MOD_SHIFT)) {
+                registry.players.get(player).game_speed -= 0.1f;
+                current_speed -= 0.1f;
+                printf("Current speed = %f\n", registry.players.get(player).game_speed);
+            }
+            break;
+        }
+        case GLFW_KEY_PERIOD: {
+            if (action == GLFW_RELEASE && (mods & GLFW_MOD_SHIFT)) {
+                registry.players.get(player).game_speed += 0.1f;
+                current_speed += 0.1f;
+                printf("Current speed = %f\n", registry.players.get(player).game_speed);
+            }
+            break;
+        }
         default: {
         }
     }
+    // Enforce that the speed cannot be less than 0
+    registry.players.get(player).game_speed = fmax(0.f, registry.players.get(player).game_speed);
 }
 
 void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
