@@ -190,6 +190,37 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 	screen.screen_darken_factor = 1 - min_timer_ms / 4000;
 
     if (goal_reached) {
+        for (const auto entity : registry.scoreTimers.entities) {
+            auto &timer = registry.scoreTimers.get(entity);
+            timer.timer_ms -= elapsed_ms_raw;
+            if (timer.timer_ms <= 0.f) {
+                switch (score_progression) {
+                    case ScoreStep::START:
+                        createGameEnd(renderer); // TODO: only here to easily test
+                        createText(renderer, {TILE_WIDTH / 4, TILE_WIDTH * 6.5},
+                                   {TILE_WIDTH / 4, TILE_WIDTH / 4},
+                                   stats_string.data(),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::BATTLES;
+                        break;
+                    case ScoreStep::BATTLES
+                        //TODO: stats for previous text from player
+                        score_progression = ScoreStep::KILLS;
+                        break;
+                    case ScoreStep::CONTINUE:
+                        createText(renderer, {window_width_px - TILE_HEIGHT * 4, window_height_px - TILE_WIDTH / 4},
+                                   {TILE_WIDTH / 8, TILE_WIDTH / 8},
+                                   "Press any key to continue...",
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::WAIT;
+                        break;
+                    default:
+                        break;
+                }
+                timer.timer_ms += 1000.f;
+            }
+        }
+
         return true;
     }
 
@@ -555,6 +586,7 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
                     if (entity == map_start_goal.second) {
                         goal_reached = true;
                         const Entity gameEnd = createGameEnd(renderer);
+                        registry.scoreTimers.emplace(gameEnd);
                         Mix_PlayMusic(end_music, -1);
                     } else {
                         if (loc_props.type == LocationType::FIGHT) {

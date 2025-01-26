@@ -57,6 +57,7 @@ public:
 	ComponentContainer<Text> texts;
 	ComponentContainer<HitTimer> hitTimers;
 	ComponentContainer<StatusTextTimer> statusTextTimers;
+    ComponentContainer<ScoreTimer> scoreTimers;
     ComponentContainer<HitboxVisualization> hitboxVisualizations;
     ComponentContainer<PathVisualization> pathVisualizations;
     ComponentContainer<TowerVisualization> towerVisualizations;
@@ -108,6 +109,7 @@ public:
 		registry_list.push_back(&texts);
 		registry_list.push_back(&hitTimers);
 		registry_list.push_back(&statusTextTimers);
+        registry_list.push_back(&scoreTimers);
         registry_list.push_back(&hitboxVisualizations);
         registry_list.push_back(&pathVisualizations);
         registry_list.push_back(&towerVisualizations);

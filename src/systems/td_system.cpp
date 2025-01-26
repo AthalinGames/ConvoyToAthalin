@@ -597,6 +597,7 @@ void TDSystem::restart_td_fight() {
 void TDSystem::handle_enemy_death(const Entity enemy_entity, Enemy &enemy) {
     assert(registry.enemies.has(enemy_entity) && "Entity not an enemy");
     enemy.alive = false;
+    registry.players.get(player).defeated_enemies++;
     const auto enemy_motion = registry.motions.get(enemy_entity);
     for (const auto spawn_entity : enemy.spawns_enemies) {
         auto &spawn_enemy = registry.enemies.get(spawn_entity);

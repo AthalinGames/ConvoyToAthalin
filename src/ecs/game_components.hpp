@@ -18,6 +18,7 @@ class Player {
 	int baseFoodGain = 5;
     std::vector<Entity> owned_cards;
     int won_battles = 0;
+    int defeated_enemies = 0;
 	std::vector<Entity> status_bar_entities;
 	std::function<void()> status_bar_cleanup_func = []{};
     std::vector<Entity> placement_marker;
@@ -329,6 +330,24 @@ struct DeathTimer
 
 struct HitTimer {
 	float timer_ms = 200.f;
+};
+
+struct ScoreTimer {
+    float timer_ms = 1000.f;
+};
+
+enum class ScoreStep {
+    START = 0,
+    BATTLES,
+    KILLS,
+    HEALTH,
+    FOOD,
+    COINS,
+    CARDS,
+    FINAL_TEXT,
+    FINAL_SCORE,
+    CONTINUE,
+    WAIT,
 };
 
 enum class StatusType {

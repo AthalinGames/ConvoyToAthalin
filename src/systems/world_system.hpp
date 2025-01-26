@@ -71,7 +71,18 @@ private:
     Entity next_map_pos;
     bool td_fight_launched = false;
     bool shop_launched = false;
-    bool goal_reached = false;
+    bool goal_reached = true;
+
+    // Game End
+    ScoreStep score_progression = ScoreStep::START;
+    static constexpr std::string_view stats_string = R"(
+Won battles:
+Defeated enemies:
+Health:
+Food:
+Coins:
+Cards in possession:
+)";
 
     // Tutorial entity;
     Entity tutorial_hint;
