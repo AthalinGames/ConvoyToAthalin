@@ -280,10 +280,6 @@ bool WorldSystem::step(const float elapsed_ms) {
 		auto &next_map_pos_props = registry.overviewMapLocations.get(next_map_pos);
 		registry.invisibles.remove(next_map_pos_props.overview_selection);
 
-        if (next_map_pos_props.next_locations.empty()) {
-            printf("end\n");
-        }
-
 		for (const Entity next_location : next_map_pos_props.next_locations) {
 			auto &location_props = registry.overviewMapLocations.get(next_location);
 			location_props.selectable = true;
@@ -408,6 +404,13 @@ bool WorldSystem::is_over() const {
 // On key callback
 void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	//TODO: handle keyboard shortcuts
+    if (goal_reached && action == GLFW_PRESS) {
+        int w, h;
+        glfwGetWindowSize(window, &w, &h);
+
+        restart_game();
+    }
+
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		registry.players.clear();
 		current_td_system.reset(); // without this cleanup we would get an error
@@ -426,7 +429,7 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 			if (action == GLFW_RELEASE) {
 				int w, h;
 				glfwGetWindowSize(window, &w, &h);
-
+                Mix_PlayMusic(overview_music, -1);
 				restart_game();
 			}
 			break;
@@ -508,6 +511,13 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 }
 
 void WorldSystem::on_mouse_button(const int button, const int action, const int mods) {
+    if (goal_reached && action == GLFW_PRESS) {
+        int w, h;
+        glfwGetWindowSize(window, &w, &h);
+        Mix_PlayMusic(overview_music, -1);
+        restart_game();
+    }
+
 	if (!current_td_system->is_over()) {
 		current_td_system->on_mouse_button(button, action, mods, window);
 	} else {

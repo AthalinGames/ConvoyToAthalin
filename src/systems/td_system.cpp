@@ -1100,7 +1100,6 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         continue;
                     }
                     const Entity tower_entity = registry.towers.entities[tower_index];
-                    printf("dist to tower %f", distance(registry.motions.get(tower_entity).position, card_pos));
                     if (abs(distance(registry.motions.get(tower_entity).position, card_pos)) < tower_blocked_radius) {
                         place_occupied = true;
                     }
@@ -1211,7 +1210,6 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         registry.cards.components[i].dragged = true;
                         dragged_entity = registry.cards.entities[i];
                         dragging = true;
-                        printf("z:%f\n", registry.renderForeground.get(dragged_entity).z_position);
                         if (!registry.healthPotions.has(dragged_entity)) {
                             registry.invisibles.emplace(dragged_entity);
                             registry.stationaries.get(placement_marker[0]).position = registry.stationaries.get(

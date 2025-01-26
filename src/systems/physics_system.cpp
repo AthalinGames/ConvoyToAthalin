@@ -304,7 +304,6 @@ vec2 PhysicsSystem::calculate_enemy_position(Enemy& enemy, Entity enemy_entity, 
             const float angle = atan2(path_vector.y, path_vector.x);
             Motion& enemy_motion = registry.motions.get(enemy_entity);
             enemy_motion.angle = angle;
-            printf("%f\n", angle);
         }
 	}
 	return previous_checkpoint + (next_checkpoint - previous_checkpoint) * section_progress;
