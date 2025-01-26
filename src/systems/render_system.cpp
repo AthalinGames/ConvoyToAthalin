@@ -401,6 +401,9 @@ void RenderSystem::draw() const {
 	const auto sort_func = [](const Entity& e1, const Entity& e2, ComponentContainer<RenderRequest>& registry) {
 		const RenderRequest& r1 = registry.get(e1);
 		const RenderRequest& r2 = registry.get(e2);
+		if (r1.z_position == r2.z_position) {
+			return e1 < e2;
+		}
 		return r1.z_position < r2.z_position;
 	};
 	registry.renderBackground.sort([sort_func](const Entity& e1, const Entity& e2) {
