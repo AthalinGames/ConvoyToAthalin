@@ -31,7 +31,7 @@ Entity createPlayer(RenderSystem *renderer) {
         if (new_hp - old_hp >= 0) {
             status_sign = "+";
         } else {
-	        status_sign = "-";
+	        status_sign = "";
         }
 		createStatusText(renderer, status_sign + std::to_string(new_hp - old_hp) + " HP", new_hp > old_hp, StatusType::HEALTH);
 	};
@@ -49,7 +49,7 @@ Entity createPlayer(RenderSystem *renderer) {
         if (new_food - old_food >= 0) {
             status_sign = "+";
         } else {
-	        status_sign = "-";
+	        status_sign = "";
         }
 		createStatusText(renderer, status_sign + std::to_string(new_food - old_food) + " Food", new_food > old_food, StatusType::FOOD);
 	};
@@ -67,7 +67,7 @@ Entity createPlayer(RenderSystem *renderer) {
 		if (new_coins - old_coins >= 0) {
 			status_sign = "+";
 		} else {
-			status_sign = "-";
+			status_sign = "";
 		}
 		createStatusText(renderer, status_sign + std::to_string(new_coins - old_coins) + " Coins", new_coins > old_coins, StatusType::COINS);
 	};
@@ -1401,7 +1401,19 @@ Entity createStatusText(RenderSystem *renderer, const std::string &text, const b
     //    case StatusType::FOOD:
     //        pos.x = TILE_WIDTH * 2 - TILE_WIDTH / 8;
     //}
-	const auto entity = createText(renderer, {TILE_WIDTH, TILE_HEIGHT}, {TILE_WIDTH/6, TILE_HEIGHT/3}, text, FontType::SLIM);
+    float x_pos = 0.f;
+    switch (type) {
+        case StatusType::HEALTH:
+            x_pos = TILE_WIDTH / 4;
+            break;
+        case StatusType::FOOD:
+            x_pos = TILE_WIDTH * 2 - TILE_WIDTH / 8;
+            break;
+        case StatusType::COINS:
+            x_pos = TILE_WIDTH * 4 - TILE_WIDTH / 8;
+            break;
+    }
+	const auto entity = createText(renderer, {x_pos, TILE_HEIGHT}, {TILE_WIDTH/6, TILE_HEIGHT/3}, text, FontType::SLIM);
 
 	auto &color = registry.colors.emplace(entity);
 	color.a = 1.f;

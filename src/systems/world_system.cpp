@@ -214,7 +214,7 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
                 position.position.x = TILE_WIDTH * 2 - TILE_WIDTH / 8;
                 break;
         	case StatusType::COINS:
-        		position.position.x = TILE_WIDTH * 5.2;
+        		position.position.x = TILE_WIDTH * 4 - TILE_WIDTH / 8;
         	    break;
         }
 
@@ -422,7 +422,8 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
     if (goal_reached && action == GLFW_PRESS) {
         int w, h;
         glfwGetWindowSize(window, &w, &h);
-
+        Mix_PlayMusic(overview_music, -1);
+        goal_reached = false;
         restart_game();
     }
 
@@ -536,6 +537,7 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
         int w, h;
         glfwGetWindowSize(window, &w, &h);
         Mix_PlayMusic(overview_music, -1);
+        goal_reached = false;
         restart_game();
     }
 
@@ -564,6 +566,7 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
                             current_shop_system.reset(new ShopSystem(rng()));
                             current_shop_system->init(renderer, player, loc_props.type);
                             shop_launched = true;
+                            Mix_PlayMusic(shop_music, -1);
                         }
                     }
 					next_map_pos = entity;
