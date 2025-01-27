@@ -573,13 +573,14 @@ void TDSystem::restart_td_fight() {
         createCardFromItem(renderer, itemEntity);
         cards.push_back(itemEntity);
         if (registry.towers.has(itemEntity)) {
-            Tower& tower = registry.towers.get(itemEntity);
+            const Tower& tower = registry.towers.get(itemEntity);
             if (tower.food_cost > current_player.getFood()) {
                 registry.cards.get(itemEntity).selectable = false;
                 registry.colors.insert(itemEntity, {0.5f, 0.5f, 0.5f, 1.f});
             }
         }
     }
+    realignCards();
 
     const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial", FontType::SQUARE);
     cleanup_entities.push_back(text);
