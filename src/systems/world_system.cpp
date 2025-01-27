@@ -483,13 +483,19 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
     registry.players.get(player).game_speed = fmax(0.f, registry.players.get(player).game_speed);
 }
 
-void WorldSystem::on_mouse_move(const vec2 pos) {
+void WorldSystem::on_mouse_move(vec2 pos) {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// TODO A1: HANDLE SALMON ROTATION HERE
 	// xpos and ypos are relative to the top-left of the window, the salmon's
 	// default facing direction is (1, 0)
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//TODO: handle drag and drop tower placement
+
+	// When using Wayland sometimes the cursor uses the wrong scaling. This fixes this
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+	const auto window_scaling = vec2(static_cast<float>(window_width_px)/width, static_cast<float>(window_height_px)/height);
+	pos *= window_scaling;
 
 	// If td fight is running handle the proper mouse movements
 	if (!current_td_system->is_over()) {
@@ -539,6 +545,9 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 	} else {
 		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 			auto &clickables = registry.clickables;
+			if (clickables.entities.size() < 1) {
+				return;
+			}
 			const auto entity = clickables.entities[0]; // only one element should be clickable
 			if (registry.overviewMapLocations.has(entity)) {
 				const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
