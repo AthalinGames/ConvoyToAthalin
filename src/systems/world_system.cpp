@@ -491,11 +491,13 @@ void WorldSystem::on_mouse_move(vec2 pos) {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//TODO: handle drag and drop tower placement
 
+#ifdef GLFW_PLATFORM_WAYLAND
 	// When using Wayland sometimes the cursor uses the wrong scaling. This fixes this
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
 	const auto window_scaling = vec2(static_cast<float>(window_width_px)/width, static_cast<float>(window_height_px)/height);
 	pos *= window_scaling;
+#endif
 
 	// If td fight is running handle the proper mouse movements
 	if (!current_td_system->is_over()) {
