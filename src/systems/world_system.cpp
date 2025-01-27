@@ -507,7 +507,7 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 				const vec2 dp = map_pos.position - pos;
 				const float dist_squared = dot(dp, dp);
 				vec2 bounding_box = {abs(map_pos.scale.x), abs(map_pos.scale.y)};
-				bounding_box *= 0.3f;
+				bounding_box *= 0.2f;
 				const float element_r_squared = dot(bounding_box, bounding_box);
 				// TODO fix selection flickering
 				if (dist_squared < element_r_squared) {
@@ -539,29 +539,28 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 	} else {
 		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 			auto &clickables = registry.clickables;
-			for (const auto entity : clickables.entities) {
-				if (registry.overviewMapLocations.has(entity)) {
-                    const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
-					registry.invisibles.emplace(tutorial_hint);
-                    if (entity == map_start_goal.second) {
-                        goal_reached = true;
-                        const Entity gameEnd = createGameEnd(renderer);
-                        Mix_PlayMusic(end_music, -1);
-                    } else {
-                        if (loc_props.type == LocationType::FIGHT) {
-                            current_td_system.reset( new TDSystem(rng()));
-                            current_td_system->init(renderer, player);
-                            td_fight_launched = true;
-                            Mix_PlayMusic(td_fight_music, -1);
-                        } else {
-                            current_shop_system.reset(new ShopSystem(rng()));
-                            current_shop_system->init(renderer, player, loc_props.type);
-                            shop_launched = true;
-                            Mix_PlayMusic(shop_music, -1);
-                        }
-                    }
-					next_map_pos = entity;
+			const auto entity = clickables.entities[0]; // only one element should be clickable
+			if (registry.overviewMapLocations.has(entity)) {
+				const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
+				registry.invisibles.emplace(tutorial_hint);
+				if (entity == map_start_goal.second) {
+					goal_reached = true;
+					const Entity gameEnd = createGameEnd(renderer);
+					Mix_PlayMusic(end_music, -1);
+				} else {
+					if (loc_props.type == LocationType::FIGHT) {
+						current_td_system.reset( new TDSystem(rng()));
+						current_td_system->init(renderer, player);
+						td_fight_launched = true;
+						Mix_PlayMusic(td_fight_music, -1);
+					} else {
+						current_shop_system.reset(new ShopSystem(rng()));
+						current_shop_system->init(renderer, player, loc_props.type);
+						shop_launched = true;
+						Mix_PlayMusic(shop_music, -1);
+					}
 				}
+				next_map_pos = entity;
 			}
 		}
 	}
