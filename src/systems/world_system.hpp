@@ -71,10 +71,18 @@ private:
     Entity next_map_pos;
     bool td_fight_launched = false;
     bool shop_launched = false;
-    bool goal_reached = true; //TODO: set to false for finished feature
+    bool goal_reached = false; //TODO: set to false for finished feature
 
     // Game End
-    bool temp_switch = true; //TODO: only for score debug
+    bool temp_switch = false; //TODO: only for score debug
+    std::map<ScoreStep, int> score_factors = {
+            {ScoreStep::BATTLES, 20},
+            {ScoreStep::KILLS, 10},
+            {ScoreStep::HEALTH, 2},
+            {ScoreStep::FOOD, 5},
+            {ScoreStep::COINS, 10},
+            {ScoreStep::CARDS, 30},
+    };
     ScoreStep score_progression = ScoreStep::START;
     static constexpr std::string_view stats_string = R"(Won battles:
 

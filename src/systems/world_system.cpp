@@ -195,17 +195,17 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
             registry.scoreTimers.emplace(gameEnd);
             temp_switch = false;
         }
-        auto curr_player = registry.players.get(player);
+        auto &curr_player = registry.players.get(player);
         vec2 scores_pos = {TILE_WIDTH / 4, TILE_WIDTH * 6.5};
         float scores_scale = TILE_WIDTH / 5;
-        float score_num_dist = 4*TILE_WIDTH;
+        float score_num_dist = 4.2 * TILE_WIDTH;
         for (const auto entity : registry.scoreTimers.entities) {
             auto &timer = registry.scoreTimers.get(entity);
             timer.timer_ms -= elapsed_ms_raw;
             if (timer.timer_ms <= 0.f) {
                 printf("scoreTimer: %f\n", timer.timer_ms);
                 switch (score_progression) {
-                    case ScoreStep::START:
+                    case ScoreStep::START: {
                         createText(renderer,
                                    scores_pos,
                                    {scores_scale, scores_scale},
@@ -213,8 +213,9 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
                                    FontType::SQUARE);
                         score_progression = ScoreStep::BATTLES;
                         break;
-                    case ScoreStep::BATTLES:
-                        //TODO: stats for previous text from player
+                    }
+                    case ScoreStep::BATTLES: {
+                        curr_player.score += score_factors[score_progression] * curr_player.won_battles;
                         createText(renderer,
                                    scores_pos + vec2{score_num_dist, 0},
                                    {scores_scale, scores_scale},
@@ -222,7 +223,9 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
                                    FontType::SQUARE);
                         score_progression = ScoreStep::KILLS;
                         break;
-                    case ScoreStep::KILLS:
+                    }
+                    case ScoreStep::KILLS: {
+                        curr_player.score += score_factors[score_progression] * curr_player.defeated_enemies;
                         createText(renderer,
                                    scores_pos + vec2{score_num_dist, 0},
                                    {scores_scale, scores_scale},
@@ -230,15 +233,19 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
                                    FontType::SQUARE);
                         score_progression = ScoreStep::HEALTH;
                         break;
-                    case ScoreStep::HEALTH:
-                        createText(renderer,
+                    }
+                    case ScoreStep::HEALTH: {
+                        curr_player.score += score_factors[score_progression] * curr_player.getHealth();
+                                createText(renderer,
                                    scores_pos + vec2{score_num_dist, 0},
                                    {scores_scale, scores_scale},
                                    std::string(4, '\n') + std::to_string(curr_player.getHealth()),
                                    FontType::SQUARE);
                         score_progression = ScoreStep::FOOD;
                         break;
-                    case ScoreStep::FOOD:
+                    }
+                    case ScoreStep::FOOD: {
+                        curr_player.score += score_factors[score_progression] * curr_player.getFood();
                         createText(renderer,
                                    scores_pos + vec2{score_num_dist, 0},
                                    {scores_scale, scores_scale},
@@ -246,7 +253,9 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
                                    FontType::SQUARE);
                         score_progression = ScoreStep::COINS;
                         break;
-                    case ScoreStep::COINS:
+                    }
+                    case ScoreStep::COINS: {
+                        curr_player.score += score_factors[score_progression] * curr_player.getCoins();
                         createText(renderer,
                                    scores_pos + vec2{score_num_dist, 0},
                                    {scores_scale, scores_scale},
@@ -254,21 +263,50 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
                                    FontType::SQUARE);
                         score_progression = ScoreStep::CARDS;
                         break;
-                    case ScoreStep::CARDS:
+                    }
+                    case ScoreStep::CARDS: {
+                        curr_player.score += score_factors[score_progression] * registry.items.size();
                         createText(renderer,
                                    scores_pos + vec2{score_num_dist, 0},
                                    {scores_scale, scores_scale},
                                    std::string(10, '\n') + std::to_string(registry.items.size()),
                                    FontType::SQUARE);
+                        score_progression = ScoreStep::FACTORS;
+                        break;
+                    }
+                    case ScoreStep::FACTORS: {
+                        std::string factors_text;
+                        for (const auto factor : score_factors) {
+                            factors_text += "x " + std::to_string(factor.second) + "\n\n";
+                        }
+                        createText(renderer,
+                                   scores_pos + vec2{ 1.2 * score_num_dist, 0},
+                                   vec2{scores_scale, scores_scale},
+                                   factors_text,
+                                   FontType::SQUARE);
+
                         score_progression = ScoreStep::FINAL_TEXT;
                         break;
-                    case ScoreStep::FINAL_TEXT:
+                    }
+                    case ScoreStep::FINAL_TEXT: {
+                        createText(renderer,
+                                   scores_pos + vec2{1.8 * score_num_dist, 0},
+                                   2.f * vec2{scores_scale, scores_scale},
+                                   std::string("Final Score:"),
+                                   FontType::SQUARE);
                         score_progression = ScoreStep::FINAL_SCORE;
                         break;
-                    case ScoreStep::FINAL_SCORE:
+                    }
+                    case ScoreStep::FINAL_SCORE: {
+                        createText(renderer,
+                                   scores_pos + vec2{1.8 * score_num_dist, 0},
+                                   2.f * vec2{scores_scale, scores_scale},
+                                   "\n" + std::to_string(curr_player.score),
+                                   FontType::SQUARE);
                         score_progression = ScoreStep::CONTINUE;
                         break;
-                    case ScoreStep::CONTINUE:
+                    }
+                    case ScoreStep::CONTINUE: {
                         //TODO: create restart button instead
                         createText(renderer, {window_width_px - TILE_HEIGHT * 4, window_height_px - TILE_WIDTH / 4},
                                    {TILE_WIDTH / 8, TILE_WIDTH / 8},
@@ -276,8 +314,10 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
                                    FontType::SQUARE);
                         score_progression = ScoreStep::WAIT;
                         break;
-                    default:
+                    }
+                    default: {
                         break;
+                    }
                 }
                 timer.timer_ms += timer.start_time;
             }

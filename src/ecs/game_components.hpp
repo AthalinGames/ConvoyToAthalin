@@ -13,6 +13,7 @@ class Player {
 	int coins = 0;
 
 	public:
+    int score = 0;
     float game_speed = 1.f;
     int maxHealth = 100;
 	int baseFoodGain = 5;
@@ -345,6 +346,7 @@ enum class ScoreStep {
     FOOD,
     COINS,
     CARDS,
+    FACTORS,
     FINAL_TEXT,
     FINAL_SCORE,
     CONTINUE,
