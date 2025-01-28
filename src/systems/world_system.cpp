@@ -129,18 +129,13 @@ GLFWwindow* WorldSystem::create_window(const bool windowed) {
     td_fight_music = Mix_LoadMUS(audio_path("Darkling.wav").c_str());
     shop_music = Mix_LoadMUS(audio_path("Achaidh Cheide.wav").c_str());
     end_music = Mix_LoadMUS(audio_path("Midnight Tale.wav").c_str());
-	salmon_dead_sound = Mix_LoadWAV(audio_path("salmon_dead.wav").c_str());
-	salmon_eat_sound = Mix_LoadWAV(audio_path("salmon_eat.wav").c_str());
 
-	if (overview_music == nullptr || td_fight_music == nullptr || shop_music == nullptr || end_music == nullptr
-    || salmon_dead_sound == nullptr || salmon_eat_sound == nullptr) {
-		fprintf(stderr, "Failed to load sounds\n %s\n %s\n %s\n make sure the data directory is present",
+	if (overview_music == nullptr || td_fight_music == nullptr || shop_music == nullptr || end_music == nullptr) {
+		fprintf(stderr, "Failed to load sounds\n %s\n %s\n %s\n %s\n make sure the data directory is present",
             audio_path("Village Consort.wav").c_str(),
             audio_path("Darkling.wav").c_str(),
             audio_path("Achaidh Cheide.wav").c_str(),
-            audio_path("Midnight Tale.wav").c_str(),
-			audio_path("salmon_dead.wav").c_str(),
-			audio_path("salmon_eat.wav").c_str());
+            audio_path("Midnight Tale.wav").c_str());
 		return nullptr;
 	}
 	//*/
@@ -151,7 +146,7 @@ GLFWwindow* WorldSystem::create_window(const bool windowed) {
 void WorldSystem::init(RenderSystem* renderer) {
 	this->renderer = renderer;
 	// Playing background music indefinitely
-	Mix_PlayMusic(overview_music, -1); // TODO: Replace with our bgm
+    Mix_FadeInMusic(overview_music, -1, 500);
 	fprintf(stderr, "Loaded music\n");
 
 	// Set all states to default
@@ -164,6 +159,32 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 	ScreenState &screen = registry.screenStates.components[0];
 
     const float elapsed_ms = elapsed_ms_raw * registry.players.get(player).game_speed;
+
+    if (music_transition) {
+        //if (Mix_FadeOutMusic(1) == 0) {
+        music_transition = false;
+        Mix_Music* new_track;
+        switch (next_track) {
+            case Music::FIGHT: {
+                new_track = td_fight_music;
+                break;
+            }
+            case Music::SHOP: {
+                new_track = shop_music;
+                break;
+            }
+            case Music::END: {
+                new_track = end_music;
+                break;
+            }
+            default: {
+                new_track = overview_music;
+                break;
+            }
+        }
+        Mix_FadeInMusic(new_track, -1, 500);
+        //}
+    }
 
 	float min_timer_ms = 4000.f;
 	for (const Entity entity: registry.deathTimers.entities) {
@@ -186,6 +207,135 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 	screen.screen_darken_factor = 1 - min_timer_ms / 4000;
 
     if (goal_reached) {
+        auto &curr_player = registry.players.get(player);
+        vec2 scores_pos = {TILE_WIDTH / 4, TILE_WIDTH * 6.5};
+        float scores_scale = TILE_WIDTH / 5;
+        float score_num_dist = 4.2 * TILE_WIDTH;
+        for (const auto entity : registry.scoreTimers.entities) {
+            auto &timer = registry.scoreTimers.get(entity);
+            timer.timer_ms -= elapsed_ms_raw;
+            if (timer.timer_ms <= 0.f) {
+                printf("scoreTimer: %f\n", timer.timer_ms);
+                switch (score_progression) {
+                    case ScoreStep::START: {
+                        createText(renderer,
+                                   scores_pos,
+                                   {scores_scale, scores_scale},
+                                   stats_string.data(),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::BATTLES;
+                        break;
+                    }
+                    case ScoreStep::BATTLES: {
+                        curr_player.score += score_factors[score_progression] * curr_player.won_battles;
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::to_string(curr_player.won_battles),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::KILLS;
+                        break;
+                    }
+                    case ScoreStep::KILLS: {
+                        curr_player.score += score_factors[score_progression] * curr_player.defeated_enemies;
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::string(2, '\n') + std::to_string(curr_player.defeated_enemies),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::HEALTH;
+                        break;
+                    }
+                    case ScoreStep::HEALTH: {
+                        curr_player.score += score_factors[score_progression] * curr_player.getHealth();
+                                createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::string(4, '\n') + std::to_string(curr_player.getHealth()),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::FOOD;
+                        break;
+                    }
+                    case ScoreStep::FOOD: {
+                        curr_player.score += score_factors[score_progression] * curr_player.getFood();
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::string(6, '\n') + std::to_string(curr_player.getFood()),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::COINS;
+                        break;
+                    }
+                    case ScoreStep::COINS: {
+                        curr_player.score += score_factors[score_progression] * curr_player.getCoins();
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::string(8, '\n') + std::to_string(curr_player.getCoins()),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::CARDS;
+                        break;
+                    }
+                    case ScoreStep::CARDS: {
+                        curr_player.score += score_factors[score_progression] * registry.items.size();
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::string(10, '\n') + std::to_string(registry.items.size()),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::FACTORS;
+                        break;
+                    }
+                    case ScoreStep::FACTORS: {
+                        std::string factors_text;
+                        for (const auto factor : score_factors) {
+                            factors_text += "x " + std::to_string(factor.second) + "\n\n";
+                        }
+                        createText(renderer,
+                                   scores_pos + vec2{ 1.2 * score_num_dist, 0},
+                                   vec2{scores_scale, scores_scale},
+                                   factors_text,
+                                   FontType::SQUARE);
+
+                        score_progression = ScoreStep::FINAL_TEXT;
+                        break;
+                    }
+                    case ScoreStep::FINAL_TEXT: {
+                        createText(renderer,
+                                   scores_pos + vec2{1.8 * score_num_dist, 0},
+                                   2.f * vec2{scores_scale, scores_scale},
+                                   std::string("Final Score:"),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::FINAL_SCORE;
+                        break;
+                    }
+                    case ScoreStep::FINAL_SCORE: {
+                        createText(renderer,
+                                   scores_pos + vec2{1.8 * score_num_dist, 0},
+                                   2.f * vec2{scores_scale, scores_scale},
+                                   "\n" + std::to_string(curr_player.score),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::CONTINUE;
+                        break;
+                    }
+                    case ScoreStep::CONTINUE: {
+                        //TODO: create restart button instead
+                        restart_button = createButton(renderer,
+                                                      {window_width_px - TILE_HEIGHT * 2, window_height_px - TILE_WIDTH},
+                                                      {3*TILE_WIDTH, TILE_WIDTH},
+                                                      "Restart");
+
+                        score_progression = ScoreStep::WAIT;
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
+                timer.timer_ms += timer.start_time;
+            }
+        }
+
         return true;
     }
 
@@ -279,7 +429,8 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 			current_shop_system.reset(new ShopSystem());
 			shop_launched = false;
 		}
-        Mix_PlayMusic(overview_music, -1);
+        music_transition = true;
+        next_track = Music::OVERVIEW;
 		// Setup Overview-Map for next selection
 		auto &current_map_pos_props = registry.overviewMapLocations.get(current_map_pos);
 		current_map_pos_props.active = false;
@@ -416,11 +567,9 @@ bool WorldSystem::is_over() const {
 void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	//TODO: handle keyboard shortcuts
     if (goal_reached && action == GLFW_PRESS) {
-        int w, h;
-        glfwGetWindowSize(window, &w, &h);
-        Mix_PlayMusic(overview_music, -1);
-        goal_reached = false;
-        restart_game();
+        for (const auto entity : registry.scoreTimers.entities) {
+            registry.scoreTimers.get(entity).timer_ms = 0.f;
+        }
     }
 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -443,9 +592,11 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 		// restart game key
 		case GLFW_KEY_R: {
 			if (action == GLFW_RELEASE) {
+                goal_reached = false;
 				int w, h;
 				glfwGetWindowSize(window, &w, &h);
-                Mix_PlayMusic(overview_music, -1);
+                music_transition = true;
+                next_track = Music::OVERVIEW;
 				restart_game();
 			}
 			break;
@@ -501,7 +652,18 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 		current_td_system->on_mouse_move(pos, window);
 	} else if (!current_shop_system->is_over()) {
 		current_shop_system->on_mouse_move(pos);
-	} else {
+	} else if (goal_reached) {
+        if (score_progression == ScoreStep::WAIT) {
+            registry.clickables.clear();
+            auto stationary = registry.stationaries.get(restart_button);
+            const auto half_button = vec2(1.5*TILE_WIDTH, 0.5*TILE_WIDTH);
+            const vec2 corner1 = stationary.position - half_button;
+            const vec2 corner2 = stationary.position + half_button;
+            if (pos.x >= corner1.x && pos.y >= corner1.y && pos.x <= corner2.x && pos.y <= corner2.y) {
+                registry.clickables.emplace(restart_button);
+            }
+        }
+    } else {
 		auto &overview_map_reg = registry.overviewMapLocations;
 
 		registry.clickables.clear();
@@ -512,7 +674,7 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 				const vec2 dp = map_pos.position - pos;
 				const float dist_squared = dot(dp, dp);
 				vec2 bounding_box = {abs(map_pos.scale.x), abs(map_pos.scale.y)};
-				bounding_box *= 0.3f;
+				bounding_box *= 0.2f;
 				const float element_r_squared = dot(bounding_box, bounding_box);
 				// TODO fix selection flickering
 				if (dist_squared < element_r_squared) {
@@ -530,11 +692,9 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 
 void WorldSystem::on_mouse_button(const int button, const int action, const int mods) {
     if (goal_reached && action == GLFW_PRESS) {
-        int w, h;
-        glfwGetWindowSize(window, &w, &h);
-        Mix_PlayMusic(overview_music, -1);
-        goal_reached = false;
-        restart_game();
+        for (const auto entity : registry.scoreTimers.entities) {
+            registry.scoreTimers.get(entity).timer_ms = 0.f;
+        }
     }
 
 	if (!current_td_system->is_over()) {
@@ -544,30 +704,44 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 	} else {
 		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 			auto &clickables = registry.clickables;
-			for (const auto entity : clickables.entities) {
-				if (registry.overviewMapLocations.has(entity)) {
-                    const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
-					registry.invisibles.emplace(tutorial_hint);
-                    if (entity == map_start_goal.second) {
-                        goal_reached = true;
-                        const Entity gameEnd = createGameEnd(renderer);
-                        Mix_PlayMusic(end_music, -1);
-                    } else {
-                        if (loc_props.type == LocationType::FIGHT) {
-                            current_td_system.reset( new TDSystem(rng()));
-                            current_td_system->init(renderer, player);
-                            td_fight_launched = true;
-                            Mix_PlayMusic(td_fight_music, -1);
-                        } else {
-                            current_shop_system.reset(new ShopSystem(rng()));
-                            current_shop_system->init(renderer, player, loc_props.type);
-                            shop_launched = true;
-                            Mix_PlayMusic(shop_music, -1);
-                        }
-                    }
-					next_map_pos = entity;
+			const auto entity = clickables.entities[0]; // only one element should be clickable
+			if (registry.overviewMapLocations.has(entity)) {
+				const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
+				registry.invisibles.emplace(tutorial_hint);
+				if (entity == map_start_goal.second) {
+                    goal_reached = true;
+                    const Entity gameEnd = createGameEnd(renderer);
+                    registry.scoreTimers.emplace(gameEnd);
+                    music_transition = true;
+                    next_track = Music::END;
+				} else {
+					if (loc_props.type == LocationType::FIGHT) {
+                        current_td_system.reset( new TDSystem(rng()));
+                        current_td_system->init(renderer, player);
+                        td_fight_launched = true;
+                        music_transition = true;
+                        next_track = Music::FIGHT;
+					} else {
+                        current_shop_system.reset(new ShopSystem(rng()));
+                        current_shop_system->init(renderer, player, loc_props.type);
+                        shop_launched = true;
+                        music_transition = true;
+                        next_track = Music::SHOP;
+					}
 				}
-			}
+				next_map_pos = entity;
+			} else if (entity == restart_button) {
+                for (const auto score_timer : registry.scoreTimers.entities) {
+                    registry.remove_all_components_of(score_timer);
+                }
+                int w, h;
+                glfwGetWindowSize(window, &w, &h);
+                music_transition = true;
+                next_track = Music::OVERVIEW;
+                //Mix_PlayMusic(overview_music, -1);
+                goal_reached = false;
+                restart_game();
+            }
 		}
 	}
 }
