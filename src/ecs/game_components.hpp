@@ -333,7 +333,8 @@ struct HitTimer {
 };
 
 struct ScoreTimer {
-    float timer_ms = 1000.f;
+    float start_time = 500.f;
+    float timer_ms = start_time;
 };
 
 enum class ScoreStep {

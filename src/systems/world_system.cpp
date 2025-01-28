@@ -190,24 +190,86 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 	screen.screen_darken_factor = 1 - min_timer_ms / 4000;
 
     if (goal_reached) {
+        if (temp_switch) {// TODO: only here to easily test
+            const Entity gameEnd = createGameEnd(renderer);
+            registry.scoreTimers.emplace(gameEnd);
+            temp_switch = false;
+        }
+        auto curr_player = registry.players.get(player);
+        vec2 scores_pos = {TILE_WIDTH / 4, TILE_WIDTH * 6.5};
+        float scores_scale = TILE_WIDTH / 5;
+        float score_num_dist = 4*TILE_WIDTH;
         for (const auto entity : registry.scoreTimers.entities) {
             auto &timer = registry.scoreTimers.get(entity);
             timer.timer_ms -= elapsed_ms_raw;
             if (timer.timer_ms <= 0.f) {
+                printf("scoreTimer: %f\n", timer.timer_ms);
                 switch (score_progression) {
                     case ScoreStep::START:
-                        createGameEnd(renderer); // TODO: only here to easily test
-                        createText(renderer, {TILE_WIDTH / 4, TILE_WIDTH * 6.5},
-                                   {TILE_WIDTH / 4, TILE_WIDTH / 4},
+                        createText(renderer,
+                                   scores_pos,
+                                   {scores_scale, scores_scale},
                                    stats_string.data(),
                                    FontType::SQUARE);
                         score_progression = ScoreStep::BATTLES;
                         break;
-                    case ScoreStep::BATTLES
+                    case ScoreStep::BATTLES:
                         //TODO: stats for previous text from player
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::to_string(curr_player.won_battles),
+                                   FontType::SQUARE);
                         score_progression = ScoreStep::KILLS;
                         break;
+                    case ScoreStep::KILLS:
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::string(2, '\n') + std::to_string(curr_player.defeated_enemies),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::HEALTH;
+                        break;
+                    case ScoreStep::HEALTH:
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::string(4, '\n') + std::to_string(curr_player.getHealth()),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::FOOD;
+                        break;
+                    case ScoreStep::FOOD:
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::string(6, '\n') + std::to_string(curr_player.getFood()),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::COINS;
+                        break;
+                    case ScoreStep::COINS:
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::string(8, '\n') + std::to_string(curr_player.getCoins()),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::CARDS;
+                        break;
+                    case ScoreStep::CARDS:
+                        createText(renderer,
+                                   scores_pos + vec2{score_num_dist, 0},
+                                   {scores_scale, scores_scale},
+                                   std::string(10, '\n') + std::to_string(registry.items.size()),
+                                   FontType::SQUARE);
+                        score_progression = ScoreStep::FINAL_TEXT;
+                        break;
+                    case ScoreStep::FINAL_TEXT:
+                        score_progression = ScoreStep::FINAL_SCORE;
+                        break;
+                    case ScoreStep::FINAL_SCORE:
+                        score_progression = ScoreStep::CONTINUE;
+                        break;
                     case ScoreStep::CONTINUE:
+                        //TODO: create restart button instead
                         createText(renderer, {window_width_px - TILE_HEIGHT * 4, window_height_px - TILE_WIDTH / 4},
                                    {TILE_WIDTH / 8, TILE_WIDTH / 8},
                                    "Press any key to continue...",
@@ -217,7 +279,7 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
                     default:
                         break;
                 }
-                timer.timer_ms += 1000.f;
+                timer.timer_ms += timer.start_time;
             }
         }
 

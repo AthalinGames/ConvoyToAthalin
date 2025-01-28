@@ -71,16 +71,21 @@ private:
     Entity next_map_pos;
     bool td_fight_launched = false;
     bool shop_launched = false;
-    bool goal_reached = true;
+    bool goal_reached = true; //TODO: set to false for finished feature
 
     // Game End
+    bool temp_switch = true; //TODO: only for score debug
     ScoreStep score_progression = ScoreStep::START;
-    static constexpr std::string_view stats_string = R"(
-Won battles:
+    static constexpr std::string_view stats_string = R"(Won battles:
+
 Defeated enemies:
+
 Health:
+
 Food:
+
 Coins:
+
 Cards in possession:
 )";
 
