@@ -120,8 +120,6 @@ At each location you will need to protect the convoy from monsters.
     Mix_Music* td_fight_music;
     Mix_Music* shop_music;
     Mix_Music* end_music;
-    Mix_Chunk* salmon_dead_sound;
-    Mix_Chunk* salmon_eat_sound;
 
     bool music_transition = false;
     Music next_track = Music::OVERVIEW;
