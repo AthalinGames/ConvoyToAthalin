@@ -1100,7 +1100,7 @@ Entity createGameEnd(RenderSystem *renderer) {
     gameend_texture.scale = vec2({BACKGROUND_WIDTH, BACKGROUND_HEIGHT});
     gameend_texture.position = vec2({window_width_px / 2, window_height_px / 2});
 
-    registry.renderForeground.insert(entity, {
+    registry.renderBackground.insert(entity, {
             {Stationary{}},
             {0},
             Z_FOREGROUND,

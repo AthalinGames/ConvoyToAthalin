@@ -308,10 +308,11 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
                     }
                     case ScoreStep::CONTINUE: {
                         //TODO: create restart button instead
-                        createText(renderer, {window_width_px - TILE_HEIGHT * 4, window_height_px - TILE_WIDTH / 4},
-                                   {TILE_WIDTH / 8, TILE_WIDTH / 8},
-                                   "Press any key to continue...",
-                                   FontType::SQUARE);
+                        restart_button = createButton(renderer,
+                                                      {window_width_px - TILE_HEIGHT * 2, window_height_px - TILE_WIDTH},
+                                                      {3*TILE_WIDTH, TILE_WIDTH},
+                                                      "Restart");
+
                         score_progression = ScoreStep::WAIT;
                         break;
                     }
@@ -553,11 +554,9 @@ bool WorldSystem::is_over() const {
 void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 	//TODO: handle keyboard shortcuts
     if (goal_reached && action == GLFW_PRESS) {
-        int w, h;
-        glfwGetWindowSize(window, &w, &h);
-        Mix_PlayMusic(overview_music, -1);
-        goal_reached = false;
-        restart_game();
+        for (const auto entity : registry.scoreTimers.entities) {
+            registry.scoreTimers.get(entity).timer_ms = 0.f;
+        }
     }
 
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
@@ -580,6 +579,7 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 		// restart game key
 		case GLFW_KEY_R: {
 			if (action == GLFW_RELEASE) {
+                goal_reached = false;
 				int w, h;
 				glfwGetWindowSize(window, &w, &h);
                 Mix_PlayMusic(overview_music, -1);
@@ -638,7 +638,18 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 		current_td_system->on_mouse_move(pos, window);
 	} else if (!current_shop_system->is_over()) {
 		current_shop_system->on_mouse_move(pos);
-	} else {
+	} else if (goal_reached) {
+        if (score_progression == ScoreStep::WAIT) {
+            registry.clickables.clear();
+            auto stationary = registry.stationaries.get(restart_button);
+            const auto half_button = vec2(1.5*TILE_WIDTH, 0.5*TILE_WIDTH);
+            const vec2 corner1 = stationary.position - half_button;
+            const vec2 corner2 = stationary.position + half_button;
+            if (pos.x >= corner1.x && pos.y >= corner1.y && pos.x <= corner2.x && pos.y <= corner2.y) {
+                registry.clickables.emplace(restart_button);
+            }
+        }
+    } else {
 		auto &overview_map_reg = registry.overviewMapLocations;
 
 		registry.clickables.clear();
@@ -667,11 +678,9 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 
 void WorldSystem::on_mouse_button(const int button, const int action, const int mods) {
     if (goal_reached && action == GLFW_PRESS) {
-        int w, h;
-        glfwGetWindowSize(window, &w, &h);
-        Mix_PlayMusic(overview_music, -1);
-        goal_reached = false;
-        restart_game();
+        for (const auto entity : registry.scoreTimers.entities) {
+            registry.scoreTimers.get(entity).timer_ms = 0.f;
+        }
     }
 
 	if (!current_td_system->is_over()) {
@@ -704,7 +713,16 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
                         }
                     }
 					next_map_pos = entity;
-				}
+				} else if (entity == restart_button) {
+                    for (const auto score_timer : registry.scoreTimers.entities) {
+                        registry.remove_all_components_of(score_timer);
+                    }
+                    int w, h;
+                    glfwGetWindowSize(window, &w, &h);
+                    Mix_PlayMusic(overview_music, -1);
+                    goal_reached = false;
+                    restart_game();
+                }
 			}
 		}
 	}
