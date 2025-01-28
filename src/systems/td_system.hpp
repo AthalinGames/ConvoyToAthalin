@@ -52,6 +52,8 @@ private:
     Entity generate_map(int difficulty) const;
     void restart_td_fight();
 
+    bool check_placement_collision(const Map& mapProperties, vec2 card_pos) const;
+
     enum class GamePhase {
         SETUP,
         RUNNING,

@@ -573,13 +573,14 @@ void TDSystem::restart_td_fight() {
         createCardFromItem(renderer, itemEntity);
         cards.push_back(itemEntity);
         if (registry.towers.has(itemEntity)) {
-            Tower& tower = registry.towers.get(itemEntity);
+            const Tower& tower = registry.towers.get(itemEntity);
             if (tower.food_cost > current_player.getFood()) {
                 registry.cards.get(itemEntity).selectable = false;
                 registry.colors.insert(itemEntity, {0.5f, 0.5f, 0.5f, 1.f});
             }
         }
     }
+    realignCards();
 
     const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial", FontType::SQUARE);
     cleanup_entities.push_back(text);
@@ -989,6 +990,13 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
     if (current_phase == GamePhase::SETUP || current_phase == GamePhase::RUNNING) {
         if (dragging) {
             if (registry.cards.has(dragged_entity)) {
+                if (check_placement_collision(registry.maps.get(map), pos)) {
+                    if (!registry.colors.has(placement_marker[0])) {
+                        registry.colors.emplace(placement_marker[0], 0.2f, 0.2f, 0.2f, 1.f);
+                    }
+                } else {
+                    registry.colors.remove(placement_marker[0]);
+                }
                 registry.stationaries.get(dragged_entity).position = pos;
                 registry.stationaries.get(placement_marker[0]).position = pos;
                 registry.stationaries.get(placement_marker[1]).position = pos;
@@ -1041,6 +1049,52 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
             }
         }
     }
+}
+
+bool TDSystem::check_placement_collision(const Map &mapProperties, const vec2 card_pos) const {
+    bool place_occupied = false;
+    constexpr float tower_blocked_radius = (TOWER_HEIGHT + TOWER_WIDTH) / 2.1;
+    //abs(distance(vec2(0, 0), vec2(TOWER_WIDTH, TOWER_HEIGHT)));
+    for (std::size_t tower_index = 0; tower_index < registry.towers.size(); ++tower_index) {
+        if (!registry.towers.components[tower_index].placed) {
+            continue;
+        }
+        const Entity tower_entity = registry.towers.entities[tower_index];
+        if (abs(distance(registry.motions.get(tower_entity).position, card_pos)) < tower_blocked_radius) {
+            place_occupied = true;
+        }
+    }
+
+    // block placement on enemy path
+    float path_blocked_radius = (TILE_WIDTH + TOWER_WIDTH) / 2.1;//window_height_px * 0.05;
+    if (abs(distance(mapProperties.checkpoints[0], card_pos)) < path_blocked_radius) {
+        place_occupied = true;
+    }
+    for (std::size_t i = 1; i < mapProperties.checkpoints.size(); i++) {
+        vec2 prev_checkpoint = mapProperties.checkpoints[i - 1];
+        vec2 curr_checkpoint = mapProperties.checkpoints[i];
+        if (abs(distance(mapProperties.checkpoints[i], card_pos)) < path_blocked_radius) {
+            place_occupied = true;
+            break;
+        }
+        vec2 vec_prev = prev_checkpoint - card_pos;
+        vec2 vec_curr = curr_checkpoint - card_pos;
+        vec2 vec_prod = vec_prev * vec_curr;
+        if (!(vec_prod[0] > 0 && vec_prod[1] > 0)) {
+            // cursor between prev and curr checkpoint
+            float d = abs((curr_checkpoint[1] - prev_checkpoint[1]) * card_pos[0]
+                          - (curr_checkpoint[0] - prev_checkpoint[0]) * card_pos[1]
+                          + curr_checkpoint[0] * prev_checkpoint[1]
+                          - curr_checkpoint[1] * prev_checkpoint[0]) /
+                      distance(prev_checkpoint, curr_checkpoint);
+            if (d < path_blocked_radius) {
+                place_occupied = true;
+            }
+        }
+        //printf("%f %f, %f %f, %f %f\n", a[0], a[1], b[0], b[1], ab[0], ab[1]);
+        //printf("%f %f\n", distance(prev_checkpoint, vec2 (mouse_x, mouse_y)), distance(curr_checkpoint, vec2 (mouse_x, mouse_y)));
+    }
+    return place_occupied;
 }
 
 void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *window) {
@@ -1113,49 +1167,8 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                     registry.invisibles.emplace(placement_marker[1]);
                 }
 
-                // block placement on other towers
-                bool place_occupied = false;
-                constexpr float tower_blocked_radius = TOWER_HEIGHT;
-                //abs(distance(vec2(0, 0), vec2(TOWER_WIDTH, TOWER_HEIGHT)));
-                for (std::size_t tower_index = 0; tower_index < registry.towers.size(); ++tower_index) {
-                    if (!registry.towers.components[tower_index].placed) {
-                        continue;
-                    }
-                    const Entity tower_entity = registry.towers.entities[tower_index];
-                    if (abs(distance(registry.motions.get(tower_entity).position, card_pos)) < tower_blocked_radius) {
-                        place_occupied = true;
-                    }
-                }
-
-                // block placement on enemy path
-                float path_blocked_radius = TILE_WIDTH / 2 + TOWER_WIDTH / 2;//window_height_px * 0.05;
-                if (abs(distance(mapProperties.checkpoints[0], card_pos)) < path_blocked_radius) {
-                    place_occupied = true;
-                }
-                for (std::size_t i = 1; i < mapProperties.checkpoints.size(); i++) {
-                    vec2 prev_checkpoint = mapProperties.checkpoints[i - 1];
-                    vec2 curr_checkpoint = mapProperties.checkpoints[i];
-                    if (abs(distance(mapProperties.checkpoints[i], card_pos)) < path_blocked_radius) {
-                        place_occupied = true;
-                        break;
-                    }
-                    vec2 vec_prev = prev_checkpoint - card_pos;
-                    vec2 vec_curr = curr_checkpoint - card_pos;
-                    vec2 vec_prod = vec_prev * vec_curr;
-                    if (!(vec_prod[0] > 0 && vec_prod[1] > 0)) {
-                        // cursor between prev and curr checkpoint
-                        float d = abs((curr_checkpoint[1] - prev_checkpoint[1]) * card_pos[0]
-                                      - (curr_checkpoint[0] - prev_checkpoint[0]) * card_pos[1]
-                                      + curr_checkpoint[0] * prev_checkpoint[1]
-                                      - curr_checkpoint[1] * prev_checkpoint[0]) /
-                                  distance(prev_checkpoint, curr_checkpoint);
-                        if (d < path_blocked_radius) {
-                            place_occupied = true;
-                        }
-                    }
-                    //printf("%f %f, %f %f, %f %f\n", a[0], a[1], b[0], b[1], ab[0], ab[1]);
-                    //printf("%f %f\n", distance(prev_checkpoint, vec2 (mouse_x, mouse_y)), distance(curr_checkpoint, vec2 (mouse_x, mouse_y)));
-                }
+                const bool place_occupied = check_placement_collision(mapProperties, card_pos);
+                registry.colors.remove(placement_marker[0]);
                 if ((card_pos[1] > (CARD_AXIS_HEIGHT - CARD_HEIGHT / 2) &&
                      card_pos[1] < (CARD_AXIS_HEIGHT + CARD_HEIGHT / 2) &&
                      card_pos[0] < CARD_AXIS_WIDTH)) {
