@@ -155,7 +155,8 @@ GLFWwindow* WorldSystem::create_window(const bool windowed) {
 void WorldSystem::init(RenderSystem* renderer) {
 	this->renderer = renderer;
 	// Playing background music indefinitely
-	Mix_PlayMusic(overview_music, -1); // TODO: Replace with our bgm
+	//Mix_PlayMusic(overview_music, -1); // TODO: Replace with our bgm
+    Mix_FadeInMusic(overview_music, -1, 500);
 	fprintf(stderr, "Loaded music\n");
 
 	// Set all states to default
@@ -168,6 +169,32 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 	ScreenState &screen = registry.screenStates.components[0];
 
     const float elapsed_ms = elapsed_ms_raw * registry.players.get(player).game_speed;
+
+    if (music_transition) {
+        //if (Mix_FadeOutMusic(1) == 0) {
+        music_transition = false;
+        Mix_Music* new_track;
+        switch (next_track) {
+            case Music::FIGHT: {
+                new_track = td_fight_music;
+                break;
+            }
+            case Music::SHOP: {
+                new_track = shop_music;
+                break;
+            }
+            case Music::END: {
+                new_track = end_music;
+                break;
+            }
+            default: {
+                new_track = overview_music;
+                break;
+            }
+        }
+        Mix_FadeInMusic(new_track, -1, 500);
+        //}
+    }
 
 	float min_timer_ms = 4000.f;
 	for (const Entity entity: registry.deathTimers.entities) {
@@ -190,11 +217,6 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 	screen.screen_darken_factor = 1 - min_timer_ms / 4000;
 
     if (goal_reached) {
-        if (temp_switch) {// TODO: only here to easily test
-            const Entity gameEnd = createGameEnd(renderer);
-            registry.scoreTimers.emplace(gameEnd);
-            temp_switch = false;
-        }
         auto &curr_player = registry.players.get(player);
         vec2 scores_pos = {TILE_WIDTH / 4, TILE_WIDTH * 6.5};
         float scores_scale = TILE_WIDTH / 5;
@@ -417,7 +439,9 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 			current_shop_system.reset(new ShopSystem());
 			shop_launched = false;
 		}
-        Mix_PlayMusic(overview_music, -1);
+        //Mix_PlayMusic(overview_music, -1);
+        music_transition = true;
+        next_track = Music::OVERVIEW;
 		// Setup Overview-Map for next selection
 		auto &current_map_pos_props = registry.overviewMapLocations.get(current_map_pos);
 		current_map_pos_props.active = false;
@@ -582,7 +606,9 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
                 goal_reached = false;
 				int w, h;
 				glfwGetWindowSize(window, &w, &h);
-                Mix_PlayMusic(overview_music, -1);
+                music_transition = true;
+                next_track = Music::OVERVIEW;
+                //Mix_PlayMusic(overview_music, -1);
 				restart_game();
 			}
 			break;
@@ -698,18 +724,24 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
                         goal_reached = true;
                         const Entity gameEnd = createGameEnd(renderer);
                         registry.scoreTimers.emplace(gameEnd);
-                        Mix_PlayMusic(end_music, -1);
+                        music_transition = true;
+                        next_track = Music::END;
+                        //Mix_PlayMusic(end_music, -1);
                     } else {
                         if (loc_props.type == LocationType::FIGHT) {
                             current_td_system.reset( new TDSystem(rng()));
                             current_td_system->init(renderer, player);
                             td_fight_launched = true;
-                            Mix_PlayMusic(td_fight_music, -1);
+                            music_transition = true;
+                            next_track = Music::FIGHT;
+                            //Mix_PlayMusic(td_fight_music, -1);
                         } else {
                             current_shop_system.reset(new ShopSystem(rng()));
                             current_shop_system->init(renderer, player, loc_props.type);
                             shop_launched = true;
-                            Mix_PlayMusic(shop_music, -1);
+                            music_transition = true;
+                            next_track = Music::SHOP;
+                            //Mix_PlayMusic(shop_music, -1);
                         }
                     }
 					next_map_pos = entity;
@@ -719,7 +751,9 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
                     }
                     int w, h;
                     glfwGetWindowSize(window, &w, &h);
-                    Mix_PlayMusic(overview_music, -1);
+                    music_transition = true;
+                    next_track = Music::OVERVIEW;
+                    //Mix_PlayMusic(overview_music, -1);
                     goal_reached = false;
                     restart_game();
                 }

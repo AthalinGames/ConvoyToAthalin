@@ -378,3 +378,10 @@ struct Button {
 		cleanup_func();
 	}
 };
+
+enum class Music {
+    OVERVIEW = 0,
+    FIGHT,
+    SHOP,
+    END,
+};

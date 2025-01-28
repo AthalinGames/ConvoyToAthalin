@@ -71,10 +71,9 @@ private:
     Entity next_map_pos;
     bool td_fight_launched = false;
     bool shop_launched = false;
-    bool goal_reached = true; //TODO: set to false for finished feature
+    bool goal_reached = false;
 
     // Game End
-    bool temp_switch = true; //TODO: only for score debug
     std::map<ScoreStep, int> score_factors = {
             {ScoreStep::BATTLES, 20},
             {ScoreStep::KILLS, 10},
@@ -123,6 +122,9 @@ At each location you will need to protect the convoy from monsters.
     Mix_Music* end_music;
     Mix_Chunk* salmon_dead_sound;
     Mix_Chunk* salmon_eat_sound;
+
+    bool music_transition = false;
+    Music next_track = Music::OVERVIEW;
 
     // C++ random number generator
     std::default_random_engine rng;
