@@ -582,8 +582,10 @@ void TDSystem::restart_td_fight() {
     }
     realignCards();
 
-    const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial", FontType::SQUARE);
-    cleanup_entities.push_back(text);
+    //const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial", FontType::SQUARE);
+    //cleanup_entities.push_back(text);
+    tutorial_button = createButton(renderer, {TILE_WIDTH/2, CARD_AXIS_HEIGHT - TILE_HEIGHT/6 - CARD_HEIGHT/2}, {TILE_WIDTH * 1, TILE_HEIGHT/3}, "Tutorial");
+    cleanup_entities.push_back(tutorial_button);
 
     const Entity card_background = createBlackSquare(renderer, {window_width_px / 2, CARD_AXIS_HEIGHT}, {window_width_px, CARD_HEIGHT}, 0.75);
     cleanup_entities.push_back(card_background);
@@ -591,6 +593,13 @@ void TDSystem::restart_td_fight() {
     const Entity button = createRoundStartButton(renderer, {TILE_WIDTH * (MAP_COUNT_X - 1) - TILE_WIDTH / 4, TILE_HEIGHT / 4});
     cleanup_entities.push_back(button);
     start_button = button;
+
+    tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{495, 130}, {1020, 255}, 0.75f);
+    tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data(), FontType::SQUARE);
+    cleanup_entities.push_back(tutorial_text);
+    cleanup_entities.push_back(tutorial_background);
+    registry.invisibles.emplace(tutorial_background);
+    registry.invisibles.emplace(tutorial_text);
 
     registry.list_all_components();
 }
@@ -824,15 +833,11 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
         }
         case GLFW_KEY_T: {
             if (action == GLFW_PRESS) {
-                tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{495, 130}, {1020, 255}, 0.75f);
-                tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data(), FontType::SQUARE);
-                cleanup_entities.push_back(tutorial_text);
-                cleanup_entities.push_back(tutorial_background);
+                registry.invisibles.remove(tutorial_text);
+                registry.invisibles.remove(tutorial_background);
             } else if (action == GLFW_RELEASE) {
-                registry.remove_all_components_of(tutorial_text);
-                registry.remove_all_components_of(tutorial_background);
-                std::erase(cleanup_entities, tutorial_text);
-                std::erase(cleanup_entities, tutorial_background);
+                registry.invisibles.emplace(tutorial_text);
+                registry.invisibles.emplace(tutorial_background);
             }
             break;
         }
@@ -973,9 +978,22 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
 
 void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
     // TODO fight specific mouse handling
+    registry.clickables.clear();
+
+    {
+        const auto& button_pos = registry.stationaries.get(tutorial_button);
+        const vec2 dp = button_pos.position - pos;
+        const float dist_squared = dot(dp, dp);
+        vec2 bounding_box = {abs(button_pos.scale.x), abs(button_pos.scale.y)};
+        bounding_box *= 0.4f;
+        const float element_r_squared = bounding_box.x * bounding_box.y;
+        if (dist_squared < element_r_squared) {
+            registry.clickables.emplace(tutorial_button);
+        }
+    }
+
 
     if (current_phase == GamePhase::SETUP) {
-        registry.clickables.clear();
         const auto& card_pos = registry.stationaries.get(start_button);
         const vec2 dp = card_pos.position - pos;
         const float dist_squared = dot(dp, dp);
@@ -1032,8 +1050,6 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
             }
         }
     } else if (current_phase == GamePhase::CHOOSE_REWARD) {
-        registry.clickables.clear();
-
         for (const Entity card : new_cards) {
             auto& card_pos = registry.stationaries.get(card);
             const vec2 dp = card_pos.position - pos;
@@ -1099,6 +1115,21 @@ bool TDSystem::check_placement_collision(const Map &mapProperties, const vec2 ca
 
 void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *window) {
     printf("mouse button\n");
+
+    if (registry.clickables.has(tutorial_button)) {
+        if (action == GLFW_PRESS) {
+            registry.buttons.get(tutorial_button).click(true);
+        } else if (action == GLFW_RELEASE) {
+            registry.buttons.get(tutorial_button).click(false);
+            if (registry.invisibles.has(tutorial_text)) {
+                registry.invisibles.remove(tutorial_text);
+                registry.invisibles.remove(tutorial_background);
+            } else {
+                registry.invisibles.emplace(tutorial_text);
+                registry.invisibles.emplace(tutorial_background);
+            }
+        }
+    }
 
     if (current_phase == GamePhase::SETUP) {
         if (registry.clickables.has(start_button) && action == GLFW_PRESS) {

@@ -522,7 +522,6 @@ void WorldSystem::restart_game() {
 
 	tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data(), FontType::SLIM);
 	registry.invisibles.emplace(tutorial_text);
-	//tutorial_button = createButton(renderer, {(TILE_WIDTH * MAP_COUNT_X - TILE_WIDTH * 1.8), TILE_HEIGHT/4}, {TILE_WIDTH * 1, TILE_HEIGHT/3}, "Tutorial");
 	tutorial_button = createButton(renderer, {TILE_WIDTH/2, window_height_px - TILE_HEIGHT/6}, {TILE_WIDTH * 1, TILE_HEIGHT/3}, "Tutorial");
 }
 
