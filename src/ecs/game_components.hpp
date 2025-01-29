@@ -23,6 +23,7 @@ class Player {
 	std::vector<Entity> status_bar_entities;
 	std::function<void()> status_bar_cleanup_func = []{};
     std::vector<Entity> placement_marker;
+    Entity cardStatsWindow;
 
 	std::function<void(int new_hp, int old_hp)> health_update_callback = [](int ...){};
 	std::function<void(int new_food, int old_food)> food_update_callback = [](int ...){};
@@ -164,31 +165,33 @@ struct ShotTimer {
 // Archer
 struct Archer {
 	float arrow_speed = 1000.0f;
+    int damage = 50;
     Entity bow;
 };
 
 // Arrow
 struct Arrow {
-    int damage = 50;
+    int damage;
 	std::size_t max_hitcount = 1;
 	std::set<Entity> hit_entities{};
 };
 
 // Bow
 struct Bow {
-
+    int damage = 50;
 };
 
 // Knight
 struct Knight {
     float swing_time = 800.0f; //time to complete a full swing
     float cooldown = 1200.0f;
+    int damage = 30;
     Entity sword;
 };
 
 // Sword
 struct Sword { //TODO: maybe outsource hitcound and hit list to Weapon and make Arrow Weapon, too.
-    int damage = 40;
+    int damage;
     bool has_collision = false; // activate collision when sword is swung
     std::set<Entity> hit_entities{};
 };
@@ -362,6 +365,13 @@ enum class StatusType {
 struct StatusTextTimer {
 	float timer_ms = 2000.f;
     StatusType type = StatusType::HEALTH;
+};
+
+struct CardStatsWindow {
+    Entity text_entity;
+    Entity background_entity;
+    size_t text_rows = 0;
+    size_t text_cols = 0;
 };
 
 struct Button {

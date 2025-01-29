@@ -505,6 +505,7 @@ void WorldSystem::restart_game() {
     createItem(ConsumableType::HEALTH_POTION);
 
     registry.players.get(player).placement_marker = createPlacementMarker(renderer);
+    registry.players.get(player).cardStatsWindow = createCardStats(renderer);
 
 	current_td_system.reset(new TDSystem());
 	current_shop_system.reset(new ShopSystem());

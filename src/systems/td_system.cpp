@@ -794,7 +794,7 @@ void TDSystem::handle_aiming() const {
                 if (towerType == TowerType::ARCHER) {
                     const auto &archer = registry.archers.get(tower_entity);
                     registry.shotTimers.emplace(tower_entity);
-                    createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p);
+                    createArrow(renderer, tower_motion.position, archer.arrow_speed, d_p, registry.bows.get(archer.bow).damage);
                 } else if (towerType == TowerType::KNIGHT) {
                     const auto &knight = registry.knights.get(tower_entity);
                     ShotTimer &swing_timer = registry.shotTimers.emplace(tower_entity);
@@ -1017,9 +1017,66 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
                 if (i == selected_card_id && registry.cards.get(card_entity).selectable) {
                     registry.stationaries.get(card_entity).scale = vec2(1.3 * CARD_WIDTH, 1.3 * CARD_HEIGHT);
                     cardRegistry.components[i].selected = true;
+                    //TODO: createText for selected cards stats
+                    auto &stats_window = registry.cardStatsWindows.get(registry.players.get(player).cardStatsWindow);
+                    registry.invisibles.remove(stats_window.text_entity);
+                    registry.invisibles.remove(stats_window.background_entity);
+                    auto &text_stationary = registry.stationaries.get(stats_window.text_entity);
+                    auto &bg_stationary = registry.stationaries.get(stats_window.background_entity);
+
+                    std::vector<std::string> stats_text;
+                    std::string next_line;
+                    stats_window.text_rows = 0;
+                    stats_window.text_cols = 0;
+                    if (registry.towers.has(card_entity)) {
+                        auto tower = registry.towers.get(card_entity);
+                        stats_text.push_back("Cost: " + std::to_string(tower.food_cost) + " Food\n");
+                        stats_text.push_back("Gain: " + std::to_string(tower.food_gain) + " Food\n");
+                        stats_text.push_back("Range: " + std::to_string(tower.range / TILE_WIDTH) + "\n");
+                        if (registry.archers.has(card_entity)) {
+                            stats_text.push_back("Damage: " + std::to_string(registry.archers.get(card_entity).damage) + "\n");
+                        } else if (registry.knights.has(card_entity)) {
+                            stats_text.push_back("Damage: " + std::to_string(registry.knights.get(card_entity).damage) + "\n");
+                        }
+                        stats_window.text_rows = 4;
+                    } else if (registry.consumables.has(card_entity)) {
+                        auto consumable = registry.consumables.get(card_entity);
+                        if (registry.healthPotions.has(card_entity)) {
+                            stats_text.push_back("Restores: " + std::to_string(registry.healthPotions.get(card_entity).health) + " Health\n");
+                            stats_window.text_rows = 1;
+                        } else if (registry.bombs.has(card_entity)) {
+                            auto bomb = registry.bombs.get(card_entity);
+                            stats_text.push_back("Range: " + std::to_string(consumable.range / TILE_WIDTH) + "\n");
+                            stats_text.push_back("Damage: " + std::to_string(bomb.damage) + "\n");
+                            stats_window.text_rows = 2;
+                        } else if (registry.spikes.has(card_entity)) {
+                            stats_text.push_back("Damage: " + std::to_string(registry.spikes.get(card_entity).damage) + "\n");
+                            stats_window.text_rows = 1;
+                        } else if (registry.barriers.has(card_entity)) {
+                            stats_text.push_back("Health: " + std::to_string(registry.barriers.get(card_entity).health) + "\n");
+                            stats_window.text_rows = 1;
+                        }
+                    }
+                    std::string final_text;
+                    for (auto &line : stats_text) {
+                        final_text += line;
+                        stats_window.text_cols = max(stats_window.text_cols, line.size() + 1);
+                    }
+                    updateText(stats_window.text_entity, final_text);
+                    bg_stationary.scale = text_stationary.scale * vec2(stats_window.text_cols, stats_window.text_rows) + text_stationary.scale;
+                    text_stationary.position = vec2(max(0.f + text_stationary.scale.x, pos.x - bg_stationary.scale.x + text_stationary.scale.x),
+                                                    max(0.f + text_stationary.scale.y, pos.y - bg_stationary.scale.y + text_stationary.scale.y));
+                            //vec2((pos.x - text_stationary.scale.x - bg_stationary.scale.x > 0 ?
+                            //                                pos.x - text_stationary.scale.x - bg_stationary.scale.x : bg_stationary.scale.x),
+                            //                        (pos.y - text_stationary.scale.y - bg_stationary.scale.y < 0 ?
+                            //                                pos.y - text_stationary.scale.y - bg_stationary.scale.y : bg_stationary.scale.y));
+
+                    bg_stationary.position = text_stationary.position;
+                    bg_stationary.position += bg_stationary.scale / 2.f - text_stationary.scale;
                 } else {
                     registry.stationaries.get(card_entity).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
                     cardRegistry.components[i].selected = false;
+                    //TODO: delete created Text for not selected cards stats
                 }
             }
         } else { // unselect all cards
@@ -1029,6 +1086,11 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
                 Entity card_entity = cardRegistry.entities[i];
                 registry.stationaries.get(card_entity).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
                 cardRegistry.components[i].selected = false;
+                //TODO: delete created Text for all cards stats
+            }
+            auto &stats_window = registry.cardStatsWindows.get(registry.players.get(player).cardStatsWindow);
+            if (!registry.invisibles.has(stats_window.text_entity)) {
+                registry.invisibles.emplace(stats_window.text_entity);
             }
         }
     } else if (current_phase == GamePhase::CHOOSE_REWARD) {
@@ -1242,6 +1304,10 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
             if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
                 for (uint i = 0; i < registry.cards.entities.size(); i++) {
                     if (registry.cards.components[i].selected) {
+                        auto &stats_window = registry.cardStatsWindows.get(registry.players.get(player).cardStatsWindow);
+                        if (!registry.invisibles.has(stats_window.text_entity)) {
+                            registry.invisibles.emplace(stats_window.text_entity);
+                        }
                         registry.cards.components[i].dragged = true;
                         dragged_entity = registry.cards.entities[i];
                         dragging = true;

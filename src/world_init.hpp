@@ -52,7 +52,7 @@ void returnTowerToItem(Entity tower);
 // consumable creation
 void createConsumableFromCard(RenderSystem* renderer, Entity card, Entity player_entity, std::set<Entity> &placed_consumables);
 // the arrows
-Entity createArrow(RenderSystem* renderer, vec2 pos, float velocity, vec2 dir);
+Entity createArrow(RenderSystem* renderer, vec2 pos, float velocity, vec2 dir, int damage);
 // the enemy unit
 Entity createEnemy(RenderSystem* renderer, vec2 pos, EnemyType enemyType);
 // the cards
@@ -95,6 +95,8 @@ Entity createGameOver(RenderSystem* renderer);
 Entity createGameEnd(RenderSystem* renderer);
 
 Entity createBlackSquare(RenderSystem* renderer, vec2 pos, vec2 size, float alpha);
+
+Entity createCardStats(RenderSystem* renderer);
 
 Entity createMerchantBackground();
 

@@ -258,9 +258,10 @@ void createArcherFromCard(RenderSystem *renderer, const Entity card, Motion &mot
 	registry.renderForeground.remove(card);
 	registry.renderGameLayer.emplace(card, request);
 
-	registry.bows.emplace(bow);
+    auto &archer = registry.archers.get(card);
+	registry.bows.emplace(bow).damage = archer.damage;
 	registry.weapons.emplace(bow);
-	registry.archers.get(card).bow = bow;
+	archer.bow = bow;
 
 	Mesh &bow_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(bow, &bow_mesh);
@@ -314,9 +315,10 @@ void createKnightFromCard(RenderSystem *renderer, const Entity card, Motion &mot
 	registry.renderForeground.remove(card);
 	registry.renderGameLayer.emplace(card, request);
 
-	registry.swords.emplace(sword);
+    auto &knight = registry.knights.get(card);
+	registry.swords.emplace(sword).damage = knight.damage;
 	registry.weapons.emplace(sword);
-	registry.knights.get(card).sword = sword;
+	knight.sword = sword;
 
 	Mesh &sword_mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
 	registry.meshPtrs.emplace(sword, &sword_mesh);
@@ -519,7 +521,7 @@ void returnTowerToItem(const Entity tower) {
 	}
 }
 
-Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity, const vec2 dir) {
+Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity, const vec2 dir, const int damage) {
 	const auto entity = Entity();
 
 	Mesh &mesh = renderer->getMesh(GEOMETRY_BUFFER_ID::SPRITE);
@@ -531,7 +533,7 @@ Entity createArrow(RenderSystem *renderer, const vec2 pos, const float velocity,
 	motion.velocity = -velocity * normalize(dir);
 	motion.scale = vec2({TOWER_WIDTH, TOWER_HEIGHT});
 
-	registry.arrows.emplace(entity);
+	registry.arrows.emplace(entity).damage = damage;
 
 	auto request = registry.renderGameLayer.insert(entity, {
 		                                {Stationary{}},
@@ -1460,6 +1462,20 @@ Entity createBlackSquare(RenderSystem *renderer, const vec2 pos, const vec2 size
 
 	return entity;
 }
+
+Entity createCardStats(RenderSystem *renderer) {
+    Entity entity = Entity();
+    auto &statsWindow = registry.cardStatsWindows.emplace(entity);
+
+    auto background_entity = createBlackSquare(renderer, {0, 0}, {CARD_WIDTH, CARD_HEIGHT/6}, 0.75);
+    registry.renderForeground.get(background_entity).z_position = Z_FOREGROUND;
+    statsWindow.background_entity = background_entity;
+    registry.invisibles.emplace(statsWindow.background_entity);
+
+    statsWindow.text_entity = createText(renderer, {0, 0}, {CARD_WIDTH / 6, CARD_HEIGHT / 6}, "asdf", FontType::SLIM);
+    registry.invisibles.emplace(statsWindow.text_entity);
+    return entity;
+};
 
 Entity createMerchantBackground() {
 	const auto entity = Entity();
