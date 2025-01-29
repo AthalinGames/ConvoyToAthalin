@@ -424,20 +424,23 @@ std::vector<Entity> TDSystem::generate_combat(int difficulty) {
     //TODO: maybe remove entry from pool when selected, to increase variation
 
     //{enemy_type, amount, interval, speed}
-    std::vector<vec4> combat_pool = {vec4(EnemyType::SLIME, 1, 1000., 120.),
+    std::vector<vec4> combat_pool = {vec4(EnemyType::SLIME, 2, 1000., 120.),
                                      vec4(EnemyType::SLIME, 2, 1000., 120.),
                                      vec4(EnemyType::SLIME, 3, 1000., 120.),
                                      vec4(EnemyType::SLIME, 4, 1000., 120.),
+                                     vec4(EnemyType::SLIME, 5, 1000., 120.),
                                      vec4(EnemyType::SLIME, 1, 500., 120.),
                                      vec4(EnemyType::SLIME, 2, 500., 120.),
                                      vec4(EnemyType::SLIME, 3, 500., 120.),
                                      vec4(EnemyType::SLIME, 4, 500., 120.),
-                                     vec4(EnemyType::SLIME_BIG, 1, 1000., 100.),
+                                     vec4(EnemyType::SLIME, 5, 500., 120.),
                                      vec4(EnemyType::SLIME_BIG, 2, 1000., 100.),
+                                     vec4(EnemyType::SLIME_BIG, 2, 1000., 100.),
+                                     vec4(EnemyType::SLIME_BIG, 3, 1000., 100.),
                                      vec4(EnemyType::SLIME_BIG, 1, 500., 100.),
                                      vec4(EnemyType::SLIME_BIG, 2, 500., 100.),};
     std::vector<Entity> enemy_list = {};
-    uint wave_amount = 1 + int(std::floor(difficulty/2)); //TODO: better curve maybe some kind of sigmoid
+    uint wave_amount = 1 + int(std::floor(difficulty/1.5)); //TODO: better curve maybe some kind of sigmoid
     std::uniform_int_distribution<int> uniform_int_dist(0, combat_pool.size()-1);
 
     if (difficulty == 0) {
