@@ -88,7 +88,7 @@ overview_grid_entities create_fight_locations(RenderSystem *renderer, std::defau
         	const float radius = length(goal_pos - start_pos) * dist_percentage;
         	auto location_pos = circle_section_lerp(selected_pos, radius + 0.05 * window_height_px, start_angle, end_angle, width_percentage);
             location_pos += (vec2(dist(rng), dist(rng)) - 0.5f) * 30.f;
-        	if ((height == 0 || height == 6) && location_dist(rng) == 0) {
+        	if ((height == 3 || height == 6) && location_dist(rng) == 0) {
         		if (shop_type(rng) == 0) {
         			locations[height][width] = createGarrisonLocation(renderer, location_pos);
         		} else {
