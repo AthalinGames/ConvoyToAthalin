@@ -756,7 +756,8 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
                 goal_reached = false;
                 restart_game();
             } else if (entity == tutorial_button) {
-            	registry.buttons.get(tutorial_button).click(true);
+            	auto& button_ref = registry.buttons.get(tutorial_button);
+            	button_ref.click(true);
             	if (registry.invisibles.has(tutorial_text)) {
             		registry.invisibles.remove(tutorial_text);
             	} else {
@@ -764,7 +765,8 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
             	}
             }
 		} else {
-			registry.buttons.get(tutorial_button).click(false);
+			auto& button_ref = registry.buttons.get(tutorial_button);
+			button_ref.click(false);
 		}
 	}
 }

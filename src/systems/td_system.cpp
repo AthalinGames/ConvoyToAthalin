@@ -1117,10 +1117,11 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
     printf("mouse button\n");
 
     if (registry.clickables.has(tutorial_button)) {
+        auto& button_ref = registry.buttons.get(tutorial_button);
         if (action == GLFW_PRESS) {
-            registry.buttons.get(tutorial_button).click(true);
+            button_ref.click(true);
         } else if (action == GLFW_RELEASE) {
-            registry.buttons.get(tutorial_button).click(false);
+            button_ref.click(false);
             if (registry.invisibles.has(tutorial_text)) {
                 registry.invisibles.remove(tutorial_text);
                 registry.invisibles.remove(tutorial_background);
