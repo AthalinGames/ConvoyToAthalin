@@ -1032,7 +1032,7 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
                         auto tower = registry.towers.get(card_entity);
                         stats_text.push_back("Cost: " + std::to_string(tower.food_cost) + " Food\n");
                         stats_text.push_back("Gain: " + std::to_string(tower.food_gain) + " Food\n");
-                        stats_text.push_back("Range: " + std::to_string(tower.range / TILE_WIDTH) + "\n");
+                        stats_text.push_back("Range: " + std::to_string(static_cast<int>(tower.range / TILE_WIDTH * 100)) + "\n");
                         if (registry.archers.has(card_entity)) {
                             stats_text.push_back("Damage: " + std::to_string(registry.archers.get(card_entity).damage) + "\n");
                         } else if (registry.knights.has(card_entity)) {
@@ -1046,7 +1046,7 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
                             stats_window.text_rows = 1;
                         } else if (registry.bombs.has(card_entity)) {
                             auto bomb = registry.bombs.get(card_entity);
-                            stats_text.push_back("Range: " + std::to_string(consumable.range / TILE_WIDTH) + "\n");
+                            stats_text.push_back("Range: " + std::to_string(static_cast<int>(consumable.range / TILE_WIDTH * 100)) + "\n");
                             stats_text.push_back("Damage: " + std::to_string(bomb.damage) + "\n");
                             stats_window.text_rows = 2;
                         } else if (registry.spikes.has(card_entity)) {
@@ -1091,6 +1091,9 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
             auto &stats_window = registry.cardStatsWindows.get(registry.players.get(player).cardStatsWindow);
             if (!registry.invisibles.has(stats_window.text_entity)) {
                 registry.invisibles.emplace(stats_window.text_entity);
+            }
+            if (!registry.invisibles.has(stats_window.background_entity)) {
+                registry.invisibles.emplace(stats_window.background_entity);
             }
         }
     } else if (current_phase == GamePhase::CHOOSE_REWARD) {
@@ -1307,6 +1310,9 @@ void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *win
                         auto &stats_window = registry.cardStatsWindows.get(registry.players.get(player).cardStatsWindow);
                         if (!registry.invisibles.has(stats_window.text_entity)) {
                             registry.invisibles.emplace(stats_window.text_entity);
+                        }
+                        if (!registry.invisibles.has(stats_window.background_entity)) {
+                            registry.invisibles.emplace(stats_window.background_entity);
                         }
                         registry.cards.components[i].dragged = true;
                         dragged_entity = registry.cards.entities[i];
