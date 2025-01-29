@@ -14,6 +14,12 @@ ShopSystem::ShopSystem(): location() {
 }
 
 void ShopSystem::cleanup_ecs() {
+    printf("ShopSystem::cleanup_ecs\n");
+    if (registry.buttons.has(button))
+        registry.buttons.get(button).cleanup_func(); // TODO this should not be needed. Somehow the deconstructor of this is not called
+    if (registry.buttons.has(tutorial_button))
+        registry.buttons.get(tutorial_button).cleanup_func();
+
     for (const Entity cleanup_entity : cleanup_entities) {
         registry.remove_all_components_of(cleanup_entity);
     }
@@ -101,6 +107,12 @@ void ShopSystem::restartShop() {
 
     button = createButton(renderSystem, {window_width_px / 2, 2.1 * (window_height_px / 3)}, {CARD_WIDTH * 0.8, CARD_WIDTH * 0.25}, "Continue");
     cleanup_entities.push_back(button);
+
+    tutorial_button = createButton(renderSystem, {TILE_WIDTH/2, window_height_px - TILE_HEIGHT/6}, {TILE_WIDTH * 1, TILE_HEIGHT/3}, "Tutorial");
+    cleanup_entities.push_back(tutorial_button);
+    tutorial_text = createText(renderSystem, tutorial_pos, {8, 20}, tutorial_string.data(), FontType::SLIM);
+    registry.invisibles.emplace(tutorial_text);
+    cleanup_entities.push_back(tutorial_text);
 }
 
 bool ShopSystem::step(float elapsed_ms) const {
@@ -113,6 +125,14 @@ bool ShopSystem::is_over() const {
 
 void ShopSystem::on_key(const int key, const int, const int action, const int mods) {
     switch (key) {
+        case GLFW_KEY_T: {
+            if (action == GLFW_PRESS) {
+                registry.invisibles.remove(tutorial_text);
+            } else if (action == GLFW_RELEASE) {
+                registry.invisibles.emplace(tutorial_text);
+            }
+            break;
+        }
         case GLFW_KEY_C:
         case GLFW_KEY_R: {
             if (action == GLFW_PRESS) {
@@ -124,11 +144,11 @@ void ShopSystem::on_key(const int key, const int, const int action, const int mo
     }
 }
 
-bool check_mouse_collision(const vec2 pos, const Stationary& elem_pos) {
+bool check_mouse_collision(const vec2 pos, const Stationary& elem_pos, const float collision_size=0.1f) {
     const vec2 dp = elem_pos.position - pos;
     const float dist_squared = dot(dp, dp);
     vec2 bounding_box = {abs(elem_pos.position.x), abs(elem_pos.position.y)};
-    bounding_box *= 0.1f;
+    bounding_box *= collision_size;
     const float card_squared = dot(bounding_box, bounding_box);
     return dist_squared < card_squared;
 }
@@ -152,12 +172,15 @@ void ShopSystem::on_mouse_move(const vec2 pos) {
     if (check_mouse_collision(pos, registry.stationaries.get(button))) {
         registry.clickables.emplace(button);
     }
+    if (check_mouse_collision(pos, registry.stationaries.get(tutorial_button), 0.7f)) {
+        registry.clickables.emplace(tutorial_button);
+    }
 }
 
 void ShopSystem::on_mouse_button(const int button, const int action, int) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         for (const Entity entity : registry.clickables.entities) {
-            if (entity == this->button) {
+            if (entity == this->button || entity == this->tutorial_button) {
                 registry.buttons.get(entity).click(true);
                 continue;
             }
@@ -172,7 +195,17 @@ void ShopSystem::on_mouse_button(const int button, const int action, int) {
         if (registry.clickables.has(this->button)) {
             over = true;
         }
-        registry.buttons.get(this->button).click(false);
+        if (registry.clickables.has(this->tutorial_button)) {
+            if (registry.invisibles.has(tutorial_text)) {
+                registry.invisibles.remove(tutorial_text);
+            } else {
+                registry.invisibles.emplace(tutorial_text);
+            }
+        }
+        auto& button_ref = registry.buttons.get(this->button);
+        auto& button_ref2 = registry.buttons.get(this->tutorial_button);
+        button_ref.click(false);
+        button_ref2.click(false);
     }
 }
 

@@ -449,7 +449,7 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 		next_map_pos_props.selectable = false;
 		current_map_pos = next_map_pos;
 
-		registry.invisibles.remove(tutorial_hint);
+		registry.invisibles.remove(tutorial_button);
 
 		// Finally get back to overview-map steps
 	}
@@ -520,7 +520,9 @@ void WorldSystem::restart_game() {
     map_start_goal = build_overview_graph(renderer, paths, location_entities);
 	current_map_pos = map_start_goal.first;
 
-	tutorial_hint = createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial", FontType::SQUARE);
+	tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data(), FontType::SLIM);
+	registry.invisibles.emplace(tutorial_text);
+	tutorial_button = createButton(renderer, {TILE_WIDTH/2, window_height_px - TILE_HEIGHT/6}, {TILE_WIDTH * 1, TILE_HEIGHT/3}, "Tutorial");
 }
 
 // Compute collisions between entities
@@ -603,9 +605,9 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 		}
 		case GLFW_KEY_T: {
 			if (action == GLFW_PRESS) {
-				tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data(), FontType::SQUARE);
+				registry.invisibles.remove(tutorial_text);
 			} else if (action == GLFW_RELEASE) {
-				registry.remove_all_components_of(tutorial_text);
+				registry.invisibles.emplace(tutorial_text);
 			}
 			break;
 		}
@@ -695,6 +697,15 @@ void WorldSystem::on_mouse_move(vec2 pos) {
 				}
 			}
 		}
+    	const auto button_pos = registry.stationaries.get(tutorial_button);
+    	const vec2 dp = button_pos.position - pos;
+    	const float dist_squared = dot(dp, dp);
+    	vec2 bounding_box = {abs(button_pos.scale.x), abs(button_pos.scale.y)};
+    	bounding_box *= 0.7f;
+    	const float element_r_squared = dot(bounding_box, bounding_box);
+    	if (dist_squared < element_r_squared) {
+    		registry.clickables.emplace(tutorial_button);
+    	}
 	}
 }
 
@@ -712,13 +723,13 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 	} else {
 		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 			auto &clickables = registry.clickables;
-			if (clickables.entities.size() < 1) {
+			if (clickables.entities.empty()) {
 				return;
 			}
 			const auto entity = clickables.entities[0]; // only one element should be clickable
 			if (registry.overviewMapLocations.has(entity)) {
 				const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
-				registry.invisibles.emplace(tutorial_hint);
+				registry.invisibles.emplace(tutorial_button);
 				if (entity == map_start_goal.second) {
                     goal_reached = true;
                     const Entity gameEnd = createGameEnd(renderer);
@@ -752,7 +763,18 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
                 //Mix_PlayMusic(overview_music, -1);
                 goal_reached = false;
                 restart_game();
+            } else if (entity == tutorial_button) {
+            	auto& button_ref = registry.buttons.get(tutorial_button);
+            	button_ref.click(true);
+            	if (registry.invisibles.has(tutorial_text)) {
+            		registry.invisibles.remove(tutorial_text);
+            	} else {
+            		registry.invisibles.emplace(tutorial_text);
+            	}
             }
+		} else {
+			auto& button_ref = registry.buttons.get(tutorial_button);
+			button_ref.click(false);
 		}
 	}
 }
