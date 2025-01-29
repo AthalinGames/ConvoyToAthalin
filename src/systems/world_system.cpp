@@ -705,43 +705,45 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 	} else {
 		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 			auto &clickables = registry.clickables;
-			const auto entity = clickables.entities[0]; // only one element should be clickable
-			if (registry.overviewMapLocations.has(entity)) {
-				const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
-				registry.invisibles.emplace(tutorial_hint);
-				if (entity == map_start_goal.second) {
-                    goal_reached = true;
-                    const Entity gameEnd = createGameEnd(renderer);
-                    registry.scoreTimers.emplace(gameEnd);
+            if (!clickables.entities.empty()) {
+                const auto entity = clickables.entities[0]; // only one element should be clickable
+                if (registry.overviewMapLocations.has(entity)) {
+                    const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
+                    registry.invisibles.emplace(tutorial_hint);
+                    if (entity == map_start_goal.second) {
+                        goal_reached = true;
+                        const Entity gameEnd = createGameEnd(renderer);
+                        registry.scoreTimers.emplace(gameEnd);
+                        music_transition = true;
+                        next_track = Music::END;
+                    } else {
+                        if (loc_props.type == LocationType::FIGHT) {
+                            current_td_system.reset(new TDSystem(rng()));
+                            current_td_system->init(renderer, player);
+                            td_fight_launched = true;
+                            music_transition = true;
+                            next_track = Music::FIGHT;
+                        } else {
+                            current_shop_system.reset(new ShopSystem(rng()));
+                            current_shop_system->init(renderer, player, loc_props.type);
+                            shop_launched = true;
+                            music_transition = true;
+                            next_track = Music::SHOP;
+                        }
+                    }
+                    next_map_pos = entity;
+                } else if (entity == restart_button) {
+                    for (const auto score_timer: registry.scoreTimers.entities) {
+                        registry.remove_all_components_of(score_timer);
+                    }
+                    int w, h;
+                    glfwGetWindowSize(window, &w, &h);
                     music_transition = true;
-                    next_track = Music::END;
-				} else {
-					if (loc_props.type == LocationType::FIGHT) {
-                        current_td_system.reset( new TDSystem(rng()));
-                        current_td_system->init(renderer, player);
-                        td_fight_launched = true;
-                        music_transition = true;
-                        next_track = Music::FIGHT;
-					} else {
-                        current_shop_system.reset(new ShopSystem(rng()));
-                        current_shop_system->init(renderer, player, loc_props.type);
-                        shop_launched = true;
-                        music_transition = true;
-                        next_track = Music::SHOP;
-					}
-				}
-				next_map_pos = entity;
-			} else if (entity == restart_button) {
-                for (const auto score_timer : registry.scoreTimers.entities) {
-                    registry.remove_all_components_of(score_timer);
+                    next_track = Music::OVERVIEW;
+                    //Mix_PlayMusic(overview_music, -1);
+                    goal_reached = false;
+                    restart_game();
                 }
-                int w, h;
-                glfwGetWindowSize(window, &w, &h);
-                music_transition = true;
-                next_track = Music::OVERVIEW;
-                //Mix_PlayMusic(overview_music, -1);
-                goal_reached = false;
-                restart_game();
             }
 		}
 	}

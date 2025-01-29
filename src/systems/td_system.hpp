@@ -41,6 +41,8 @@ public:
     // Should the td fight be over?
     bool is_over() const;
 
+    void updateCardStats(vec2 pos, Entity card_entity, Entity player);
+
     // Input callback functions
     void on_key(int key, int, int action, int mods);
     void on_mouse_move(vec2 pos, GLFWwindow* window);
