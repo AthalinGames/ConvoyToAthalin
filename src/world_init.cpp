@@ -1598,6 +1598,9 @@ RenderRequest createTextRenderRequest(const std::string &text, const vec2 scale,
 			}
 			case '\n': {
 				current_pos.y += scale.y;
+				if (font == FontType::SLIM) {
+					current_pos.y += scale.y * 0.1;
+				}
 				current_pos.x = 0;
 				continue;
 			}

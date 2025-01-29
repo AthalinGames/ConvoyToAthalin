@@ -98,15 +98,19 @@ Cards in possession:
 )";
 
     // Tutorial entity;
-    Entity tutorial_hint;
     Entity tutorial_text;
+    Entity tutorial_button;
     static constexpr std::string_view tutorial_string = R"(
 Welcome to Convoy to Athalin!
 In this game you are in charge of defences of an convoy that travels to the capital Athalin.
 This is the overview map where you select the path that the convoy will travel along.
-At each location you will need to protect the convoy from monsters.
+There are three different types of locations:
+  - Campfire: At this location the convoy rests and needs protection from you
+  - Tower/Garrison: At this place you can hire new troops
+  - Merchant: Here you can buy consumable items
+To begin, select one location after the starting location
 )";
-    static constexpr auto tutorial_pos = vec2(100, 100);
+    static constexpr auto tutorial_pos = vec2(120, 120);
 
 
 
