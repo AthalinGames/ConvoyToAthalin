@@ -1598,6 +1598,8 @@ Entity createButton(RenderSystem *renderer, const vec2 pos, const vec2 size, con
 		registry.remove_all_components_of(text_entity);
 	};
 
+    button.text_entity = text_entity;
+
 	return entity;
 }
 

@@ -200,6 +200,8 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 			registry.deathTimers.remove(entity);
 			screen.screen_darken_factor = 0;
 			restart_game();
+            music_transition = true;
+            next_track = Music::OVERVIEW;
 			return true;
 		}
 	}
@@ -450,6 +452,7 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 		current_map_pos = next_map_pos;
 
 		registry.invisibles.remove(tutorial_button);
+        registry.invisibles.remove(registry.buttons.get(tutorial_button).text_entity);
 
 		// Finally get back to overview-map steps
 	}
@@ -731,12 +734,15 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 			if (registry.overviewMapLocations.has(entity)) {
 				const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
 				registry.invisibles.emplace(tutorial_button);
+                registry.invisibles.emplace(registry.buttons.get(tutorial_button).text_entity);
 				if (entity == map_start_goal.second) {
                     goal_reached = true;
                     const Entity gameEnd = createGameEnd(renderer);
                     registry.scoreTimers.emplace(gameEnd);
                     music_transition = true;
                     next_track = Music::END;
+                    registry.buttons.get(tutorial_button).cleanup_func();
+                    registry.remove_all_components_of(tutorial_button);
 				} else {
 					if (loc_props.type == LocationType::FIGHT) {
                         current_td_system.reset( new TDSystem(rng()));
@@ -773,7 +779,7 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
             		registry.invisibles.emplace(tutorial_text);
             	}
             }
-		} else {
+		} else if (!goal_reached) {
 			auto& button_ref = registry.buttons.get(tutorial_button);
 			button_ref.click(false);
 		}

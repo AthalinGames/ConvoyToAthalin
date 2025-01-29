@@ -377,6 +377,7 @@ struct CardStatsWindow {
 struct Button {
 	std::vector<std::function<void(bool)>> on_click_listeners{};
 	std::function<void()> cleanup_func = []{};
+    Entity text_entity;
 
 	void click(const bool pressing) {
 		for (const auto & on_click_listener : on_click_listeners) {
