@@ -1499,7 +1499,8 @@ Entity createMerchantBackground() {
 Entity createButton(RenderSystem *renderer, const vec2 pos, const vec2 size, const std::string &text) {
 	const auto entity = Entity();
 
-	Button& button = registry.buttons.emplace(entity);
+	registry.buttons.insert(entity, {});
+	Button& button = registry.buttons.get(entity);
 
 	uint tile_count = size.x/size.y;
 	if (tile_count < 2) {
@@ -1592,7 +1593,8 @@ Entity createButton(RenderSystem *renderer, const vec2 pos, const vec2 size, con
 		}
 	});
 
-	button.cleanup_func = [text_entity] {
+	button.cleanup_func = [text_entity, text] {
+		printf("Removing %s button\n", text.c_str());
 		registry.remove_all_components_of(text_entity);
 	};
 
@@ -1614,6 +1616,9 @@ RenderRequest createTextRenderRequest(const std::string &text, const vec2 scale,
 			}
 			case '\n': {
 				current_pos.y += scale.y;
+				if (font == FontType::SLIM) {
+					current_pos.y += scale.y * 0.1;
+				}
 				current_pos.x = 0;
 				continue;
 			}

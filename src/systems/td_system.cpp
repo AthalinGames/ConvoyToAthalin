@@ -592,8 +592,10 @@ void TDSystem::restart_td_fight() {
     }
     realignCards();
 
-    const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial", FontType::SQUARE);
-    cleanup_entities.push_back(text);
+    //const Entity text = createText(renderer, {8, window_height_px - 10}, {16, 20}, "Hold 'T' to show the Tutorial", FontType::SQUARE);
+    //cleanup_entities.push_back(text);
+    tutorial_button = createButton(renderer, {TILE_WIDTH/2, CARD_AXIS_HEIGHT - TILE_HEIGHT/6 - CARD_HEIGHT/2}, {TILE_WIDTH * 1, TILE_HEIGHT/3}, "Tutorial");
+    cleanup_entities.push_back(tutorial_button);
 
     const Entity card_background = createBlackSquare(renderer, {window_width_px / 2, CARD_AXIS_HEIGHT}, {window_width_px, CARD_HEIGHT}, 0.75);
     cleanup_entities.push_back(card_background);
@@ -601,6 +603,13 @@ void TDSystem::restart_td_fight() {
     const Entity button = createRoundStartButton(renderer, {TILE_WIDTH * (MAP_COUNT_X - 1) - TILE_WIDTH / 4, TILE_HEIGHT / 4});
     cleanup_entities.push_back(button);
     start_button = button;
+
+    tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{495, 130}, {1020, 255}, 0.75f);
+    tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data(), FontType::SQUARE);
+    cleanup_entities.push_back(tutorial_text);
+    cleanup_entities.push_back(tutorial_background);
+    registry.invisibles.emplace(tutorial_background);
+    registry.invisibles.emplace(tutorial_text);
 
     registry.list_all_components();
 }
@@ -834,15 +843,11 @@ void TDSystem::on_key(const int key, int, const int action, const int mods) {
         }
         case GLFW_KEY_T: {
             if (action == GLFW_PRESS) {
-                tutorial_background = createBlackSquare(renderer, tutorial_pos + vec2{495, 130}, {1020, 255}, 0.75f);
-                tutorial_text = createText(renderer, tutorial_pos, {10, 20}, tutorial_string.data(), FontType::SQUARE);
-                cleanup_entities.push_back(tutorial_text);
-                cleanup_entities.push_back(tutorial_background);
+                registry.invisibles.remove(tutorial_text);
+                registry.invisibles.remove(tutorial_background);
             } else if (action == GLFW_RELEASE) {
-                registry.remove_all_components_of(tutorial_text);
-                registry.remove_all_components_of(tutorial_background);
-                std::erase(cleanup_entities, tutorial_text);
-                std::erase(cleanup_entities, tutorial_background);
+                registry.invisibles.emplace(tutorial_text);
+                registry.invisibles.emplace(tutorial_background);
             }
             break;
         }
@@ -1037,9 +1042,22 @@ void TDSystem::updateCardStats(const vec2 pos, const Entity card_entity, const E
 
 void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
     // TODO fight specific mouse handling
+    registry.clickables.clear();
+
+    {
+        const auto& button_pos = registry.stationaries.get(tutorial_button);
+        const vec2 dp = button_pos.position - pos;
+        const float dist_squared = dot(dp, dp);
+        vec2 bounding_box = {abs(button_pos.scale.x), abs(button_pos.scale.y)};
+        bounding_box *= 0.4f;
+        const float element_r_squared = bounding_box.x * bounding_box.y;
+        if (dist_squared < element_r_squared) {
+            registry.clickables.emplace(tutorial_button);
+        }
+    }
+
 
     if (current_phase == GamePhase::SETUP) {
-        registry.clickables.clear();
         const auto& card_pos = registry.stationaries.get(start_button);
         const vec2 dp = card_pos.position - pos;
         const float dist_squared = dot(dp, dp);
@@ -1081,12 +1099,10 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
                 if (i == selected_card_id && registry.cards.get(card_entity).selectable) {
                     registry.stationaries.get(card_entity).scale = vec2(1.3 * CARD_WIDTH, 1.3 * CARD_HEIGHT);
                     cardRegistry.components[i].selected = true;
-                    //TODO: createText for selected cards stats
                     updateCardStats(pos, card_entity, player);
                 } else {
                     registry.stationaries.get(card_entity).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
                     cardRegistry.components[i].selected = false;
-                    //TODO: delete created Text for not selected cards stats
                 }
             }
         } else { // unselect all cards
@@ -1096,7 +1112,6 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
                 Entity card_entity = cardRegistry.entities[i];
                 registry.stationaries.get(card_entity).scale = vec2(CARD_WIDTH, CARD_HEIGHT);
                 cardRegistry.components[i].selected = false;
-                //TODO: delete created Text for all cards stats
             }
             auto &stats_window = registry.cardStatsWindows.get(registry.players.get(player).cardStatsWindow);
             if (!registry.invisibles.has(stats_window.text_entity)) {
@@ -1107,7 +1122,6 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
             }
         }
     } else if (current_phase == GamePhase::CHOOSE_REWARD) {
-        registry.clickables.clear();
         bool card_selected = false;
         for (const Entity card : new_cards) {
             auto& card_pos = registry.stationaries.get(card);
@@ -1116,7 +1130,6 @@ void TDSystem::on_mouse_move(const vec2 pos, GLFWwindow *window) {
             vec2 bounding_box = {abs(card_pos.scale.x), abs(card_pos.scale.y)};
             bounding_box *= 0.3f;
             const float card_squared = dot(bounding_box, bounding_box);
-
             if (dist_squared < card_squared) {
                 card_pos.scale = vec2(1.3 * CARD_WIDTH, 1.3 * CARD_HEIGHT);
                 registry.clickables.emplace(card);
@@ -1190,6 +1203,22 @@ bool TDSystem::check_placement_collision(const Map &mapProperties, const vec2 ca
 
 void TDSystem::on_mouse_button(int button, int action, int mods, GLFWwindow *window) {
     printf("mouse button\n");
+
+    if (registry.clickables.has(tutorial_button)) {
+        auto& button_ref = registry.buttons.get(tutorial_button);
+        if (action == GLFW_PRESS) {
+            button_ref.click(true);
+        } else if (action == GLFW_RELEASE) {
+            button_ref.click(false);
+            if (registry.invisibles.has(tutorial_text)) {
+                registry.invisibles.remove(tutorial_text);
+                registry.invisibles.remove(tutorial_background);
+            } else {
+                registry.invisibles.emplace(tutorial_text);
+                registry.invisibles.emplace(tutorial_background);
+            }
+        }
+    }
 
     if (current_phase == GamePhase::SETUP) {
         if (registry.clickables.has(start_button) && action == GLFW_PRESS) {

@@ -44,6 +44,18 @@ private:
 
     Entity button;
 
+    // Tutorial entities
+    Entity tutorial_text;
+    Entity tutorial_button;
+    static constexpr std::string_view tutorial_string = R"(
+This is the Shop.
+Here you can buy up to four Consumables or Towers, depending on the shop-type.
+The price of each card is listed under each one, if you cannot afford a card,
+it is greyed out.
+The required coins are gathered by killing enemies.
+)";
+    static constexpr auto tutorial_pos = vec2(100, 100);
+
     std::vector<Entity> new_cards;
 
     std::vector<Entity> cleanup_entities;

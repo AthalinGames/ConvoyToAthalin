@@ -52,6 +52,7 @@ public:
 	// Constructor that registers the type
 	ComponentContainer()
 	{
+		components.reserve(3);
 	}
 
 	// Inserting a component c associated to entity e

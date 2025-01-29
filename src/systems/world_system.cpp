@@ -449,7 +449,7 @@ bool WorldSystem::step(const float elapsed_ms_raw) {
 		next_map_pos_props.selectable = false;
 		current_map_pos = next_map_pos;
 
-		registry.invisibles.remove(tutorial_hint);
+		registry.invisibles.remove(tutorial_button);
 
 		// Finally get back to overview-map steps
 	}
@@ -521,7 +521,9 @@ void WorldSystem::restart_game() {
     map_start_goal = build_overview_graph(renderer, paths, location_entities);
 	current_map_pos = map_start_goal.first;
 
-	tutorial_hint = createText(renderer, {5, window_height_px - 5}, {10, 10}, "Hold 'T' to show the tutorial", FontType::SQUARE);
+	tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data(), FontType::SLIM);
+	registry.invisibles.emplace(tutorial_text);
+	tutorial_button = createButton(renderer, {TILE_WIDTH/2, window_height_px - TILE_HEIGHT/6}, {TILE_WIDTH * 1, TILE_HEIGHT/3}, "Tutorial");
 }
 
 // Compute collisions between entities
@@ -604,9 +606,9 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
 		}
 		case GLFW_KEY_T: {
 			if (action == GLFW_PRESS) {
-				tutorial_text = createText(renderer, tutorial_pos, {8, 20}, tutorial_string.data(), FontType::SQUARE);
+				registry.invisibles.remove(tutorial_text);
 			} else if (action == GLFW_RELEASE) {
-				registry.remove_all_components_of(tutorial_text);
+				registry.invisibles.emplace(tutorial_text);
 			}
 			break;
 		}
@@ -640,13 +642,21 @@ void WorldSystem::on_key(const int key, int, const int action, const int mod) {
     registry.players.get(player).game_speed = fmax(0.f, registry.players.get(player).game_speed);
 }
 
-void WorldSystem::on_mouse_move(const vec2 pos) {
+void WorldSystem::on_mouse_move(vec2 pos) {
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	// TODO A1: HANDLE SALMON ROTATION HERE
 	// xpos and ypos are relative to the top-left of the window, the salmon's
 	// default facing direction is (1, 0)
 	// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	//TODO: handle drag and drop tower placement
+
+#ifdef GLFW_PLATFORM_WAYLAND
+	// When using Wayland sometimes the cursor uses the wrong scaling. This fixes this
+	int width, height;
+	glfwGetWindowSize(window, &width, &height);
+	const auto window_scaling = vec2(static_cast<float>(window_width_px)/width, static_cast<float>(window_height_px)/height);
+	pos *= window_scaling;
+#endif
 
 	// If td fight is running handle the proper mouse movements
 	if (!current_td_system->is_over()) {
@@ -688,6 +698,15 @@ void WorldSystem::on_mouse_move(const vec2 pos) {
 				}
 			}
 		}
+    	const auto button_pos = registry.stationaries.get(tutorial_button);
+    	const vec2 dp = button_pos.position - pos;
+    	const float dist_squared = dot(dp, dp);
+    	vec2 bounding_box = {abs(button_pos.scale.x), abs(button_pos.scale.y)};
+    	bounding_box *= 0.7f;
+    	const float element_r_squared = dot(bounding_box, bounding_box);
+    	if (dist_squared < element_r_squared) {
+    		registry.clickables.emplace(tutorial_button);
+    	}
 	}
 }
 
@@ -705,46 +724,58 @@ void WorldSystem::on_mouse_button(const int button, const int action, const int 
 	} else {
 		if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 			auto &clickables = registry.clickables;
-            if (!clickables.entities.empty()) {
-                const auto entity = clickables.entities[0]; // only one element should be clickable
-                if (registry.overviewMapLocations.has(entity)) {
-                    const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
-                    registry.invisibles.emplace(tutorial_hint);
-                    if (entity == map_start_goal.second) {
-                        goal_reached = true;
-                        const Entity gameEnd = createGameEnd(renderer);
-                        registry.scoreTimers.emplace(gameEnd);
-                        music_transition = true;
-                        next_track = Music::END;
-                    } else {
-                        if (loc_props.type == LocationType::FIGHT) {
-                            current_td_system.reset(new TDSystem(rng()));
-                            current_td_system->init(renderer, player);
-                            td_fight_launched = true;
-                            music_transition = true;
-                            next_track = Music::FIGHT;
-                        } else {
-                            current_shop_system.reset(new ShopSystem(rng()));
-                            current_shop_system->init(renderer, player, loc_props.type);
-                            shop_launched = true;
-                            music_transition = true;
-                            next_track = Music::SHOP;
-                        }
-                    }
-                    next_map_pos = entity;
-                } else if (entity == restart_button) {
-                    for (const auto score_timer: registry.scoreTimers.entities) {
-                        registry.remove_all_components_of(score_timer);
-                    }
-                    int w, h;
-                    glfwGetWindowSize(window, &w, &h);
+			if (clickables.entities.empty()) {
+				return;
+			}
+			const auto entity = clickables.entities[0]; // only one element should be clickable
+			if (registry.overviewMapLocations.has(entity)) {
+				const OverviewMapLocation &loc_props = registry.overviewMapLocations.get(entity);
+				registry.invisibles.emplace(tutorial_button);
+				if (entity == map_start_goal.second) {
+                    goal_reached = true;
+                    const Entity gameEnd = createGameEnd(renderer);
+                    registry.scoreTimers.emplace(gameEnd);
                     music_transition = true;
-                    next_track = Music::OVERVIEW;
-                    //Mix_PlayMusic(overview_music, -1);
-                    goal_reached = false;
-                    restart_game();
+                    next_track = Music::END;
+				} else {
+					if (loc_props.type == LocationType::FIGHT) {
+                        current_td_system.reset( new TDSystem(rng()));
+                        current_td_system->init(renderer, player);
+                        td_fight_launched = true;
+                        music_transition = true;
+                        next_track = Music::FIGHT;
+					} else {
+                        current_shop_system.reset(new ShopSystem(rng()));
+                        current_shop_system->init(renderer, player, loc_props.type);
+                        shop_launched = true;
+                        music_transition = true;
+                        next_track = Music::SHOP;
+					}
+				}
+				next_map_pos = entity;
+			} else if (entity == restart_button) {
+                for (const auto score_timer : registry.scoreTimers.entities) {
+                    registry.remove_all_components_of(score_timer);
                 }
+                int w, h;
+                glfwGetWindowSize(window, &w, &h);
+                music_transition = true;
+                next_track = Music::OVERVIEW;
+                //Mix_PlayMusic(overview_music, -1);
+                goal_reached = false;
+                restart_game();
+            } else if (entity == tutorial_button) {
+            	auto& button_ref = registry.buttons.get(tutorial_button);
+            	button_ref.click(true);
+            	if (registry.invisibles.has(tutorial_text)) {
+            		registry.invisibles.remove(tutorial_text);
+            	} else {
+            		registry.invisibles.emplace(tutorial_text);
+            	}
             }
+		} else {
+			auto& button_ref = registry.buttons.get(tutorial_button);
+			button_ref.click(false);
 		}
 	}
 }

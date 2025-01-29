@@ -88,17 +88,18 @@ private:
     // Tutorial entity;
     Entity tutorial_text;
     Entity tutorial_background;
+    Entity tutorial_button;
     static constexpr std::string_view tutorial_string = R"(
 This is the tower defence screen, here you do the actual fighting against enemies.
 On the bottom there are some cards that represent your towers (grey) and consumables (yellow),
 to place a tower you can drag and drop a card with left-clock onto the desired location.
 If you decide against placing a tower you are currently dragging you can either press right-click or
 let go left-click at the bottom of the screen.
-Placing a tower consumes 5 food (visible in the upper-left corner below HP).
+Placing a tower consumes 5 food (visible in the upper-left corner besides HP).
 If you don't have enough food the tower cannot be placed.
-To start the round you need to press 'c'.
+To start the round you need to press 'c' or the button in the top right corner.
 You defend the campfire and the enemies spawn at the opposite side of the path.
-When the combat ends you gain 5 food and additionally 10 food for each tower card (grey),
+When the combat ends you gain 5 food and additionally 5 food for each tower card (grey),
 that was not placed.
 Then you can select 1 of 3 cards to add to your collection of available cards.
 )";
